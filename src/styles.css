@@ -3,6 +3,7 @@
 @import "./styles/codes.css";
 @import "./styles/interactions.css";
 @import "./styles/glyphs.css";
+@import "./styles/fx.css";
 
 *,
 *::before,
@@ -91,21 +92,6 @@ h2 {
   background: var(--c-surface);
 }
 
-.game-shell::before {
-  position: fixed;
-  z-index: 20;
-  inset: 0;
-  pointer-events: none;
-  content: "";
-  opacity: 0.13;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent var(--space-hair),
-    var(--c-hairline) var(--space-hair),
-    var(--c-hairline) calc(var(--space-hair) + var(--hairline))
-  );
-}
 
 .app-header {
   position: sticky;

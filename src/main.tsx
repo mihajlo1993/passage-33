@@ -8,6 +8,7 @@ import "@fontsource/courier-prime/700.css";
 import "@fontsource/special-elite/400.css";
 import { GameApp } from "./components/GameApp";
 import { colours, layout, motion, typography } from "./tokens";
+import { VHSLayer } from "./fx";
 import "./styles.css";
 
 const root = document.documentElement;
@@ -23,6 +24,8 @@ const cssTokens: Record<string, string> = {
   "--c-slate": colours.slate,
   "--c-bile": colours.bile,
   "--c-amber": colours.amber,
+  "--c-chroma-red": colours.chromaRed,
+  "--c-chroma-cyan": colours.chromaCyan,
   "--font-ui": typography.fontFamily.ui,
   "--font-doc": typography.fontFamily.doc,
   "--font-award": typography.fontFamily.award,
@@ -41,6 +44,10 @@ const cssTokens: Record<string, string> = {
   "--motion-slow": motion.durationMs.slow + "ms",
   "--save-theatre": motion.eventMs.saveTheatre + "ms",
   "--ease-heavy": motion.easing,
+  "--vhs-roll": motion.eventMs.trackingRoll + "ms",
+  "--vhs-damage": motion.eventMs.vhsDamageSpike + "ms",
+  "--vhs-drop": motion.eventMs.vhsCriticalDrop + "ms",
+  "--vhs-drop-interval": motion.eventMs.vhsCriticalInterval + "ms",
   "--hairline": layout.hairlinePx + "px",
   "--frame-width": layout.frameMaxWidthPx + "px",
   "--touch-target": layout.touchTargetPx + "px",
@@ -65,6 +72,8 @@ root.style.colorScheme = "dark";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <GameApp />
+    <VHSLayer disabled={false}>
+      <GameApp />
+    </VHSLayer>
   </React.StrictMode>,
 );

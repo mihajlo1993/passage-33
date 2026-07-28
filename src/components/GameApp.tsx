@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGameStore } from "@/src/game";
 import { useHaptics, useWakeLock } from "@/src/device";
+import { getVHSHealthProfile, useVHS } from "@/src/fx";
+import { motion } from "@/src/tokens";
 import { HomeScreen } from "./HomeScreen";
 import { MapScreen } from "./MapScreen";
 import { InventoryScreen } from "./InventoryScreen";
@@ -29,6 +31,16 @@ const PLAY_ROUTES = new Set([
 
 function currentPath(): string {
   return typeof window === "undefined" ? "/" : window.location.pathname;
+}
+
+function elapsedTimecode(startedAt: number): string {
+  const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1_000));
+  const hours = Math.floor(seconds / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  const remainder = seconds % 60;
+  return [hours, minutes, remainder]
+    .map((part) => String(part).padStart(2, "0"))
+    .join(":");
 }
 
 function useHouseRouter() {
@@ -94,9 +106,49 @@ export function GameApp() {
       store.finishedAt,
     ],
   );
+  const vhs = useVHS();
+  const lastDamageResolution = useRef<unknown>(null);
 
   useWakeLock();
   useHaptics(store.critical);
+  useEffect(() => {
+    const profile = getVHSHealthProfile(store.health);
+    vhs.setIntensity(profile.intensity);
+
+    let timecodeTimer: number | null = null;
+    let dropTimer: number | null = null;
+    if (profile.unstableTimecode) {
+      const updateTimecode = () => {
+        vhs.setTimecode("REC " + elapsedTimecode(store.startedAt));
+      };
+      updateTimecode();
+      timecodeTimer = window.setInterval(updateTimecode, 1_000);
+    } else {
+      vhs.setTimecode(null);
+    }
+
+    if (profile.periodicDropFrames) {
+      dropTimer = window.setInterval(
+        () => vhs.dropFrames(motion.eventMs.vhsCriticalDrop),
+        motion.eventMs.vhsCriticalInterval,
+      );
+    }
+
+    return () => {
+      if (timecodeTimer !== null) window.clearInterval(timecodeTimer);
+      if (dropTimer !== null) window.clearInterval(dropTimer);
+      vhs.setTimecode(null);
+    };
+  }, [store.health, store.startedAt, vhs]);
+
+  useEffect(() => {
+    const resolution = store.lastResolution;
+    if (resolution === lastDamageResolution.current) return;
+    lastDamageResolution.current = resolution;
+    if (resolution?.ok && resolution.damage > 0) {
+      vhs.glitch(motion.eventMs.vhsDamageSpike);
+    }
+  }, [store.lastResolution, vhs]);
 
   useEffect(() => {
     void store.hydrate();

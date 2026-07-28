@@ -1,0 +1,111 @@
+.vhs-stage {
+  --vhs-saturation: 1;
+  --vhs-contrast: 1;
+  --vhs-blur: 0px;
+  --vhs-chroma: 0px;
+  --vhs-canvas-opacity: 0;
+  --vhs-jitter-y: 0px;
+  min-height: 100dvh;
+  filter:
+    saturate(var(--vhs-saturation))
+    contrast(var(--vhs-contrast))
+    blur(var(--vhs-blur));
+  transform: translate3d(0, var(--vhs-jitter-y), 0);
+}
+
+.vhs-stage[data-vhs-disabled="true"] {
+  filter: none;
+  transform: none;
+}
+
+.vhs-stage[data-glitch="true"] {
+  filter:
+    url("#vhs-damage-spike")
+    saturate(var(--vhs-saturation))
+    contrast(var(--vhs-contrast))
+    blur(var(--vhs-blur));
+}
+
+.vhs-stage[data-roll="true"] {
+  animation: vhs-hard-roll var(--vhs-roll) steps(3, end) 1;
+}
+
+.vhs-stage[data-drop="true"] .game-shell {
+  animation: vhs-frame-drop var(--vhs-drop) steps(2, end) 1;
+}
+
+.vhs-stage :where(h1, h2, h3, p, span, strong, small, button, label, output) {
+  text-shadow:
+    calc(var(--vhs-chroma) * -1) 0 0 var(--c-chroma-red),
+    var(--vhs-chroma) 0 0 var(--c-chroma-cyan);
+}
+
+.vhs-stage .game-icon {
+  filter:
+    drop-shadow(calc(var(--vhs-chroma) * -1) 0 0 var(--c-chroma-red))
+    drop-shadow(var(--vhs-chroma) 0 0 var(--c-chroma-cyan));
+}
+
+.vhs-stage[data-vhs-disabled="true"]
+  :where(h1, h2, h3, p, span, strong, small, button, label, output) {
+  text-shadow: none;
+}
+
+.vhs-stage[data-vhs-disabled="true"] .game-icon {
+  filter: none;
+}
+
+.vhs-overlay {
+  position: fixed;
+  z-index: 2147483646;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  pointer-events: none;
+  opacity: var(--vhs-canvas-opacity);
+  image-rendering: pixelated;
+  mix-blend-mode: screen;
+}
+
+.vhs-filter-defs {
+  position: fixed;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.vhs-timecode {
+  position: fixed;
+  z-index: 2147483647;
+  right: max(var(--space-md), env(safe-area-inset-right));
+  bottom: max(var(--space-xl), env(safe-area-inset-bottom));
+  display: none;
+  pointer-events: none;
+  color: var(--c-bone);
+  font-family: var(--font-doc);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-ui);
+  mix-blend-mode: screen;
+}
+
+.vhs-timecode[data-active="true"] {
+  display: block;
+}
+
+@keyframes vhs-hard-roll {
+  0% { transform: translate3d(0, var(--vhs-jitter-y), 0); }
+  24% { transform: translate3d(0, -12px, 0); }
+  28% { transform: translate3d(0, 22px, 0); }
+  72% { transform: translate3d(0, 4px, 0); }
+  100% { transform: translate3d(0, var(--vhs-jitter-y), 0); }
+}
+
+@keyframes vhs-frame-drop {
+  0%,
+  32% { opacity: 1; }
+  33%,
+  72% { opacity: 0.76; }
+  73%,
+  100% { opacity: 1; }
+}

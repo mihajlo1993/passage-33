@@ -17,6 +17,8 @@ export const colours = {
   slate: '#2E5A73',
   bile: '#6E7A2E',
   amber: '#B8843A',
+  chromaRed: '#7A211D',
+  chromaCyan: '#246673',
 } as const;
 
 // Kept as a type with the requested name so Item.tint can be `keyof colours`.
@@ -56,11 +58,34 @@ export const motion = {
     torchKill: 1800,
     scanInterval: 120,
     scanDuplicate: 1500,
+    trackingRoll: 200,
+    vhsDamageSpike: 360,
+    vhsCriticalDrop: 120,
+    vhsCriticalInterval: 2200,
   },
   easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
 } as const;
 
 export const eventMs = motion.eventMs;
+
+export const effects = {
+  vhs: {
+    renderScale: 0.5,
+    maxFps: 30,
+    grainCycleFrames: 3,
+    dropoutMinPx: 1,
+    dropoutMaxPx: 4,
+    tearMinPx: 12,
+    tearMaxPx: 20,
+    scanlineStepPx: 3,
+    jitterChance: 0.035,
+    hardRollChance: 0.0015,
+    maxBlurPx: 0.55,
+    maxChromaPx: 2,
+    saturateLoss: 0.14,
+    contrastGain: 0.22,
+  },
+} as const;
 
 /** Dimension tokens are intentionally square, spare, and mechanical. */
 export const layout = {
