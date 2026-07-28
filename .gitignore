@@ -1,0 +1,26 @@
+# dependencies
+/node_modules/
+
+# build and tool output
+/dist/
+/.vite/
+/.wrangler/
+/.vinext/
+/coverage/
+/outputs/
+/work/
+*.tsbuildinfo
+
+# environment and logs
+.env*
+*.log
+*.pem
+.DS_Store
+
+# patch artifacts
+*.orig
+*.rej
+
+# editor and package-manager state
+.pnp.*
+.yarn/
