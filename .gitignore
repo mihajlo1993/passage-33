@@ -24,3 +24,5 @@
 # editor and package-manager state
 .pnp.*
 .yarn/
+tsconfig.tsbuildinfo
+/.openai/
