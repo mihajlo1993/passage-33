@@ -326,6 +326,15 @@
       "purpose": "Spoken Host line after resolving pin 27."
     },
     {
+      "id": "voice-pin-28",
+      "category": "voice",
+      "fileName": "voice/host-pin-28.wav",
+      "durationMs": 10000,
+      "loop": false,
+      "pinId": 28,
+      "purpose": "Spoken Host line after resolving pin 28."
+    },
+    {
       "id": "ui-contact",
       "category": "oneshot",
       "fileName": "oneshot/ui-contact.wav",

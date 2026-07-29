@@ -40,6 +40,7 @@ export function selectGameState(state: GameState): GameState {
     clearedZones: [...state.clearedZones],
     lastSavePin: state.lastSavePin,
     startedAt: state.startedAt,
+    trophyAt: state.trophyAt,
     finishedAt: state.finishedAt,
   };
 }
@@ -53,6 +54,7 @@ function gameStateChanged(current: GameStore, previous: GameStore): boolean {
     current.clearedZones !== previous.clearedZones ||
     current.lastSavePin !== previous.lastSavePin ||
     current.startedAt !== previous.startedAt ||
+    current.trophyAt !== previous.trophyAt ||
     current.finishedAt !== previous.finishedAt
   );
 }
@@ -60,6 +62,7 @@ function gameStateChanged(current: GameStore, previous: GameStore): boolean {
 const initialGameState = createDefaultGameState();
 let hydrationPromise: Promise<GameState> | null = null;
 let operatorMutationRevision = 0;
+let sealedPresentRefusalAttempt = 0;
 
 export const useGameStore = create<GameStore>((set, get) => ({
   ...initialGameState,
@@ -82,8 +85,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     hydrationPromise = (async () => {
       try {
         const stored = await loadGameState();
-        // A production recovery mutation made while IndexedDB opens must win
-        // over the older record returned by that in-flight hydration.
+        // A production recovery mutation made during hydration must win over
+        // the older local snapshot returned by that in-flight read.
         const gameState = operatorMutationRevision === hydrationRevision
           ? (stored ?? selectGameState(get()))
           : selectGameState(get());
@@ -112,7 +115,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       pinId,
       Date.now(),
       method,
+      sealedPresentRefusalAttempt,
     );
+
+    if (!result.ok && result.reason === "sealed-present") {
+      sealedPresentRefusalAttempt += 1;
+    }
+    if (result.ok && result.pin.kind === "sealed") {
+      sealedPresentRefusalAttempt = 0;
+    }
 
     if (result.ok) {
       set({
@@ -148,6 +159,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   resetGame: (startedAt = Date.now()) => {
     const gameState = createDefaultGameState(startedAt);
+    sealedPresentRefusalAttempt = 0;
     set({
       ...gameState,
       critical: false,
@@ -160,6 +172,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   replaceStateFromOperator: (state) => {
     const gameState = selectGameState(state);
+    if (gameState.resolvedPins.length === 0) sealedPresentRefusalAttempt = 0;
     operatorMutationRevision += 1;
     set({
       ...gameState,
@@ -186,6 +199,7 @@ useGameStore.subscribe((current, previous) => {
       current.inventory !== previous.inventory ||
       current.resolvedPins !== previous.resolvedPins ||
       current.lastSavePin !== previous.lastSavePin ||
+      current.trophyAt !== previous.trophyAt ||
       current.finishedAt !== previous.finishedAt;
 
     if (needsImmediateWrite) {

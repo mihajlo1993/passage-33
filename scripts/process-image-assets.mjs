@@ -29,6 +29,8 @@ const SOURCE_SPECS = Object.freeze([
   { id: "trophy", source: "trophy.png", output: "media/trophy", width: 1280, height: 720 },
   { id: "creature", source: "creature.png", output: "ar/textures/creature", width: 1024, height: 2048, blackKey: true },
   { id: "appIcon", source: "app-icon.png", output: "media/app-icon", width: 1024, height: 1024, icon: true },
+  { id: "sheet01", source: "sheet01.png", output: "media/sheet01", width: 1754, height: 2480, fit: "contain" },
+  { id: "sheet02", source: "sheet02.png", output: "media/sheet02", width: 1754, height: 2480, fit: "contain" },
 ]);
 
 function invariant(condition, message) {
@@ -120,6 +122,24 @@ function coverImage(image, width, height) {
     width,
     height,
   );
+  return canvas;
+}
+
+/** Preserve every source pixel on a white A4 portrait canvas. */
+function containImage(image, width, height) {
+  const canvas = createCanvas(width, height);
+  const context = canvas.getContext("2d");
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.fillStyle = "rgb(255, 255, 255)";
+  context.fillRect(0, 0, width, height);
+
+  const scale = Math.min(width / image.width, height / image.height);
+  const drawnWidth = image.width * scale;
+  const drawnHeight = image.height * scale;
+  const drawnX = (width - drawnWidth) / 2;
+  const drawnY = (height - drawnHeight) / 2;
+  context.drawImage(image, drawnX, drawnY, drawnWidth, drawnHeight);
   return canvas;
 }
 
@@ -248,7 +268,9 @@ export async function processMediaAssets(options = {}) {
       const image = await decodePng(sourceFile, spec.source);
       const sourceWidth = image.width;
       const sourceHeight = image.height;
-      let canvas = coverImage(image, spec.width, spec.height);
+      let canvas = spec.fit === "contain"
+        ? containImage(image, spec.width, spec.height)
+        : coverImage(image, spec.width, spec.height);
       if (spec.blackKey) canvas = keyBlackToAlpha(canvas, spec.source);
       const png = pngBytes(canvas);
       stale = writeOrCompare(pngFile, png, checkOnly) || stale;

@@ -59,6 +59,7 @@ If a listed program WAV is absent, generation warns and ships a silent mono unsi
 | `voice-pin-25` | `voice/host-pin-25.wav` | 10,000 ms | Host line after pin 25 resolves. |
 | `voice-pin-26` | `voice/host-pin-26.wav` | 11,000 ms | Host line after pin 26 resolves. |
 | `voice-pin-27` | `voice/host-pin-27.wav` | 12,000 ms | Host line after pin 27 resolves. |
+| `voice-pin-28` | `voice/host-pin-28.wav` | 10,000 ms | Host line after pin 28 resolves. |
 
 The spoken wording for each pin is its `bodyText` in `src/pins.ts`. Natural pauses count toward the declared length; pad the tail with digital silence rather than time-stretching the performance.
 

@@ -26,6 +26,7 @@ function bindControls(engine: AudioEngine): AudioControls {
     heartbeat: (enabled) => {
       void engine.heartbeat(enabled);
     },
+    silence: () => engine.silence(),
     master: {
       unlock: () => engine.unlock(),
       set: (level) => engine.setMaster(level),

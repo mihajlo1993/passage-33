@@ -1,38 +1,33 @@
-import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-
+import { FINAL_PRESENT_PIN_IDS, TROPHY_PIN_ID } from "../pins";
 import type { GameState } from "../types";
+import { deriveClearedZones } from "./engine";
 
 export const GAME_STATE_WRITE_DELAY_MS = 300;
-export const GAME_STATE_RECORD_KEY = "current";
 export const GAME_STATE_JOURNAL_KEY = "birthday-horror:latest";
 
-const DATABASE_NAME = "birthday-horror";
-const DATABASE_VERSION = 1;
-const STORE_NAME = "game-state";
-
-interface GameDatabase extends DBSchema {
-  "game-state": {
-    key: string;
-    value: GameState;
-  };
-}
 export interface GameStateStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
 }
 
-let databasePromise: Promise<IDBPDatabase<GameDatabase>> | null = null;
 let pendingState: GameState | null = null;
 let writeTimer: ReturnType<typeof setTimeout> | null = null;
 
-let writeSequence: Promise<void> = Promise.resolve();
 function cloneGameState(state: GameState): GameState {
+  const resolvedPins = [...state.resolvedPins];
+  const trophyAt = state.trophyAt
+    ?? (resolvedPins.includes(TROPHY_PIN_ID) ? state.finishedAt : null);
+  const finalPresentsOpened = FINAL_PRESENT_PIN_IDS.every((pinId) =>
+    resolvedPins.includes(pinId),
+  );
   return {
     ...state,
     inventory: [...state.inventory],
-    resolvedPins: [...state.resolvedPins],
-    clearedZones: [...state.clearedZones],
+    resolvedPins,
+    clearedZones: deriveClearedZones(resolvedPins),
+    trophyAt,
+    finishedAt: finalPresentsOpened ? state.finishedAt : null,
   };
 }
 
@@ -72,50 +67,12 @@ export function loadSynchronousGameState(
     return undefined;
   }
 }
-async function getDatabase(): Promise<IDBPDatabase<GameDatabase> | null> {
-  if (typeof indexedDB === "undefined") {
-    return null;
-  }
-
-  databasePromise ??= openDB<GameDatabase>(DATABASE_NAME, DATABASE_VERSION, {
-    upgrade(database) {
-      if (!database.objectStoreNames.contains(STORE_NAME)) {
-        database.createObjectStore(STORE_NAME);
-      }
-    },
-  });
-
-  return databasePromise;
-}
-
 export async function loadGameState(): Promise<GameState | undefined> {
-  const synchronousState = loadSynchronousGameState();
-  if (synchronousState) return synchronousState;
-
-  const database = await getDatabase();
-  if (!database) {
-    return undefined;
-  }
-
-  const state = await database.get(STORE_NAME, GAME_STATE_RECORD_KEY);
-  return state ? cloneGameState(state) : undefined;
-}
-
-export async function writeGameState(state: GameState): Promise<void> {
-  const database = await getDatabase();
-  if (!database) {
-    return;
-  }
-
-  await database.put(
-    STORE_NAME,
-    cloneGameState(state),
-    GAME_STATE_RECORD_KEY,
-  );
+  return loadSynchronousGameState();
 }
 
 /**
- * Coalesce rapid game mutations into one IndexedDB write 300ms after the last
+ * Coalesce rapid game mutations into one localStorage write 300ms after the last
  * change while always retaining the newest complete GameState snapshot.
  */
 export function queueGameStateWrite(state: GameState): void {
@@ -127,34 +84,33 @@ export function queueGameStateWrite(state: GameState): void {
 
   writeTimer = setTimeout(() => {
     writeTimer = null;
-    void flushGameStateWrite().catch(() => {
-      // Persistence is best-effort when a browser denies IndexedDB. The latest
-      // snapshot remains in memory and a later mutation will retry the write.
-    });
+    void flushGameStateWrite();
   }, GAME_STATE_WRITE_DELAY_MS);
 }
 
 
 export function persistGameStateImmediately(state: GameState): Promise<void> {
+  if (writeTimer !== null) {
+    clearTimeout(writeTimer);
+    writeTimer = null;
+  }
+
   flushGameStateSynchronously(state);
-  return flushGameStateWrite();
+  pendingState = null;
+  return Promise.resolve();
 }
+
 export async function flushGameStateWrite(latestState?: GameState): Promise<void> {
   if (writeTimer !== null) {
     clearTimeout(writeTimer);
     writeTimer = null;
   }
 
-  const state = pendingState;
+  const state = latestState ? cloneGameState(latestState) : pendingState;
   pendingState = null;
-  if (latestState) {
-    flushGameStateSynchronously(latestState);
-  }
-
-
   if (state) {
-    writeSequence = writeSequence.catch(() => undefined).then(() => writeGameState(state));
-    await writeSequence;
+    flushGameStateSynchronously(state);
+    pendingState = null;
   }
 }
 
@@ -165,14 +121,10 @@ export async function clearStoredGameState(): Promise<void> {
     writeTimer = null;
   }
 
-  const database = await getDatabase();
-  if (database) {
   const storage = availableStorage();
   try {
     storage?.removeItem(GAME_STATE_JOURNAL_KEY);
   } catch {
     // Ignore denied local storage during reset.
-  }
-    await database.delete(STORE_NAME, GAME_STATE_RECORD_KEY);
   }
 }

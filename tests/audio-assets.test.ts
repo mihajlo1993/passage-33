@@ -51,7 +51,7 @@ const ambient = [
   ["ambient-balcony", "ambient/balcony-bed.wav", 28000],
   ["ambient-kitchen", "ambient/kitchen-bed.wav", 30000],
 ] as const;
-const pinDurations = [9000, 11000, 10000, 12000, 10000, 11000, 9000, 12000, 9000, 12000, 10000, 11000, 10000, 12000, 9000, 11000, 10000, 8000, 9000, 10000, 9000, 12000, 9000, 8000, 10000, 11000, 12000];
+const pinDurations = [9000, 11000, 10000, 12000, 10000, 11000, 9000, 12000, 9000, 12000, 10000, 11000, 10000, 12000, 9000, 11000, 10000, 8000, 9000, 10000, 9000, 12000, 9000, 8000, 10000, 11000, 12000, 10000];
 const oneShots: Readonly<Record<string, readonly [string, number]>> = {
   "ui-contact": ["oneshot/ui-contact.wav", 180],
   "ui-found": ["oneshot/ui-found.wav", 650],
@@ -71,9 +71,9 @@ const oneShots: Readonly<Record<string, readonly [string, number]>> = {
 };
 
 test("audio inventory is unique and complete", () => {
-  assert.equal(audioAssets.length, 50);
-  assert.equal(new Set(audioAssets.map(({ id }) => id)).size, 50);
-  assert.equal(new Set(audioAssets.map(({ fileName }) => fileName)).size, 50);
+  assert.equal(audioAssets.length, 51);
+  assert.equal(new Set(audioAssets.map(({ id }) => id)).size, 51);
+  assert.equal(new Set(audioAssets.map(({ fileName }) => fileName)).size, 51);
   assert.deepEqual(
     audioAssets.filter(({ category }) => category === "ambient").map(({ id }) => id),
     ambient.map(([id]) => id),

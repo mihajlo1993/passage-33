@@ -1,17 +1,17 @@
-export type ImageArTargetId = "sheet01" | "sheet02";
+export type ImageArSheetId = "sheet01" | "sheet02";
 export type ImageArPinId = 3 | 17;
 export type ImageArTone = "threatening" | "calm";
 export type ImageArMotion = "peel" | "reach" | "pulse" | "lift";
 
 /**
- * Image-target scenes are tracked by MindAR's compiled target index. They do
- * not share placement or combat state with the room-scale WebXR scene.
+ * Pins 3 and 17 are deliberately simple screen-space placements. The scanned
+ * QR supplies the sheet identity, and the player chooses the sprite origin by
+ * tapping the camera view. They share no state with room-scale WebXR.
  */
 export interface ImageArSceneDefinition {
   readonly mechanism: "image";
-  readonly targetId: ImageArTargetId;
+  readonly sheetId: ImageArSheetId;
   readonly pinId: ImageArPinId;
-  readonly targetIndex: 0 | 1;
   readonly tone: ImageArTone;
   readonly subject: "wall" | "herb";
   readonly motions: readonly ImageArMotion[];
@@ -21,38 +21,6 @@ export interface RoomArSceneDefinition {
   readonly mechanism: "room";
   readonly pinId: 18;
 }
-
-export type ImageArPhase =
-  | "idle"
-  | "initializing"
-  | "tracking"
-  | "acquired"
-  | "fallback2d"
-  | "completed"
-  | "cancelled"
-  | "cleanedUp";
-
-export interface ImageArState {
-  readonly mechanism: "image";
-  readonly scene: ImageArSceneDefinition;
-  readonly phase: ImageArPhase;
-  readonly initializedAtMs: number | null;
-  readonly acquiredAtMs: number | null;
-  readonly completedAtMs: number | null;
-  readonly fallbackReason: string | null;
-  readonly cancellationReason: string | null;
-}
-
-export type ImageArEvent =
-  | { readonly type: "initialize"; readonly atMs: number }
-  | { readonly type: "tracking" }
-  | { readonly type: "acquired"; readonly atMs: number }
-  | { readonly type: "lost" }
-  | { readonly type: "tick"; readonly atMs: number }
-  | { readonly type: "fallback"; readonly reason?: string }
-  | { readonly type: "complete"; readonly atMs: number }
-  | { readonly type: "cancel"; readonly reason?: string }
-  | { readonly type: "cleanup" };
 
 /** Plain numeric placement contract; the pure reducer never imports Three. */
 export interface RoomArPlacement {

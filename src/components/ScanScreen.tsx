@@ -99,7 +99,7 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
       navigate("/save");
       return;
     }
-    if (result.pin.id === 27) {
+    if (result.pin.id === 26 || result.gameCompleted) {
       navigate("/trophy");
       return;
     }
@@ -116,10 +116,10 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
       <DialLockScreen
         kind={numeric ? "numeric" : "alpha"}
         correctValue={numeric ? CABINET_DIAL_CODE : BALCONY_DIAL_WORD}
-        title={numeric ? "Cabinet Lock" : "Balcony Padlock"}
+        title={numeric ? "On-Screen Dial" : "Balcony Padlock"}
         hostText={
           numeric
-            ? "Three figures. The mirror introduced them already. Turn the little wheels and let the cabinet remember you."
+            ? "The cabinet kept only the square. The mirror introduced three figures. Turn the wheels here on the screen."
             : "Five letters. The tape was almost embarrassingly clear. Spell what our previous guest became."
         }
         wrongText={
@@ -192,11 +192,13 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
               ? "STEP BACK"
               : result.saveTriggered
                 ? "RECORD TO CASSETTE"
-                : result.pin.id === 27
-                  ? "TAKE THE TROPHY"
+                : result.gameCompleted
+                  ? "LET THE HOUSE GO QUIET"
                   : result.pin.id === 26
-                    ? "RETURN TO THE CORRIDOR"
-                    : "KEEP MOVING"}
+                    ? "VIEW THE TROPHY"
+                    : result.pin.id === 27 || result.pin.id === 28
+                      ? "FIND THE OTHER PRESENT"
+                      : "KEEP MOVING"}
           </button>
         </article>
       )}

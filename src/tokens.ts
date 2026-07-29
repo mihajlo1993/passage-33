@@ -19,6 +19,8 @@ export const colours = {
   amber: '#B8843A',
   chromaRed: '#7A211D',
   chromaCyan: '#246673',
+  printBlack: '#000000',
+  printWhite: '#FFFFFF',
 } as const;
 
 // Kept as a type with the requested name so Item.tint can be `keyof colours`.

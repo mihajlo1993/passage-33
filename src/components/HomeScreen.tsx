@@ -1,7 +1,7 @@
 "use client";
 
 import { MEDIA_ASSETS } from "@/src/media";
-import { pins } from "@/src/pins";
+import { pins, TOTAL_PIN_COUNT } from "@/src/pins";
 import type { GameState } from "@/src/types";
 import { RelightAction } from "./RelightAction";
 
@@ -60,7 +60,7 @@ export function HomeScreen({ state, coldOpen, onBegin, onRelight, navigate }: Ho
         <p className="screen-index">
           {nextPin
             ? "PIN " + String(nextPin.id).padStart(2, "0") + " // " + nextPin.zone
-            : "27 OF 27 CONTACTS"}
+            : TOTAL_PIN_COUNT + " OF " + TOTAL_PIN_COUNT + " CONTACTS"}
         </p>
       </header>
       <div className="objective-panel">
@@ -76,9 +76,9 @@ export function HomeScreen({ state, coldOpen, onBegin, onRelight, navigate }: Ho
           </p>
         )}
       </div>
-      <div className="progress-readout" aria-label={state.resolvedPins.length + " of 27 contacts resolved"}>
+      <div className="progress-readout" aria-label={state.resolvedPins.length + " of " + TOTAL_PIN_COUNT + " contacts resolved"}>
         <span>HOUSE CONTACT</span>
-        <strong>{String(state.resolvedPins.length).padStart(2, "0")} / 27</strong>
+        <strong>{String(state.resolvedPins.length).padStart(2, "0")} / {TOTAL_PIN_COUNT}</strong>
       </div>
       <button
         className="mechanical-button mechanical-button--primary mechanical-button--full"

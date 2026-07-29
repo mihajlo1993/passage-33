@@ -11,7 +11,9 @@ export type MediaAssetId =
   | "tape07"
   | "trophy"
   | "creature"
-  | "appIcon";
+  | "appIcon"
+  | "sheet01"
+  | "sheet02";
 
 export interface AvailableMediaAsset {
   readonly available: true;

@@ -9,6 +9,9 @@ export const CABINET_DIAL_CODE = '731';
 
 export const BALCONY_DIAL_WORD = 'LOSER';
 export const NON_PRINTED_PIN_IDS = new Set([24]);
+export const TROPHY_PIN_ID = 26;
+export const SEALED_PRESENT_PIN_ID = 28;
+export const FINAL_PRESENT_PIN_IDS = [27, SEALED_PRESENT_PIN_ID] as const;
 
 export const pins: readonly Pin[] = [
   {
@@ -107,7 +110,7 @@ export const pins: readonly Pin[] = [
     kind: 'save',
     resolution: 'dial',
     bodyText:
-      'Three little numbers, and the cabinet finally admits you. Inside is enough chemistry to improve the evening. Take it. The cassette deck is ready for another memory, too. You have done wonderfully already. I knew you would, which is almost the same as congratulations.',
+      'The cabinet held only my little square. The three wheels are here on your screen, where they belong. You found the numbers in the mirror and set them correctly. Take the chem fluid. The cassette deck is ready for another memory, too.',
   },
   {
     id: 9,
@@ -220,7 +223,7 @@ export const pins: readonly Pin[] = [
     arTarget: 'sheet02',
     resolution: 'ar',
     bodyText:
-      'The planter has produced a splendid crop: one living thing and one piece of plumbing. Take the herb and the valve. I planted neither, which makes their devotion to your birthday especially touching. Let the camera notice what else has taken root here.',
+      'The planter has produced an herb and one useful instruction. Take the herb. Remember that the fan can be stopped when the draught begins. I planted neither idea, which makes their devotion to your birthday especially touching. Let the camera notice what else has taken root here.',
   },
   {
     id: 18,
@@ -257,13 +260,13 @@ export const pins: readonly Pin[] = [
     id: 20,
     act: 4,
     zone: 'kitchen',
-    name: 'Chem Station',
+    name: 'Glass Mixture',
     requires: [itemIds.herb, itemIds.chemFluid],
     requiresPin: [19],
     grants: [itemIds.firstAid],
     kind: 'craft',
     bodyText:
-      'Herb first. Fluid second. Do not confuse generosity with safety; I have provided both because damaged guests become slow guests. Mix them at the station. What you make can pull you back from a very ugly edge, once. Save it for a memorable toast.',
+      'Herb first. Fluid second. Put them in a glass and mix them. Drink the result when you need the room to stop swimming. It will pull you back from one ugly edge, once. I do hope your birthday toast is memorable.',
   },
   {
     id: 22,
@@ -320,13 +323,13 @@ export const pins: readonly Pin[] = [
     id: 25,
     act: 5,
     zone: 'kitchen',
-    name: 'The Valve',
+    name: 'The Fan',
     requires: [itemIds.valve],
     requiresPin: [24],
     grants: [itemIds.fanOff],
     kind: 'puzzle',
     bodyText:
-      'The valve fits where the fan keeps worrying the air. Turn it. Listen to the blades surrender. There. Your candle may finally travel without being bullied. The previous player blamed the machinery. I prefer to thank you for correcting it.',
+      'The draught can be stopped. Find whatever is making it and switch it off. Yes, the real fan. Listen to the blades surrender. There. Your candle may finally travel without being bullied. Thank you for correcting the machinery.',
   },
   {
     id: 26,
@@ -338,7 +341,7 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'win',
     bodyText:
-      'Bring the living flame to the silent fan. One candle for every year would have been vulgar, so imagine the other thirty-two. You made it to the wish, exactly as promised. Go on. The party has one final present, and it has been waiting since the corridor.',
+      'Bring the living flame to the silent fan. Imagine the other thirty-two candles. You made it to the wish, exactly as promised. Your corridor box is where you woke. The sealed present is here in the kitchen. Both may open now. I shall stop making you guess.',
   },
   {
     id: 27,
@@ -350,10 +353,30 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.theHand, itemIds.theAltar],
     kind: 'flavour',
     bodyText:
-      'Full circle. Back where you woke, but not empty-handed. The Hand and the Altar are yours now. Thirty-three suited you beautifully. Take the trophy. I have been looking forward to congratulating you in person.',
+      'The corridor box is where you woke. Open it. The Hand and the Altar are yours now. Thirty-three suited you beautifully. If the kitchen paper is still unbroken, you may open that present too. I have finished hiding things from you.',
+  },
+  {
+    id: SEALED_PRESENT_PIN_ID,
+    act: 5,
+    zone: 'kitchen',
+    name: 'The Present',
+    requires: [],
+    requiresPin: [26],
+    grants: [itemIds.carbonator],
+    kind: 'sealed',
+    scannableFromAct: 4,
+    earlyRefusals: [
+      'Already? Delightful. I know exactly what is under that paper. The birthday girl may open it after the candles.',
+      'Back at the ribbon. Curious birthday girl. I know what is inside. I am still not telling.',
+      'You do make waiting look difficult. The birthday present stays sealed until the wish. I chose it myself.',
+      'Again? Wonderful. Your curiosity is the best part of this party. Candles first. Then the paper.',
+    ],
+    bodyText:
+      'You waited until the candles. Mostly. The kitchen parcel is open now. I knew what was inside, of course. Take the carbonator. The corridor box is still where you woke, unless you have already collected it.',
   },
 ];
 
+export const TOTAL_PIN_COUNT = pins.length;
 export const printablePins = pins.filter((pin) => !NON_PRINTED_PIN_IDS.has(pin.id));
 export const scannablePins = printablePins;
 

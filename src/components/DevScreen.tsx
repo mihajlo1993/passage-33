@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { pins } from "@/src/pins";
+import { pins, TROPHY_PIN_ID } from "@/src/pins";
 import type { GameState } from "@/src/types";
 import type { PinResolutionResult } from "@/src/game";
 
@@ -56,7 +56,7 @@ export function DevScreen({ state, resolvePin, resetGame, navigate }: DevScreenP
           );
         })}
       </ol>
-      {state.resolvedPins.includes(27) && (
+      {state.resolvedPins.includes(TROPHY_PIN_ID) && (
         <button className="mechanical-button mechanical-button--primary mechanical-button--full" onClick={() => navigate("/trophy")}>
           OPEN TROPHY
         </button>

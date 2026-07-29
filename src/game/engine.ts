@@ -1,4 +1,4 @@
-import { pinRevocations, pins } from "../pins";
+import { FINAL_PRESENT_PIN_IDS, pinRevocations, pins } from "../pins";
 import type { Act, GameState, ItemId, Pin, PinResolutionMethod, PinResolutionMode, ZoneId } from "../types";
 
 export const CRITICAL_HEALTH_THRESHOLD = 40;
@@ -24,6 +24,7 @@ export type PinRefusalReason =
   | "out-of-act"
   | "missing-requirements"
   | "missing-prerequisite-pins"
+  | "sealed-present"
   | "interaction-required";
 
 export interface SuccessfulPinResolution {
@@ -37,6 +38,7 @@ export interface SuccessfulPinResolution {
   actAdvanced: boolean;
   saveTriggered: boolean;
   finished: boolean;
+  gameCompleted: boolean;
 }
 
 export interface RefusedPinResolution {
@@ -113,12 +115,19 @@ export function createDefaultGameState(startedAt = Date.now()): GameState {
     clearedZones: [],
     lastSavePin: null,
     startedAt,
+    trophyAt: null,
     finishedAt: null,
   };
 }
 
 export function isCritical(health: number): boolean {
   return health < CRITICAL_HEALTH_THRESHOLD;
+}
+
+export function areFinalPresentsResolved(
+  resolvedPins: readonly number[],
+): boolean {
+  return FINAL_PRESENT_PIN_IDS.every((pinId) => resolvedPins.includes(pinId));
 }
 
 /**
@@ -161,6 +170,7 @@ export function attemptResolvePin(
   pinOrId: number | Pin,
   resolvedAt = state.startedAt,
   method: PinResolutionMethod = "scan",
+  refusalAttempt = 0,
 ): PinResolutionResult {
   const pin = findPin(pinOrId);
 
@@ -179,6 +189,30 @@ export function attemptResolvePin(
       pin,
       "already-resolved",
       refusalHints.alreadyResolved,
+    );
+  }
+
+  const earlyMissingPins = (pin.requiresPin ?? []).filter(
+    (requiredPin) => !state.resolvedPins.includes(requiredPin),
+  );
+  const canRefuseSealedScan =
+    pin.kind === "sealed"
+    && pin.scannableFromAct !== undefined
+    && state.act >= pin.scannableFromAct
+    && method === "scan"
+    && earlyMissingPins.length > 0;
+  if (canRefuseSealedScan) {
+    const variants = pin.earlyRefusals ?? [refusalHints.missingPins];
+    const attempt = Number.isFinite(refusalAttempt)
+      ? Math.max(0, Math.trunc(refusalAttempt))
+      : 0;
+    return refusal(
+      state,
+      pin,
+      "sealed-present",
+      variants[attempt % variants.length],
+      [],
+      earlyMissingPins,
     );
   }
 
@@ -233,6 +267,9 @@ export function attemptResolvePin(
   const damage = Math.max(0, pin.damage ?? 0);
   const nextAct = deriveAct(resolvedPins);
   const finished = pin.kind === "win";
+  const gameCompleted =
+    areFinalPresentsResolved(resolvedPins)
+    && !areFinalPresentsResolved(state.resolvedPins);
 
   const nextState: GameState = {
     ...state,
@@ -242,8 +279,10 @@ export function attemptResolvePin(
     resolvedPins,
     clearedZones: deriveClearedZones(resolvedPins),
     lastSavePin: pin.kind === "save" ? pin.id : state.lastSavePin,
+    trophyAt:
+      finished && state.trophyAt === null ? resolvedAt : state.trophyAt,
     finishedAt:
-      finished && state.finishedAt === null ? resolvedAt : state.finishedAt,
+      gameCompleted && state.finishedAt === null ? resolvedAt : state.finishedAt,
   };
 
   return {
@@ -257,6 +296,7 @@ export function attemptResolvePin(
     actAdvanced: nextAct !== state.act,
     saveTriggered: pin.kind === "save",
     finished,
+    gameCompleted,
   };
 }
 

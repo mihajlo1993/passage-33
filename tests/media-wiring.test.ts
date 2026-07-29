@@ -30,7 +30,8 @@ test("build order keys the incoming creature before AR generation and precaches 
   assert.match(processor, /output: "ar\/textures\/creature"/);
   assert.match(processor, /keyBlackToAlpha\(canvas, spec\.source\)/);
   assert.match(arGenerator, /defaultIncomingDirectory/);
-  assert.match(arGenerator, /incomingFileName = "creature\.png"/);
+  assert.match(arGenerator, /incomingName = "creature\.png"/);
+  assert.match(arGenerator, /path\.join\(incomingDirectory, incomingName\)/);
   assert.match(vite, /png,webp,svg/);
   assert.doesNotMatch(processor, /https?:\/\/|\bfetch\s*\(/);
 });

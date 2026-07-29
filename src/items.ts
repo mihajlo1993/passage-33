@@ -19,6 +19,7 @@ export const itemIds = {
   firstAid: 'firstAid',
   candleLit: 'candleLit',
   fanOff: 'fanOff',
+  carbonator: 'carbonator',
   theHand: 'theHand',
   theAltar: 'theAltar',
 } as const satisfies Record<string, ItemId>;
@@ -126,11 +127,11 @@ export const items: readonly Item[] = [
   },
   {
     id: itemIds.valve,
-    name: 'Valve Handle',
+    name: 'Fan Shutoff',
     icon: 'valve',
     tint: 'boneDim',
     examine:
-      'A cast-metal valve handle. Rust rings the square fitting, but the spokes are solid enough to turn machinery.',
+      'A reminder from the planter: the draught is machinery, not weather. The real fan can be switched off when the flame needs still air.',
   },
   {
     id: itemIds.firstAid,
@@ -156,6 +157,14 @@ export const items: readonly Item[] = [
     tint: 'slate',
     examine:
       'The fan has stopped. In the sudden stillness, a candle might cross the kitchen without losing its flame.',
+  },
+  {
+    id: itemIds.carbonator,
+    name: 'Carbonator',
+    icon: 'soda-can',
+    tint: 'bone',
+    examine:
+      'The sealed birthday present at last. Heavy, useful, and chosen by someone who enjoyed knowing the answer before you did.',
   },
   {
     id: itemIds.theHand,

@@ -13,7 +13,7 @@ import { useCamera, useTorch } from "../device";
 import { getVHSHealthProfile, useVHS } from "../fx";
 import { selectGameState, useGameStore } from "../game";
 import { items } from "../items";
-import { pins } from "../pins";
+import { pins, TOTAL_PIN_COUNT } from "../pins";
 import type { Act, GameState, ZoneId } from "../types";
 import {
   currentPinForOperator,
@@ -249,7 +249,7 @@ export function OperatorPanel({
               <input
                 type="number"
                 min={pins[0]?.id ?? 1}
-                max={pins.at(-1)?.id ?? 27}
+                max={pins.at(-1)?.id ?? TOTAL_PIN_COUNT}
                 value={selectedPin}
                 onChange={(event) => setSelectedPin(Number(event.currentTarget.value))}
               />

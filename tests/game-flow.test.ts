@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
@@ -14,6 +15,7 @@ import {
 } from "../src/locks";
 
 import {
+  areFinalPresentsResolved,
   attemptResolvePin,
   attemptUseFirstAid,
   createDefaultGameState,
@@ -24,11 +26,15 @@ import {
 import {
   BALCONY_DIAL_WORD,
   CABINET_DIAL_CODE,
+  FINAL_PRESENT_PIN_IDS,
   getPinById,
   pins,
   printablePins,
+  SEALED_PRESENT_PIN_ID,
+  TOTAL_PIN_COUNT,
 } from "../src/pins";
 import {
+  GAME_STATE_JOURNAL_KEY,
   flushGameStateSynchronously,
   loadSynchronousGameState,
   type GameStateStorage,
@@ -114,7 +120,7 @@ function assertRefusal(
   assert.match(result.hint, /birthday|party|guest|arrangement/i);
 }
 
-test("walking pins 1 through 27 completes the whole chain", () => {
+test("walking pins 1 through 28 completes the whole chain", () => {
   let state = createDefaultGameState(1_000);
 
   for (const pin of pins) {
@@ -145,17 +151,120 @@ test("walking pins 1 through 27 completes the whole chain", () => {
     if (pin.id === 24) assert.ok(state.inventory.includes("candleLit"));
     if (pin.id === 26) {
       assert.equal(result.finished, true);
-      assert.equal(state.finishedAt, 1_026);
+      assert.equal(result.gameCompleted, false);
+      assert.equal(state.trophyAt, 1_026);
+      assert.equal(state.finishedAt, null);
+      assert.equal(areFinalPresentsResolved(state.resolvedPins), false);
+      assert.equal(state.clearedZones.includes("kitchen"), false);
     }
+    if (pin.id === 27) assert.equal(result.gameCompleted, false);
+    if (pin.id === 28) assert.equal(result.gameCompleted, true);
   }
 
   assert.deepEqual(state.resolvedPins, pins.map((pin) => pin.id));
   assert.equal(state.health, 45);
-  assert.equal(state.finishedAt, 1_026, "the epilogue must not move the win time");
+  assert.equal(state.trophyAt, 1_026, "the final presents must not move the trophy time");
+  assert.equal(state.finishedAt, 1_028, "the game ends only when the second present opens");
+  assert.equal(areFinalPresentsResolved(state.resolvedPins), true);
   assert.ok(state.inventory.includes("theHand"));
   assert.ok(state.inventory.includes("theAltar"));
+  assert.ok(state.inventory.includes("carbonator"));
 });
 
+test("the sealed present cycles early Host refusals from act IV onward", () => {
+  const pin = getPinById(SEALED_PRESENT_PIN_ID);
+  assert.ok(pin);
+  assert.equal(pin.kind, "sealed");
+  assert.equal(pin.scannableFromAct, 4);
+  assert.ok((pin.earlyRefusals?.length ?? 0) >= 4);
+
+  const actThree = stateAfter(8);
+  const tooEarly = attemptResolvePin(actThree, SEALED_PRESENT_PIN_ID, 2_000, "scan", 0);
+  assert.equal(tooEarly.ok, false);
+  if (!tooEarly.ok) assert.equal(tooEarly.reason, "out-of-act");
+
+  const actFour = stateAfter(18);
+  const hints: string[] = [];
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const result = attemptResolvePin(
+      actFour,
+      SEALED_PRESENT_PIN_ID,
+      3_000 + attempt,
+      "scan",
+      attempt,
+    );
+    assert.equal(result.ok, false);
+    if (result.ok) continue;
+    assert.strictEqual(result.state, actFour);
+    assert.equal(result.reason, "sealed-present");
+    assert.deepEqual(result.missingPins, [26]);
+    hints.push(result.hint);
+  }
+  assert.equal(new Set(hints.slice(0, 4)).size, 4);
+  assert.equal(hints[4], hints[0], "the fifth early scan cycles to the first refusal");
+
+  const actFiveBeforeCandles = stateAfter(25);
+  const stillSealed = attemptResolvePin(
+    actFiveBeforeCandles,
+    SEALED_PRESENT_PIN_ID,
+    4_000,
+    "scan",
+    2,
+  );
+  assert.equal(stillSealed.ok, false);
+  if (!stillSealed.ok) assert.equal(stillSealed.reason, "sealed-present");
+});
+
+test("pins 27 and 28 are order-independent after 26 and only the pair completes the game", () => {
+  assert.deepEqual(FINAL_PRESENT_PIN_IDS, [27, 28]);
+  assert.deepEqual(getPinById(27)?.requiresPin, [26]);
+  assert.deepEqual(getPinById(28)?.requiresPin, [26]);
+  assert.equal(getPinById(27)?.requiresPin?.includes(28), false);
+  assert.equal(getPinById(28)?.requiresPin?.includes(27), false);
+
+  for (const order of [[27, 28], [28, 27]] as const) {
+    let state = stateAfter(26);
+    assert.equal(areFinalPresentsResolved(state.resolvedPins), false);
+    assert.equal(state.clearedZones.includes("corridor"), false);
+    assert.equal(state.clearedZones.includes("kitchen"), false);
+
+    for (const [index, pinId] of order.entries()) {
+      const result = attemptResolvePin(state, pinId, 2_000 + pinId, "scan");
+      assert.equal(result.ok, true, `pin ${pinId} resolves in order ${order.join(" then ")}`);
+      if (!result.ok) continue;
+      assert.equal(result.gameCompleted, index === 1);
+      state = result.state;
+    }
+
+    assert.equal(areFinalPresentsResolved(state.resolvedPins), true);
+    assert.equal(state.trophyAt, 1_026, "the trophy remains timestamped at pin 26");
+    assert.equal(state.finishedAt, 2_000 + order[1]);
+    assert.equal(state.clearedZones.includes("corridor"), true);
+    assert.equal(state.clearedZones.includes("kitchen"), true);
+    assert.ok(state.inventory.includes(itemIds.theHand));
+    assert.ok(state.inventory.includes(itemIds.theAltar));
+    assert.ok(state.inventory.includes(itemIds.carbonator));
+  }
+});
+
+test("the trophy fires at 26 and only the final pair starts the quiet closing", () => {
+  const trophySource = readFileSync(
+    new URL("../src/components/TrophyScreen.tsx", import.meta.url),
+    "utf8",
+  );
+  const scannerSource = readFileSync(
+    new URL("../src/components/ScanScreen.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(trophySource, /trophyUnlocked = trophyAt !== null/);
+  assert.match(trophySource, /areFinalPresentsResolved\(state\.resolvedPins\)/);
+  assert.match(trophySource, /window\.setTimeout/);
+  assert.match(trophySource, /audio\.ambient\(null\)/);
+  assert.match(trophySource, /trophy-screen--quiet/);
+  assert.match(scannerSource, /result\.pin\.id === 26 \|\| result\.gameCompleted/);
+  assert.match(scannerSource, /FIND THE OTHER PRESENT/);
+});
 test("out-of-act and unknown scans refuse without changing GameState", () => {
   const state = createDefaultGameState(2_000);
 
@@ -180,7 +289,11 @@ test("every physical predecessor gate refuses when its required pin is absent", 
       const result = attemptResolvePin(state, pin.id, state.startedAt, resolutionModeForPin(pin));
 
       assertRefusal(result, state);
-      assert.equal(result.reason, "missing-prerequisite-pins", `pin ${pin.id}`);
+      assert.equal(
+        result.reason,
+        pin.kind === "sealed" ? "sealed-present" : "missing-prerequisite-pins",
+        `pin ${pin.id}`,
+      );
       assert.ok(result.missingPins.includes(requiredPin), `pin ${pin.id}`);
     }
   }
@@ -241,7 +354,7 @@ test("critical is strictly below 40 and first aid is consumed on use", () => {
   assert.strictEqual(refused.state, used.state);
 });
 
-test("all 27 generated QR payloads round-trip through the bundled jsQR fallback", () => {
+test("all 28 scanner payloads round-trip through the bundled jsQR fallback", () => {
   for (const pin of pins) {
     const payload = pinPayload(pin.id);
     const { data, side } = renderQrPixels(payload);
@@ -277,8 +390,17 @@ test("Part 1 amendments keep data, order, and printable contacts aligned", () =>
   assert.deepEqual(getPinById(22)?.requiresPin, [20]);
   assert.deepEqual(getPinById(21)?.requiresPin, [22]);
   assert.deepEqual(getPinById(23)?.requiresPin, [21]);
+  assert.deepEqual(getPinById(20)?.requires, [itemIds.herb, itemIds.chemFluid]);
+  assert.deepEqual(getPinById(20)?.grants, [itemIds.firstAid]);
+  assert.match(getPinById(20)?.bodyText ?? "", /glass.*mix.*drink/i);
+  assert.doesNotMatch(getPinById(20)?.bodyText ?? "", /appliance|oven|microwave/i);
+  assert.deepEqual(getPinById(25)?.requires, [itemIds.valve]);
+  assert.match(getPinById(25)?.bodyText ?? "", /switch it off.*real fan/i);
+  assert.doesNotMatch(getPinById(25)?.bodyText ?? "", /valve|handle/i);
+  assert.doesNotMatch(getPinById(8)?.bodyText ?? "", /lockbox|physical box/i);
 
-  assert.equal(printablePins.length, 26);
+  assert.equal(TOTAL_PIN_COUNT, 28);
+  assert.equal(printablePins.length, 27);
   assert.equal(printablePins.some((pin) => pin.id === 24), false);
   assert.deepEqual(
     pins.filter((pin) => !printablePins.includes(pin)).map((pin) => pin.id),
@@ -336,6 +458,37 @@ test("zero-delay synchronous flush retains the newest mutation", () => {
   flushGameStateSynchronously(newest, storage);
 
   assert.deepEqual(loadSynchronousGameState(storage), newest);
+});
+
+test("local-only save migration recomputes zone clearance without a database", () => {
+  const values = new Map<string, string>();
+  const storage: GameStateStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => {
+      values.set(key, value);
+    },
+    removeItem: (key) => {
+      values.delete(key);
+    },
+  };
+  const stale: GameState = {
+    ...createDefaultGameState(11_000),
+    act: 5,
+    resolvedPins: [26],
+    clearedZones: ["kitchen"],
+    trophyAt: 11_500,
+  };
+  storage.setItem(GAME_STATE_JOURNAL_KEY, JSON.stringify(stale));
+
+  const migrated = loadSynchronousGameState(storage);
+  assert.ok(migrated);
+  assert.equal(migrated.clearedZones.includes("kitchen"), false);
+
+  const persistenceSource = readFileSync(
+    new URL("../src/game/persistence.ts", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(persistenceSource, /indexedDB|openDB|from ["']idb["']/);
 });
 
 test("dial helpers allow unlimited exact retries without lockout state", () => {

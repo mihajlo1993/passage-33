@@ -1,6 +1,11 @@
-import { createDefaultGameState, deriveAct, deriveClearedZones } from "../game/engine";
+import {
+  areFinalPresentsResolved,
+  createDefaultGameState,
+  deriveAct,
+  deriveClearedZones,
+} from "../game/engine";
 import { items } from "../items";
-import { getPinById, pinRevocations, pins } from "../pins";
+import { getPinById, pinRevocations, pins, TROPHY_PIN_ID } from "../pins";
 import type { Act, GameState, ItemId, ZoneId } from "../types";
 
 function uniqueItems(itemIds: readonly ItemId[]): ItemId[] {
@@ -33,8 +38,12 @@ export function resolvePinForOperator(
     resolvedPins,
     clearedZones: deriveClearedZones(resolvedPins),
     lastSavePin: pin.kind === "save" ? pin.id : state.lastSavePin,
+    trophyAt:
+      pin.id === TROPHY_PIN_ID && state.trophyAt === null
+        ? resolvedAt
+        : state.trophyAt,
     finishedAt:
-      pin.kind === "win" && state.finishedAt === null
+      areFinalPresentsResolved(resolvedPins) && state.finishedAt === null
         ? resolvedAt
         : state.finishedAt,
   };
@@ -64,7 +73,8 @@ export function unresolvePinForOperator(
     resolvedPins,
     clearedZones: deriveClearedZones(resolvedPins),
     lastSavePin,
-    finishedAt: pin.kind === "win" ? null : state.finishedAt,
+    trophyAt: pin.id === TROPHY_PIN_ID ? null : state.trophyAt,
+    finishedAt: areFinalPresentsResolved(resolvedPins) ? state.finishedAt : null,
   };
 }
 

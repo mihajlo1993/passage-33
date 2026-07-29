@@ -1,13 +1,13 @@
 import type {
   ImageArSceneDefinition,
-  ImageArTargetId,
+  ImageArSheetId,
   RoomArSceneDefinition,
   RoomWebXrSessionInit,
   WebXrRequiredFeature,
 } from "./types";
 import { effects, motion } from "../tokens";
 
-export const AR_ACQUISITION_TIMEOUT_MS = motion.eventMs.arAcquire;
+export const ROOM_AR_ACQUISITION_TIMEOUT_MS = motion.eventMs.arAcquire;
 export const AR_MAX_FPS = effects.ar.maxFps;
 export const AR_FRAME_INTERVAL_MS = 1_000 / AR_MAX_FPS;
 
@@ -20,9 +20,8 @@ export const ROOM_MONSTER_SCALE_METERS = effects.ar.monsterHeightMeters;
 
 const sheet01Scene: ImageArSceneDefinition = Object.freeze({
   mechanism: "image",
-  targetId: "sheet01",
+  sheetId: "sheet01",
   pinId: 3,
-  targetIndex: 0,
   tone: "threatening",
   subject: "wall",
   motions: Object.freeze(["peel", "reach"] as const),
@@ -30,16 +29,15 @@ const sheet01Scene: ImageArSceneDefinition = Object.freeze({
 
 const sheet02Scene: ImageArSceneDefinition = Object.freeze({
   mechanism: "image",
-  targetId: "sheet02",
+  sheetId: "sheet02",
   pinId: 17,
-  targetIndex: 1,
   tone: "calm",
   subject: "herb",
   motions: Object.freeze(["pulse", "lift"] as const),
 });
 
 export const IMAGE_AR_SCENES: Readonly<
-  Record<ImageArTargetId, ImageArSceneDefinition>
+  Record<ImageArSheetId, ImageArSceneDefinition>
 > = Object.freeze({
   sheet01: sheet01Scene,
   sheet02: sheet02Scene,
@@ -51,9 +49,9 @@ export const ROOM_AR_SCENE: RoomArSceneDefinition = Object.freeze({
 });
 
 export function getImageArScene(
-  targetId: ImageArTargetId,
+  sheetId: ImageArSheetId,
 ): ImageArSceneDefinition {
-  return IMAGE_AR_SCENES[targetId];
+  return IMAGE_AR_SCENES[sheetId];
 }
 
 /**
@@ -69,7 +67,7 @@ export function createRoomWebXrSessionInit<TRoot>(
   };
 }
 
-export function hasArAcquisitionTimedOut(
+export function hasRoomArAcquisitionTimedOut(
   initializedAtMs: number | null,
   nowMs: number,
 ): boolean {
@@ -82,7 +80,7 @@ export function hasArAcquisitionTimedOut(
     return false;
   }
 
-  return nowMs - initializedAtMs >= AR_ACQUISITION_TIMEOUT_MS;
+  return nowMs - initializedAtMs >= ROOM_AR_ACQUISITION_TIMEOUT_MS;
 }
 
 export function isArFrameDue(

@@ -39,7 +39,7 @@ test("operator resolution bypasses act, item, prerequisite, and mechanism gates"
   assert.equal(cabinet.lastSavePin, 8);
 });
 
-test("operator resolution preserves normal grants, revocations, saves, and win time", () => {
+test("operator resolution preserves grants, trophy time, and final-present completion", () => {
   let state = createDefaultGameState(1_000);
   state = setItemForOperator(state, itemIds.candleLit, true);
   state = resolvePinForOperator(state, 23, 2_000);
@@ -50,10 +50,19 @@ test("operator resolution preserves normal grants, revocations, saves, and win t
   assert.equal(state.lastSavePin, 8);
 
   state = resolvePinForOperator(state, 26, 2_300);
-  assert.equal(state.finishedAt, 2_300);
-
-  state = unresolvePinForOperator(state, 26);
+  assert.equal(state.trophyAt, 2_300);
   assert.equal(state.finishedAt, null);
+
+  state = resolvePinForOperator(state, 28, 2_400);
+  assert.equal(state.finishedAt, null);
+  state = resolvePinForOperator(state, 27, 2_500);
+  assert.equal(state.finishedAt, 2_500);
+
+  state = unresolvePinForOperator(state, 28);
+  assert.equal(state.trophyAt, 2_300);
+  assert.equal(state.finishedAt, null);
+  state = unresolvePinForOperator(state, 26);
+  assert.equal(state.trophyAt, null);
   assert.ok(state.inventory.includes(itemIds.knife));
 
   state = unresolvePinForOperator(state, 8);
@@ -87,6 +96,27 @@ test("operator health, inventory, act, status, and reset mutations are determini
   assert.equal(currentPinForOperator(reset), 1);
 });
 
+test("the live store advances and cycles sealed-present refusal copy", () => {
+  const previous = selectGameState(useGameStore.getState());
+  const early = { ...createDefaultGameState(6_000), act: 4 as const };
+  useGameStore.getState().replaceStateFromOperator(early);
+
+  try {
+    const hints: string[] = [];
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const result = useGameStore.getState().resolvePin(28, "scan");
+      assert.equal(result.ok, false);
+      if (result.ok) continue;
+      assert.equal(result.reason, "sealed-present");
+      hints.push(result.hint);
+    }
+    assert.equal(new Set(hints.slice(0, 4)).size, 4);
+    assert.equal(hints[4], hints[0]);
+  } finally {
+    useGameStore.getState().resetGame(previous.startedAt);
+    useGameStore.getState().replaceStateFromOperator(previous);
+  }
+});
 test("operator runtime commands publish synchronously", () => {
   resetOperatorOverrides();
   let skipCalls = 0;

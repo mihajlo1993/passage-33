@@ -14,7 +14,7 @@ import { reportOperatorArInitialization } from "../operator/runtime";
 import { useVHS } from "../fx";
 import { effects, motion } from "../tokens";
 import { AR_CREATURE_ASSET } from "./assets";
-import { AR_ACQUISITION_TIMEOUT_MS } from "./config";
+import { ROOM_AR_ACQUISITION_TIMEOUT_MS } from "./config";
 import {
   createRoomXrRuntime,
   isRoomXrSupported,
@@ -285,7 +285,7 @@ export function RoomARScreen({
     updateView("opening");
     placementTimerRef.current = window.setTimeout(() => {
       transferToFallback("The floor would not hold a placement.");
-    }, AR_ACQUISITION_TIMEOUT_MS);
+    }, ROOM_AR_ACQUISITION_TIMEOUT_MS);
 
     // Keep this call directly inside the user gesture. The runtime performs
     // requestSession before its first await.

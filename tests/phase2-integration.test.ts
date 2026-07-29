@@ -26,7 +26,7 @@ const compact = (value: string) => value.replace(/\s+/g, " ");
 
 const GAMEPLAY_ORDER = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-  19, 20, 22, 21, 23, 24, 25, 26, 27,
+  19, 20, 22, 21, 23, 24, 25, 26, 27, 28,
 ] as const;
 
 test("Phase 2 coordinator walks every pin with state-driven effect spies", () => {
@@ -192,19 +192,19 @@ test("Phase 2 coordinator walks every pin with state-driven effect spies", () =>
   }
 
   assert.deepEqual(visited, [...GAMEPLAY_ORDER]);
-  assert.deepEqual([...visited].sort((a, b) => a - b), Array.from({ length: 27 }, (_, index) => index + 1));
+  assert.deepEqual([...visited].sort((a, b) => a - b), Array.from({ length: 28 }, (_, index) => index + 1));
   assert.deepEqual(zoneClearPins, {
     corridor: 27,
     bathroom: 8,
     entry: 11,
     living: 18,
     balcony: 17,
-    kitchen: 26,
+    kitchen: 28,
   });
 
   assert.deepEqual(
     trace.zones.map(({ value }) => value),
-    ["corridor", "bathroom", "entry", "living", "balcony", "living", "kitchen", "corridor"],
+    ["corridor", "bathroom", "entry", "living", "balcony", "living", "kitchen", "corridor", "kitchen"],
   );
   assert.deepEqual(
     trace.ambient.map(({ value }) => value),

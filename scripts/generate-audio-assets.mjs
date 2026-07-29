@@ -166,7 +166,7 @@ for (const entry of [...manifest.audio, ...manifest.impulses]) {
   ids.add(entry.id);
   fileNames.add(entry.fileName);
 }
-invariant(manifest.audio.length === 50, `Expected 50 audio assets, found ${manifest.audio.length}`);
+invariant(manifest.audio.length === 51, `Expected 51 audio assets, found ${manifest.audio.length}`);
 invariant(manifest.impulses.length === 6, `Expected 6 impulse assets, found ${manifest.impulses.length}`);
 
 const embeddedAudio = {};
@@ -210,4 +210,4 @@ for (const [file, source] of outputs) {
   }
 }
 if (stale) process.exitCode = 1;
-if (!quiet && !stale) console.log(`[audio-assets] ${checkOnly ? "Verified" : "Wrote"} 50 audio assets and 6 impulses (${totalModuleBytes} embedded module bytes).`);
+if (!quiet && !stale) console.log(`[audio-assets] ${checkOnly ? "Verified" : "Wrote"} 51 audio assets and 6 impulses (${totalModuleBytes} embedded module bytes).`);

@@ -1,12 +1,8 @@
 import {
-  getImageArScene,
-  hasArAcquisitionTimedOut,
+  hasRoomArAcquisitionTimedOut,
   ROOM_AR_SCENE,
 } from "./config";
 import type {
-  ImageArEvent,
-  ImageArState,
-  ImageArTargetId,
   RoomArEvent,
   RoomArPlacement,
   RoomArState,
@@ -14,10 +10,6 @@ import type {
 
 function isFiniteTimestamp(atMs: number): boolean {
   return Number.isFinite(atMs);
-}
-
-function freezeImageState(state: ImageArState): ImageArState {
-  return Object.freeze(state);
 }
 
 function freezeRoomState(state: RoomArState): RoomArState {
@@ -42,123 +34,6 @@ function copyPlacement(
     zMeters: placement.zMeters,
     yawRadians: placement.yawRadians,
   });
-}
-
-export function createImageArState(
-  targetId: ImageArTargetId,
-): ImageArState {
-  return freezeImageState({
-    mechanism: "image",
-    scene: getImageArScene(targetId),
-    phase: "idle",
-    initializedAtMs: null,
-    acquiredAtMs: null,
-    completedAtMs: null,
-    fallbackReason: null,
-    cancellationReason: null,
-  });
-}
-
-/** Pure reducer for the sheet01/sheet02 image-tracking mechanism only. */
-export function imageArReducer(
-  state: ImageArState,
-  event: ImageArEvent,
-): ImageArState {
-  if (event.type === "cleanup") {
-    if (state.phase === "cleanedUp") return state;
-    return freezeImageState({ ...state, phase: "cleanedUp" });
-  }
-
-  if (event.type === "cancel") {
-    if (
-      state.phase === "cancelled"
-      || state.phase === "cleanedUp"
-      || state.phase === "completed"
-    ) {
-      return state;
-    }
-    return freezeImageState({
-      ...state,
-      phase: "cancelled",
-      cancellationReason: event.reason ?? null,
-    });
-  }
-
-  switch (event.type) {
-    case "initialize":
-      if (state.phase !== "idle" || !isFiniteTimestamp(event.atMs)) {
-        return state;
-      }
-      return freezeImageState({
-        ...state,
-        phase: "initializing",
-        initializedAtMs: event.atMs,
-      });
-
-    case "tracking":
-      if (state.phase !== "initializing") return state;
-      return freezeImageState({ ...state, phase: "tracking" });
-
-    case "acquired":
-      if (
-        (state.phase !== "initializing" && state.phase !== "tracking")
-        || !isFiniteTimestamp(event.atMs)
-      ) {
-        return state;
-      }
-      return freezeImageState({
-        ...state,
-        phase: "acquired",
-        acquiredAtMs: state.acquiredAtMs ?? event.atMs,
-      });
-
-    case "lost":
-      if (state.phase !== "acquired") return state;
-      return freezeImageState({ ...state, phase: "tracking" });
-
-    case "tick":
-      if (
-        (state.phase !== "initializing" && state.phase !== "tracking")
-        || !hasArAcquisitionTimedOut(state.initializedAtMs, event.atMs)
-      ) {
-        return state;
-      }
-      return freezeImageState({
-        ...state,
-        phase: "fallback2d",
-        fallbackReason: "acquisition-timeout",
-      });
-
-    case "fallback":
-      if (
-        state.phase !== "initializing"
-        && state.phase !== "tracking"
-        && state.phase !== "acquired"
-      ) {
-        return state;
-      }
-      return freezeImageState({
-        ...state,
-        phase: "fallback2d",
-        fallbackReason: event.reason ?? "unavailable",
-      });
-
-    case "complete":
-      if (
-        (state.phase !== "acquired" && state.phase !== "fallback2d")
-        || !isFiniteTimestamp(event.atMs)
-      ) {
-        return state;
-      }
-      return freezeImageState({
-        ...state,
-        phase: "completed",
-        completedAtMs: event.atMs,
-      });
-
-    default:
-      return state;
-  }
 }
 
 export function createRoomArState(): RoomArState {
@@ -254,7 +129,7 @@ export function roomArReducer(
     case "tick":
       if (
         (state.phase !== "initializing" && state.phase !== "tracking")
-        || !hasArAcquisitionTimedOut(state.initializedAtMs, event.atMs)
+        || !hasRoomArAcquisitionTimedOut(state.initializedAtMs, event.atMs)
       ) {
         return state;
       }
@@ -364,13 +239,6 @@ export function didRoomArShotFire(
 export function didRoomArComplete(
   previous: RoomArState,
   next: RoomArState,
-): boolean {
-  return previous.completedAtMs === null && next.completedAtMs !== null;
-}
-
-export function didImageArComplete(
-  previous: ImageArState,
-  next: ImageArState,
 ): boolean {
   return previous.completedAtMs === null && next.completedAtMs !== null;
 }

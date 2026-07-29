@@ -14,20 +14,13 @@ import { reportOperatorArInitialization } from "../operator/runtime";
 import { useVHS } from "../fx";
 import { motion } from "../tokens";
 import { AR_SHEET_ASSETS } from "./assets";
-import { AR_ACQUISITION_TIMEOUT_MS } from "./config";
 import { useSharedCameraVideo } from "./useSharedCameraVideo";
 
-import type { ImageArRuntime } from "./imageRuntime";
 import type { ImageArSceneDefinition } from "./types";
 
-type ImageArView =
-  | "tracking"
-  | "target-found"
-  | "fallback"
-  | "fallback-animating"
-  | "complete";
+type ImageArView = "placement" | "animating" | "complete";
 
-interface FallbackPoint {
+interface PlacementPoint {
   readonly xPercent: number;
   readonly yPercent: number;
 }
@@ -46,209 +39,74 @@ export function ImageARScreen({
   const {
     videoRef,
     playback,
-    cameraStatus,
     error: cameraError,
   } = useSharedCameraVideo(true);
   const audio = useAudio();
   const { suspend } = useVHS();
-  const rendererMountRef = useRef<HTMLDivElement>(null);
-  const runtimeRef = useRef<ImageArRuntime | null>(null);
-  const trackingStartedRef = useRef(false);
   const completionSentRef = useRef(false);
-  const fallbackEnteredRef = useRef(false);
-  const acquisitionTimerRef = useRef<number | null>(null);
-  const fallbackTimerRef = useRef<number | null>(null);
-  const [view, setView] = useState<ImageArView>("tracking");
-  const [fallbackReason, setFallbackReason] = useState<string | null>(null);
-  const [fallbackPoint, setFallbackPoint] = useState<FallbackPoint | null>(
+  const animationTimerRef = useRef<number | null>(null);
+  const [view, setView] = useState<ImageArView>("placement");
+  const [placementPoint, setPlacementPoint] = useState<PlacementPoint | null>(
     null,
   );
-
-  const clearAcquisitionTimer = useCallback(() => {
-    if (acquisitionTimerRef.current === null) return;
-    window.clearTimeout(acquisitionTimerRef.current);
-    acquisitionTimerRef.current = null;
-  }, []);
 
   const finish = useCallback(() => {
     if (completionSentRef.current) return;
     if (!onResolved()) return;
     completionSentRef.current = true;
-    clearAcquisitionTimer();
     setView("complete");
-  }, [clearAcquisitionTimer, onResolved]);
-
-  const enterFallback = useCallback((reason: string) => {
-    reportOperatorArInitialization("error");
-    fallbackEnteredRef.current = true;
-    clearAcquisitionTimer();
-    runtimeRef.current?.dispose();
-    runtimeRef.current = null;
-    setFallbackReason(reason);
-    setView((current) => current === "complete" ? current : "fallback");
-  }, [clearAcquisitionTimer]);
-  const armAcquisitionTimer = useCallback(() => {
-    clearAcquisitionTimer();
-    acquisitionTimerRef.current = window.setTimeout(() => {
-      enterFallback("The drawing would not hold still for the lens.");
-    }, AR_ACQUISITION_TIMEOUT_MS);
-  }, [clearAcquisitionTimer, enterFallback]);
+  }, [onResolved]);
 
   useEffect(() => {
     reportOperatorArInitialization("not-started");
     suspend(true);
-    audio.setZone(scene.targetId === "sheet01" ? "corridor" : "balcony");
+    audio.setZone(scene.sheetId === "sheet01" ? "corridor" : "balcony");
     audio.ambient(
-      scene.targetId === "sheet01"
+      scene.sheetId === "sheet01"
         ? "ambient-corridor"
         : "ambient-balcony",
     );
 
     return () => {
       suspend(false);
-      clearAcquisitionTimer();
-      if (fallbackTimerRef.current !== null) {
-        window.clearTimeout(fallbackTimerRef.current);
+      if (animationTimerRef.current !== null) {
+        window.clearTimeout(animationTimerRef.current);
       }
-      runtimeRef.current?.dispose();
-      runtimeRef.current = null;
     };
-  }, [audio, clearAcquisitionTimer, scene.targetId, suspend]);
+  }, [audio, scene.sheetId, suspend]);
 
   useEffect(() => {
-    const cameraStopped =
-      playback === "ready" && cameraStatus === "idle";
-    if (
-      !completionSentRef.current
-      && !fallbackEnteredRef.current
-      && (playback === "failed" || cameraStopped)
-    ) {
-      enterFallback(cameraError?.message ?? "Camera contact failed.");
+    if (playback === "ready") {
+      reportOperatorArInitialization("ready");
+    } else if (playback === "failed") {
+      reportOperatorArInitialization("error");
     }
-  }, [cameraError, cameraStatus, enterFallback, playback]);
+  }, [playback]);
 
-  useEffect(() => {
-    if (
-      playback !== "ready"
-      || trackingStartedRef.current
-      || fallbackEnteredRef.current
-      || !videoRef.current
-      || !rendererMountRef.current
-    ) {
-      return;
-    }
-
-    let cancelled = false;
-    trackingStartedRef.current = true;
-    armAcquisitionTimer();
-
-    void import("./imageRuntime").then(async ({ createImageArRuntime }) => {
-      if (
-        cancelled
-        || !videoRef.current
-        || fallbackEnteredRef.current
-        || !rendererMountRef.current
-      ) {
-        return;
-      }
-
-      const runtime = createImageArRuntime({
-        video: videoRef.current,
-        container: rendererMountRef.current,
-        scene,
-        onFound: () => {
-          if (
-            cancelled
-            || completionSentRef.current
-            || fallbackEnteredRef.current
-          ) return;
-          clearAcquisitionTimer();
-          setView("target-found");
-        },
-        onLost: () => {
-          if (
-            cancelled
-            || completionSentRef.current
-            || fallbackEnteredRef.current
-          ) {
-            return;
-          }
-          setView("tracking");
-          armAcquisitionTimer();
-        },
-        onComplete: () => {
-          if (!cancelled && !fallbackEnteredRef.current) finish();
-        },
-        onFallback: (runtimeError) => {
-          if (
-            !cancelled
-            && !completionSentRef.current
-            && !fallbackEnteredRef.current
-          ) {
-            enterFallback(runtimeError.message);
-          }
-        },
-      });
-      runtimeRef.current = runtime;
-      await runtime.start();
-      if (!cancelled && !fallbackEnteredRef.current) {
-        reportOperatorArInitialization("ready");
-      }
-    }).catch((reason: unknown) => {
-      if (
-        cancelled
-        || completionSentRef.current
-        || fallbackEnteredRef.current
-      ) return;
-      enterFallback(
-        reason instanceof Error
-          ? reason.message
-          : "The drawing refused image tracking.",
-      );
-    });
-
-    return () => {
-      cancelled = true;
-      trackingStartedRef.current = false;
-      clearAcquisitionTimer();
-      runtimeRef.current?.dispose();
-      runtimeRef.current = null;
-    };
-  }, [
-    armAcquisitionTimer,
-    clearAcquisitionTimer,
-    enterFallback,
-    finish,
-    playback,
-    scene,
-    videoRef,
-  ]);
-
-  const placeFallback = (
+  const placeSprite = (
     event: ReactPointerEvent<HTMLButtonElement>,
   ) => {
-    if (view !== "fallback" || fallbackPoint) return;
+    if (view !== "placement" || placementPoint !== null) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const xPercent = (event.clientX - bounds.left) / bounds.width * 100;
     const yPercent = (event.clientY - bounds.top) / bounds.height * 100;
-    setFallbackPoint({ xPercent, yPercent });
-    setView("fallback-animating");
+    setPlacementPoint({ xPercent, yPercent });
+    setView("animating");
 
-    const duration = scene.targetId === "sheet01"
+    const duration = scene.sheetId === "sheet01"
       ? motion.eventMs.arImageReveal
       : motion.eventMs.arHerbReward;
-    fallbackTimerRef.current = window.setTimeout(finish, duration);
+    animationTimerRef.current = window.setTimeout(finish, duration);
   };
 
-  const fallbackStyle = fallbackPoint
+  const placementStyle = placementPoint
     ? {
-        "--ar-tap-x": fallbackPoint.xPercent + "%",
-        "--ar-tap-y": fallbackPoint.yPercent + "%",
+        "--ar-tap-x": placementPoint.xPercent + "%",
+        "--ar-tap-y": placementPoint.yPercent + "%",
       } as CSSProperties
     : undefined;
-  const asset = AR_SHEET_ASSETS[scene.targetId];
-  const acquired = view === "target-found";
-  const fallback = view === "fallback" || view === "fallback-animating";
+  const asset = AR_SHEET_ASSETS[scene.sheetId];
+  const spritePlaced = placementPoint !== null;
 
   return (
     <section
@@ -265,46 +123,33 @@ export function ImageARScreen({
           playsInline
           aria-label="Live rear camera"
         />
-        <div
-          ref={rendererMountRef}
-          className="ar-render-mount"
-          aria-hidden="true"
-        />
-        {fallback && (
-          <button
-            className="ar-tap-plane"
-            onPointerDown={placeFallback}
-            disabled={view === "fallback-animating"}
-            aria-label={
-              fallbackPoint
-                ? "Drawing placed"
-                : "Tap to place the drawing"
-            }
-            style={fallbackStyle}
-          >
-            {fallbackPoint && (
-              <img
-                className="ar-fallback-sprite"
-                data-target={scene.targetId}
-                data-animating={String(view === "fallback-animating")}
-                src={asset.overlayDataUri}
-                alt=""
-                aria-hidden="true"
-              />
-            )}
-          </button>
-        )}
+        <button
+          className="ar-tap-plane"
+          onPointerDown={placeSprite}
+          disabled={view !== "placement"}
+          aria-label={spritePlaced ? "Drawing placed" : "Tap to place the drawing"}
+          style={placementStyle}
+        >
+          {spritePlaced && (
+            <img
+              className="ar-fallback-sprite"
+              data-sheet={scene.sheetId}
+              data-animating={String(view === "animating" || view === "complete")}
+              src={asset.spriteDataUri}
+              alt=""
+              aria-hidden="true"
+            />
+          )}
+        </button>
         <div className="ar-registration" aria-hidden="true">
           <i /><i /><i /><i />
         </div>
       </div>
 
       <div className="ar-instrument-panel" aria-live="polite">
-        <p className="eyebrow">
-          {fallback ? "MANUAL REGISTRATION" : "IMAGE CONTACT"}
-        </p>
+        <p className="eyebrow">MANUAL REGISTRATION</p>
         <h1 id="ar-title">
-          {scene.targetId === "sheet01" ? "MARKED WALL" : "PLANTER STUDY"}
+          {scene.sheetId === "sheet01" ? "MARKED WALL" : "PLANTER STUDY"}
         </h1>
         {view === "complete" ? (
           <>
@@ -320,24 +165,11 @@ export function ImageARScreen({
               LEAVE THE IMAGE
             </button>
           </>
-        ) : fallback ? (
-          <>
-            <p className="ar-status-line">
-              TRACKING REFUSED // TAP THE DRAWING TO PLACE IT
-            </p>
-            {fallbackReason && (
-              <p className="host-copy host-copy--compact">
-                I prepared a simpler arrangement. Tap where it belongs.
-              </p>
-            )}
-          </>
         ) : (
           <p className="ar-status-line">
-            {playback !== "ready"
-              ? "OPENING SHUTTER"
-              : acquired
-                ? "HOLD STILL // CONTACT HELD"
-                : "FRAME THE WHOLE CRAYON SHEET"}
+            {view === "animating"
+              ? "PLACEMENT HELD // CONTACT MOVING"
+              : "TAP A POINT IN THE ROOM TO PLACE THE DRAWING"}
           </p>
         )}
         {cameraError && playback === "failed" && (

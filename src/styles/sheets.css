@@ -1,0 +1,253 @@
+.sheets-screen {
+  display: grid;
+  justify-content: center;
+  gap: 8mm;
+  padding-block: 8mm;
+  background: var(--c-hairline);
+}
+
+.prop-sheet {
+  position: relative;
+  box-sizing: border-box;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  background: var(--c-print-white);
+  color: var(--c-print-black);
+}
+
+.prop-sheet--image {
+  padding: 10mm;
+}
+
+.prop-sheet__accessible-title {
+  position: absolute;
+  width: 1mm;
+  height: 1mm;
+  overflow: hidden;
+  clip-path: inset(1mm);
+}
+
+.prop-sheet__picture,
+.prop-sheet__image {
+  display: block;
+  width: 190mm;
+  height: 277mm;
+}
+
+.prop-sheet__image {
+  object-fit: contain;
+}
+
+.prop-sheet__missing {
+  display: grid;
+  width: 190mm;
+  height: 277mm;
+  place-content: center;
+  gap: 4mm;
+  border: 0.5mm dashed var(--c-print-black);
+  font-family: var(--font-doc);
+  font-size: 4mm;
+  line-height: 6mm;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.prop-sheet__missing strong,
+.prop-sheet__missing span {
+  display: block;
+}
+
+.prop-sheet--survey {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10mm;
+}
+
+.print-survey {
+  display: block;
+  width: 190mm;
+  height: 126.667mm;
+  flex: none;
+  background: var(--c-print-white);
+}
+
+.print-survey text {
+  fill: var(--c-print-black);
+  font-family: var(--font-doc);
+  font-size: 11pt;
+  letter-spacing: 0.2mm;
+}
+
+.print-survey__hatch-line,
+.print-survey__room-outline,
+.print-survey__door,
+.print-survey__open-passage,
+.print-survey__furniture,
+.print-survey__landmark,
+.print-survey__north,
+.print-survey__title-block {
+  stroke: var(--c-print-black);
+  stroke-linecap: square;
+  stroke-linejoin: bevel;
+  vector-effect: non-scaling-stroke;
+}
+
+.print-survey__hatch-line {
+  stroke-width: 0.45mm;
+}
+
+.print-survey__wall-hatch {
+  stroke: url("#print-survey-wall-hatch");
+  stroke-width: 5mm;
+}
+
+.print-survey__room-outline {
+  stroke-width: 0.45mm;
+}
+
+.print-survey__opening-mask {
+  stroke: var(--c-print-white);
+  stroke-linecap: square;
+  stroke-width: 5.5mm;
+  vector-effect: non-scaling-stroke;
+}
+
+.print-survey__door,
+.print-survey__landmark,
+.print-survey__north,
+.print-survey__title-block {
+  stroke-width: 0.55mm;
+}
+
+.print-survey__open-passage,
+.print-survey__furniture {
+  stroke-width: 0.35mm;
+}
+
+.print-survey__room-name {
+  font-family: var(--font-award);
+  font-size: 10pt;
+  letter-spacing: 0.15mm;
+}
+
+.print-survey__furniture-label,
+.print-survey__annotation,
+.print-survey__title-block text {
+  font-size: 7pt;
+}
+
+.print-survey__title {
+  font-family: var(--font-award);
+  font-size: 9pt;
+  letter-spacing: 0.2mm;
+}
+
+.pressed-text-area {
+  position: relative;
+  display: grid;
+  width: 150mm;
+  height: 22mm;
+  place-items: center;
+  margin-top: auto;
+  border: 0.2mm solid var(--c-print-black);
+  font-family: var(--font-doc);
+  font-size: 3mm;
+  letter-spacing: 0.2mm;
+  opacity: 0.28;
+}
+
+.pressed-text-area__tick {
+  position: absolute;
+  width: 4mm;
+  height: 4mm;
+  border-color: var(--c-print-black);
+}
+
+.pressed-text-area__tick--north-west {
+  top: -2mm;
+  left: -2mm;
+  border-top: 0.25mm solid;
+  border-left: 0.25mm solid;
+}
+
+.pressed-text-area__tick--north-east {
+  top: -2mm;
+  right: -2mm;
+  border-top: 0.25mm solid;
+  border-right: 0.25mm solid;
+}
+
+.pressed-text-area__tick--south-west {
+  bottom: -2mm;
+  left: -2mm;
+  border-bottom: 0.25mm solid;
+  border-left: 0.25mm solid;
+}
+
+.pressed-text-area__tick--south-east {
+  right: -2mm;
+  bottom: -2mm;
+  border-right: 0.25mm solid;
+  border-bottom: 0.25mm solid;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  .vhs-stage {
+    min-height: 0;
+    filter: none !important;
+    transform: none !important;
+  }
+
+  .vhs-overlay,
+  .vhs-filter-defs,
+  .vhs-timecode,
+  .operator-overlay {
+    display: none;
+  }
+
+  .sheets-screen :where(h1, span, strong) {
+    text-shadow: none !important;
+  }
+
+  html,
+  body,
+  #root {
+    width: 210mm;
+    min-height: 0;
+    margin: 0;
+    overflow: visible;
+    background: var(--c-print-white);
+  }
+
+  .sheets-screen {
+    display: block;
+    width: 210mm;
+    margin: 0;
+    padding: 0;
+    background: var(--c-print-white);
+  }
+
+  .prop-sheet {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    break-after: page;
+    break-inside: avoid;
+    page-break-after: always;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .prop-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}

@@ -52,6 +52,7 @@ test("media pipeline is deterministic, non-fatal for missing sources, and emits 
   writeFileSync(path.join(incoming, "tape-01.png"), sourcePng(32, 18));
   writeFileSync(path.join(incoming, "creature.png"), sourcePng(16, 32, true));
   writeFileSync(path.join(incoming, "app-icon.png"), sourcePng(24, 24));
+  writeFileSync(path.join(incoming, "sheet01.png"), sourcePng(20, 20));
 
   try {
     const result = await processMediaAssets({
@@ -65,8 +66,11 @@ test("media pipeline is deterministic, non-fatal for missing sources, and emits 
     assert.equal(result.errors.length, 0);
     assert.equal(result.records.tape01?.available, true);
     assert.equal(result.records.creature?.available, true);
+    assert.equal(result.records.sheet01?.available, true);
+    assert.equal(result.records.sheet02?.available, false);
     assert.equal(result.records.coldOpen?.available, false);
     assert.ok(result.missing.includes("cold-open.png"));
+    assert.ok(result.missing.includes("sheet02.png"));
     assert.deepEqual(
       await imageDimensions(path.join(publicDirectory, "media", "tape-01.png")),
       [640, 360],
@@ -78,6 +82,27 @@ test("media pipeline is deterministic, non-fatal for missing sources, and emits 
     assert.deepEqual(
       await imageDimensions(path.join(publicDirectory, "icons", "icon-512.png")),
       [512, 512],
+    );
+    assert.deepEqual(
+      await imageDimensions(path.join(publicDirectory, "media", "sheet01.png")),
+      [1754, 2480],
+    );
+
+    const sheet = await loadImage(
+      readFileSync(path.join(publicDirectory, "media", "sheet01.png")),
+    );
+    const decodedSheet = createCanvas(sheet.width, sheet.height);
+    const sheetContext = decodedSheet.getContext("2d");
+    sheetContext.drawImage(sheet, 0, 0);
+    assert.deepEqual(
+      [...sheetContext.getImageData(0, 0, 1, 1).data],
+      [255, 255, 255, 255],
+      "contain must letterbox rather than crop or stretch",
+    );
+    assert.deepEqual(
+      [...sheetContext.getImageData(877, 1240, 1, 1).data],
+      [102, 118, 61, 255],
+      "the complete source remains centred on the A4 canvas",
     );
 
     const tapeWebp = readFileSync(path.join(publicDirectory, "media", "tape-01.webp"));

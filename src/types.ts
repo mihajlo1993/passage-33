@@ -39,7 +39,10 @@ export interface Pin {
     | 'scare'
     | 'craft'
     | 'gate'
-    | 'win';
+    | 'win'
+    | 'sealed';
+  scannableFromAct?: Act;
+  earlyRefusals?: readonly [string, string, string, string, ...string[]];
   arTarget?: 'sheet01' | 'sheet02';
   scare?: 'torchKill' | 'roomMonster' | 'closeQuarters';
   damage?: number;
@@ -55,6 +58,7 @@ export interface GameState {
   clearedZones: ZoneId[];
   lastSavePin: number | null;
   startedAt: number;
+  trophyAt: number | null;
   finishedAt: number | null;
 }
 

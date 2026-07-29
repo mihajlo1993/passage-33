@@ -19,6 +19,7 @@ import { DevScreen } from "./DevScreen";
 import { CodesScreen } from "./CodesScreen";
 import { GlyphsScreen } from "./GlyphsScreen";
 import { TapePlaybackScreen } from "./TapePlaybackScreen";
+import { SheetsScreen } from "./SheetsScreen";
 import { useOperatorRuntime } from "../operator";
 
 const LazyARScreen = lazy(() => import("../ar/ARScreen").then((module) => ({
@@ -38,6 +39,7 @@ const PLAY_ROUTES = new Set([
   "/dev",
   "/ar",
   "/tape",
+  "/sheets",
 ]);
 
 function currentPath(): string {
@@ -104,6 +106,7 @@ export function GameApp() {
       clearedZones: store.clearedZones,
       lastSavePin: store.lastSavePin,
       startedAt: store.startedAt,
+      trophyAt: store.trophyAt,
       finishedAt: store.finishedAt,
     }),
     [
@@ -114,6 +117,7 @@ export function GameApp() {
       store.clearedZones,
       store.lastSavePin,
       store.startedAt,
+      store.trophyAt,
       store.finishedAt,
     ],
   );
@@ -207,6 +211,7 @@ export function GameApp() {
 
   if (route === "/codes") return <CodesScreen />;
   if (route === "/glyphs") return <GlyphsScreen />;
+  if (route === "/sheets") return <SheetsScreen />;
 
   if (route === "/save") {
     const ticket = typeof window === "undefined" ? null : Number(sessionStorage.getItem("bh7-save-ticket"));

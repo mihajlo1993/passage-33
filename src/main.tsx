@@ -29,6 +29,8 @@ const cssTokens: Record<string, string> = {
   "--c-amber": colours.amber,
   "--c-chroma-red": colours.chromaRed,
   "--c-chroma-cyan": colours.chromaCyan,
+  "--c-print-black": colours.printBlack,
+  "--c-print-white": colours.printWhite,
   "--font-ui": typography.fontFamily.ui,
   "--font-doc": typography.fontFamily.doc,
   "--font-award": typography.fontFamily.award,

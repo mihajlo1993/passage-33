@@ -138,11 +138,11 @@
   transform-origin: 50% 72%;
 }
 
-.ar-fallback-sprite[data-target="sheet01"][data-animating="true"] {
+.ar-fallback-sprite[data-sheet="sheet01"][data-animating="true"] {
   animation: ar-wall-reach var(--ar-image-reveal) var(--ease-heavy) forwards;
 }
 
-.ar-fallback-sprite[data-target="sheet02"][data-animating="true"] {
+.ar-fallback-sprite[data-sheet="sheet02"][data-animating="true"] {
   animation: ar-herb-lift var(--ar-herb-reward) var(--ease-heavy) forwards;
 }
 

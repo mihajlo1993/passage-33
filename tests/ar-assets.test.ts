@@ -17,9 +17,7 @@ import { createCanvas, loadImage } from "canvas";
 import {
   AR_CREATURE_ASSET,
   AR_SHEET_ASSETS,
-  AR_TARGET_DATABASE,
-  AR_TARGET_ORDER,
-  targetDatabaseBuffer,
+  AR_SHEET_ORDER,
 } from "../src/ar/assets";
 
 interface PixelImage {
@@ -29,18 +27,13 @@ interface PixelImage {
 }
 
 interface GeneratedPayload {
-  targetOrder: string[];
-  targetDatabase: {
-    base64: string;
-    placeholder: boolean;
-    fileName: string;
-  };
+  sheetOrder: string[];
   sheets: Record<"sheet01" | "sheet02", {
-    paperDataUri: string;
-    overlayDataUri: string;
+    spriteDataUri: string;
     width: number;
     height: number;
     placeholder: boolean;
+    sourceMode: string;
   }>;
   creature: {
     dataUri: string;
@@ -53,11 +46,14 @@ interface GeneratedPayload {
 }
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const generatorUrl = pathToFileURL(path.join(root, "scripts", "generate-ar-assets.mjs")).href;
+const generatorUrl = pathToFileURL(
+  path.join(root, "scripts", "generate-ar-assets.mjs"),
+).href;
 
 async function generator(): Promise<{
   generateArAssets(options: {
     sourceDirectory: string;
+    incomingDirectory?: string | false;
     outputDirectory: string;
     checkOnly?: boolean;
     quiet?: boolean;
@@ -65,7 +61,7 @@ async function generator(): Promise<{
     outputFile: string;
     stale: boolean;
     sourceMode: Record<string, string>;
-    targetOrder: readonly string[];
+    sheetOrder: readonly string[];
   }>;
 }> {
   return import(generatorUrl);
@@ -78,14 +74,19 @@ function parseGeneratedModule(file: string): GeneratedPayload {
   const start = source.indexOf(prefix);
   assert.notEqual(start, -1);
   assert.ok(source.endsWith(suffix));
-  return JSON.parse(source.slice(start + prefix.length, -suffix.length)) as GeneratedPayload;
+  return JSON.parse(
+    source.slice(start + prefix.length, -suffix.length),
+  ) as GeneratedPayload;
 }
 
 async function decodePng(dataUri: string): Promise<PixelImage> {
   assert.match(dataUri, /^data:image\/png;base64,/);
   const encoded = dataUri.slice(dataUri.indexOf(",") + 1);
   const bytes = Buffer.from(encoded, "base64");
-  assert.deepEqual([...bytes.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.deepEqual(
+    [...bytes.subarray(0, 8)],
+    [137, 80, 78, 71, 13, 10, 26, 10],
+  );
   const image = await loadImage(bytes);
   const canvas = createCanvas(image.width, image.height);
   const context = canvas.getContext("2d");
@@ -117,11 +118,10 @@ function writeSourceFixture(sourceDirectory: string): void {
       context.fillRect(0, 0, 1754, 2480);
       context.fillStyle = `rgba(${ink}, ${ink - 5}, ${ink - 11}, 1)`;
       context.fillRect(430, 540, 720, 1120);
-      context.strokeStyle = "rgba(118, 103, 79, 1)";
-      context.lineWidth = 18;
-      context.strokeRect(100, 120, 1554, 2240);
     });
     writePng(path.join(sourceDirectory, `${id}-mask.png`), 1754, 2480, (context) => {
+      context.fillStyle = "rgba(0, 0, 0, 1)";
+      context.fillRect(0, 0, 1754, 2480);
       context.fillStyle = "rgba(255, 255, 255, 1)";
       context.fillRect(430, 540, 720, 1120);
     });
@@ -135,62 +135,22 @@ function writeSourceFixture(sourceDirectory: string): void {
   });
 }
 
-test("public AR assets preserve target order and return owned target bytes", () => {
-  assert.deepEqual(AR_TARGET_ORDER, ["sheet01", "sheet02"]);
-  assert.equal(AR_TARGET_DATABASE.fileName, "targets.mind");
-  assert.equal(AR_TARGET_DATABASE.placeholder, true);
-  const first = AR_TARGET_DATABASE.bytes;
-  const second = AR_TARGET_DATABASE.bytes;
-  assert.notEqual(first, second);
-  assert.deepEqual(first, second);
-  const sentinel = Buffer.from(first).toString("utf8");
-  assert.match(sentinel, /target index 0: sheet01/);
-  assert.match(sentinel, /target index 1: sheet02/);
-
-  first[0] = 0;
-  assert.notEqual(AR_TARGET_DATABASE.bytes[0], 0);
-  const buffer = targetDatabaseBuffer();
-  assert.ok(buffer instanceof ArrayBuffer);
-  assert.equal(buffer.byteLength, second.byteLength);
-  assert.deepEqual(new Uint8Array(buffer), second);
-});
-
-test("embedded paper and isolated overlays are decodable and pixel-related", async () => {
-  for (const id of AR_TARGET_ORDER) {
+test("public AR assets contain only ordered 2D sprites and the room creature", async () => {
+  assert.deepEqual(AR_SHEET_ORDER, ["sheet01", "sheet02"]);
+  for (const id of AR_SHEET_ORDER) {
     const asset = AR_SHEET_ASSETS[id];
-    assert.equal(asset.width, 512);
-    assert.equal(asset.height, 724);
-    assert.equal(asset.placeholder, true);
-    const paper = await decodePng(asset.paperDataUri);
-    const overlay = await decodePng(asset.overlayDataUri);
-    assert.deepEqual([paper.width, paper.height], [asset.width, asset.height]);
-    assert.deepEqual([overlay.width, overlay.height], [asset.width, asset.height]);
-
-    let transparent = 0;
-    let opaque = 0;
-    let matchedOpaquePixel = false;
-    for (let offset = 0; offset < overlay.pixels.length; offset += 4) {
-      assert.equal(paper.pixels[offset + 3], 255, `${id} paper is opaque`);
-      const alpha = overlay.pixels[offset + 3];
-      if (alpha === 0) transparent += 1;
-      if (alpha === 255) {
-        opaque += 1;
-        if (
-          overlay.pixels[offset] === paper.pixels[offset]
-          && overlay.pixels[offset + 1] === paper.pixels[offset + 1]
-          && overlay.pixels[offset + 2] === paper.pixels[offset + 2]
-        ) {
-          matchedOpaquePixel = true;
-        }
-      }
-    }
-    assert.ok(transparent > paper.width * paper.height * 0.2, `${id} overlay has transparent isolation`);
-    assert.ok(opaque > 500, `${id} overlay has visible drawing pixels`);
-    assert.equal(matchedOpaquePixel, true, `${id} overlay comes from its photographed paper pixels`);
+    assert.deepEqual([asset.width, asset.height], [512, 724]);
+    const sprite = await decodePng(asset.spriteDataUri);
+    assert.deepEqual([sprite.width, sprite.height], [512, 724]);
+    assert.equal(typeof asset.placeholder, "boolean");
+    assert.ok(
+      sprite.pixels.some((value, offset) => offset % 4 === 3 && value > 0),
+      `${id} sprite has visible pixels`,
+    );
   }
 });
 
-test("creature is decoded at 1024x2048 after exact black-to-alpha keying", async () => {
+test("creature remains embedded at 1024x2048 after exact black-to-alpha keying", async () => {
   assert.deepEqual(
     {
       width: AR_CREATURE_ASSET.width,
@@ -201,7 +161,6 @@ test("creature is decoded at 1024x2048 after exact black-to-alpha keying", async
     { width: 1024, height: 2048, placeholder: false, blackKeyed: true },
   );
   const creature = await decodePng(AR_CREATURE_ASSET.dataUri);
-  assert.deepEqual([creature.width, creature.height], [1024, 2048]);
   let transparent = 0;
   let visible = 0;
   let opaqueBlack = 0;
@@ -218,7 +177,7 @@ test("creature is decoded at 1024x2048 after exact black-to-alpha keying", async
   }
   assert.ok(transparent > creature.width * creature.height * 0.25);
   assert.ok(visible > 100);
-  assert.equal(opaqueBlack, 0, "every exact-black source pixel was keyed transparent");
+  assert.equal(opaqueBlack, 0);
 });
 
 test("generator output is deterministic and --check/--quiet is clean", async (context) => {
@@ -232,44 +191,31 @@ test("generator output is deterministic and --check/--quiet is clean", async (co
   const firstSource = readFileSync(first.outputFile, "utf8");
   const second = await generateArAssets({ sourceDirectory, outputDirectory, quiet: true });
   assert.equal(readFileSync(second.outputFile, "utf8"), firstSource);
-  const checked = await generateArAssets({ sourceDirectory, outputDirectory, checkOnly: true, quiet: true });
-  assert.equal(checked.stale, false);
-  assert.deepEqual(checked.targetOrder, ["sheet01", "sheet02"]);
-
-  const cli = spawnSync(process.execPath, ["scripts/generate-ar-assets.mjs", "--check", "--quiet"], {
-    cwd: root,
-    encoding: "utf8",
+  const checked = await generateArAssets({
+    sourceDirectory,
+    outputDirectory,
+    checkOnly: true,
+    quiet: true,
   });
+  assert.equal(checked.stale, false);
+  assert.deepEqual(checked.sheetOrder, ["sheet01", "sheet02"]);
+
+  const cli = spawnSync(
+    process.execPath,
+    ["scripts/generate-ar-assets.mjs", "--check", "--quiet"],
+    { cwd: root, encoding: "utf8" },
+  );
   assert.equal(cli.status, 0, cli.stderr || cli.stdout);
   assert.equal(cli.stdout, "");
   assert.equal(cli.stderr, "");
 });
 
-test("real source mode validates, composes, keys, and preserves database order", async (context) => {
+test("paired source masks isolate sprites without any tracking database", async (context) => {
   const temporaryRoot = mkdtempSync(path.join(tmpdir(), "re7bday-ar-source-"));
   context.after(() => rmSync(temporaryRoot, { recursive: true, force: true }));
   const sourceDirectory = path.join(temporaryRoot, "source");
   const outputDirectory = path.join(temporaryRoot, "generated");
   writeSourceFixture(sourceDirectory);
-
-  const msgpackName = "@msgpack/msgpack";
-  const { encode, decode } = await import(msgpackName) as typeof import("@msgpack/msgpack");
-  const mindBytes = encode({
-    v: 2,
-    dataList: [
-      {
-        targetImage: { width: 1754, height: 2480 },
-        matchingData: [{ source: "sheet01" }],
-        trackingData: [],
-      },
-      {
-        targetImage: { width: 1754, height: 2480 },
-        matchingData: [{ source: "sheet02" }],
-        trackingData: [],
-      },
-    ],
-  });
-  writeFileSync(path.join(sourceDirectory, "targets.mind"), mindBytes);
 
   const { generateArAssets } = await generator();
   const result = await generateArAssets({ sourceDirectory, outputDirectory, quiet: true });
@@ -277,32 +223,61 @@ test("real source mode validates, composes, keys, and preserves database order",
     sheet01: "source",
     sheet02: "source",
     creature: "source",
-    targets: "source",
   });
-  assert.deepEqual(result.targetOrder, ["sheet01", "sheet02"]);
+  assert.deepEqual(result.sheetOrder, ["sheet01", "sheet02"]);
 
   const generated = parseGeneratedModule(result.outputFile);
-  assert.deepEqual(generated.targetOrder, ["sheet01", "sheet02"]);
-  assert.equal(generated.targetDatabase.placeholder, false);
-  assert.equal(generated.targetDatabase.fileName, "targets.mind");
-  const decodedMind = decode(Buffer.from(generated.targetDatabase.base64, "base64")) as {
-    dataList: Array<{ matchingData: Array<{ source: string }> }>;
-  };
-  assert.deepEqual(decodedMind.dataList.map((entry) => entry.matchingData[0]?.source), ["sheet01", "sheet02"]);
+  assert.deepEqual(generated.sheetOrder, ["sheet01", "sheet02"]);
   assert.equal(generated.sheets.sheet01.placeholder, false);
   assert.equal(generated.sheets.sheet02.placeholder, false);
   assert.equal(generated.creature.placeholder, false);
   assert.equal(generated.creature.blackKeyed, true);
-
-  const sourceCreature = await decodePng(generated.creature.dataUri);
-  const backgroundAlpha = sourceCreature.pixels[3];
-  const creatureOffset = (500 * sourceCreature.width + 500) * 4;
-  assert.equal(backgroundAlpha, 0);
-  assert.equal(sourceCreature.pixels[creatureOffset + 3], 255);
-  assert.notDeepEqual([...sourceCreature.pixels.slice(creatureOffset, creatureOffset + 3)], [0, 0, 0]);
+  const sheet = await decodePng(generated.sheets.sheet01.spriteDataUri);
+  const alphaAtCorner = sheet.pixels[3];
+  const subjectOffset = (300 * sheet.width + 200) * 4;
+  assert.equal(alphaAtCorner, 0);
+  assert.ok(sheet.pixels[subjectOffset + 3] > 0);
 });
 
-test("source photographs are rejected unless dimensions are exact", async (context) => {
+test("incoming print art becomes a full-page 2D sprite at arbitrary portrait size", async (context) => {
+  const temporaryRoot = mkdtempSync(path.join(tmpdir(), "re7bday-ar-incoming-"));
+  context.after(() => rmSync(temporaryRoot, { recursive: true, force: true }));
+  const sourceDirectory = path.join(temporaryRoot, "source");
+  const incomingDirectory = path.join(temporaryRoot, "incoming");
+  const outputDirectory = path.join(temporaryRoot, "generated");
+  mkdirSync(sourceDirectory, { recursive: true });
+  mkdirSync(incomingDirectory, { recursive: true });
+  for (const id of ["sheet01", "sheet02"] as const) {
+    writePng(path.join(incomingDirectory, `${id}.png`), 941, 1672, (context2d) => {
+      context2d.fillStyle = "rgba(222, 211, 184, 1)";
+      context2d.fillRect(0, 0, 941, 1672);
+      context2d.fillStyle = "rgba(52, 45, 37, 1)";
+      context2d.fillRect(300, 350, 340, 900);
+    });
+  }
+
+  const { generateArAssets } = await generator();
+  const result = await generateArAssets({
+    sourceDirectory,
+    incomingDirectory,
+    outputDirectory,
+    quiet: true,
+  });
+  assert.deepEqual(result.sourceMode, {
+    sheet01: "incoming",
+    sheet02: "incoming",
+    creature: "placeholder",
+  });
+  const generated = parseGeneratedModule(result.outputFile);
+  assert.equal(generated.sheets.sheet01.placeholder, false);
+  assert.equal(generated.sheets.sheet02.placeholder, false);
+  assert.deepEqual(
+    [generated.sheets.sheet01.width, generated.sheets.sheet01.height],
+    [512, 724],
+  );
+});
+
+test("legacy masked sources are rejected unless dimensions are exact", async (context) => {
   const temporaryRoot = mkdtempSync(path.join(tmpdir(), "re7bday-ar-invalid-"));
   context.after(() => rmSync(temporaryRoot, { recursive: true, force: true }));
   const sourceDirectory = path.join(temporaryRoot, "source");
@@ -324,24 +299,23 @@ test("source photographs are rejected unless dimensions are exact", async (conte
   );
 });
 
-test("non-author target instructions specify every offline source contract", () => {
-  const docs = readFileSync(path.join(root, "src", "ar", "TARGETS.md"), "utf8");
+test("source handoff documents pure 2D offline inputs and no target compiler", () => {
+  const docs = readFileSync(
+    path.join(root, "src", "ar", "assets", "source", "README.md"),
+    "utf8",
+  );
   for (const required of [
-    "1754 pixels wide by 2480 pixels high",
-    "sheet01.png",
+    "screen-space tap placement",
+    "assets-incoming/sheet01.png",
+    "assets-incoming/sheet02.png",
     "sheet01-mask.png",
-    "sheet02.png",
     "sheet02-mask.png",
-    "targets.mind",
-    "monster-source.png",
-    "targetIndex",
-    "node scripts/generate-ar-assets.mjs --check",
-    "target index 0",
-    "target index 1",
-    "pure-black background",
+    "npm run generate:ar",
+    "No runtime image processing",
   ]) {
-    assert.ok(docs.includes(required), `TARGETS.md includes ${required}`);
+    assert.ok(docs.includes(required), `source README includes ${required}`);
   }
+  assert.doesNotMatch(docs, /target compiler/i);
 
   const runtimeSource = readFileSync(path.join(root, "src", "ar", "assets.ts"), "utf8");
   assert.doesNotMatch(runtimeSource, /canvas|fetch\s*\(|https?:\/\//i);

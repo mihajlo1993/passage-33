@@ -261,6 +261,17 @@ export class AudioEngine {
     if (enabled) this.startHeartbeat();
     else this.stopHeartbeat();
   }
+  public silence(): void {
+    if (this.disposed) return;
+    this.requestedAmbient = null;
+    this.heartbeatRequested = false;
+    this.cancelActiveVoice();
+    for (const playback of [...this.oneShots]) this.finishOneShot(playback, true);
+    for (const playback of [...this.ambientSources]) {
+      this.finishAmbient(playback, true);
+    }
+    this.stopHeartbeat();
+  }
 
   public setMaster(level: number): void {
     this.masterLevel = clampGain(level);

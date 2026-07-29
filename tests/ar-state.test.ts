@@ -2,25 +2,22 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  AR_ACQUISITION_TIMEOUT_MS,
   AR_FRAME_INTERVAL_MS,
   AR_MAX_FPS,
   IMAGE_AR_SCENES,
+  ROOM_AR_ACQUISITION_TIMEOUT_MS,
   ROOM_AR_SCENE,
   ROOM_MONSTER_SCALE_METERS,
   WEBXR_REQUIRED_FEATURES,
   WEBXR_SESSION_MODE,
   createRoomWebXrSessionInit,
-  hasArAcquisitionTimedOut,
+  hasRoomArAcquisitionTimedOut,
   isArFrameDue,
 } from "../src/ar/config";
 import {
-  createImageArState,
   createRoomArState,
-  didImageArComplete,
   didRoomArComplete,
   didRoomArShotFire,
-  imageArReducer,
   roomArReducer,
 } from "../src/ar/state";
 import type { RoomArPlacement, RoomArState } from "../src/ar/types";
@@ -42,21 +39,19 @@ function roomReadyToPlace(): RoomArState {
   });
 }
 
-test("image scenes and room scene keep their exact, separate pin mappings", () => {
+test("2D sheet scenes and room scene keep exact, separate pin mappings", () => {
   assert.deepEqual(IMAGE_AR_SCENES.sheet01, {
     mechanism: "image",
-    targetId: "sheet01",
+    sheetId: "sheet01",
     pinId: 3,
-    targetIndex: 0,
     tone: "threatening",
     subject: "wall",
     motions: ["peel", "reach"],
   });
   assert.deepEqual(IMAGE_AR_SCENES.sheet02, {
     mechanism: "image",
-    targetId: "sheet02",
+    sheetId: "sheet02",
     pinId: 17,
-    targetIndex: 1,
     tone: "calm",
     subject: "herb",
     motions: ["pulse", "lift"],
@@ -67,24 +62,22 @@ test("image scenes and room scene keep their exact, separate pin mappings", () =
   });
 });
 
-test("acquisition timeout changes state exactly at the 12,000 ms boundary", () => {
-  assert.equal(AR_ACQUISITION_TIMEOUT_MS, 12_000);
-  assert.equal(hasArAcquisitionTimedOut(500, 12_499.999), false);
-  assert.equal(hasArAcquisitionTimedOut(500, 12_500), true);
-  assert.equal(hasArAcquisitionTimedOut(null, 12_500), false);
-  assert.equal(hasArAcquisitionTimedOut(500, 499), false);
+test("only room WebXR retains its twelve-second floor-acquisition limit", () => {
+  assert.equal(ROOM_AR_ACQUISITION_TIMEOUT_MS, 12_000);
+  assert.equal(hasRoomArAcquisitionTimedOut(500, 12_499.999), false);
+  assert.equal(hasRoomArAcquisitionTimedOut(500, 12_500), true);
+  assert.equal(hasRoomArAcquisitionTimedOut(null, 12_500), false);
+  assert.equal(hasRoomArAcquisitionTimedOut(500, 499), false);
 
-  let state = createImageArState("sheet01");
-  state = imageArReducer(state, { type: "initialize", atMs: 500 });
-  state = imageArReducer(state, { type: "tracking" });
-
-  const beforeBoundary = imageArReducer(state, {
+  let roomState = createRoomArState();
+  roomState = roomArReducer(roomState, { type: "initialize", atMs: 500 });
+  roomState = roomArReducer(roomState, { type: "tracking" });
+  const beforeBoundary = roomArReducer(roomState, {
     type: "tick",
     atMs: 12_499.999,
   });
-  assert.strictEqual(beforeBoundary, state);
-
-  const atBoundary = imageArReducer(state, {
+  assert.strictEqual(beforeBoundary, roomState);
+  const atBoundary = roomArReducer(roomState, {
     type: "tick",
     atMs: 12_500,
   });
@@ -92,19 +85,7 @@ test("acquisition timeout changes state exactly at the 12,000 ms boundary", () =
   assert.equal(atBoundary.fallbackReason, "acquisition-timeout");
 });
 
-test("explicit failures enter usable 2D fallback paths", () => {
-  let imageState = createImageArState("sheet02");
-  imageState = imageArReducer(imageState, {
-    type: "initialize",
-    atMs: 0,
-  });
-  imageState = imageArReducer(imageState, {
-    type: "fallback",
-    reason: "camera-denied",
-  });
-  assert.equal(imageState.phase, "fallback2d");
-  assert.equal(imageState.fallbackReason, "camera-denied");
-
+test("explicit room failures retain the usable 2D fallback path", () => {
   let roomState = createRoomArState();
   roomState = roomArReducer(roomState, { type: "initialize", atMs: 0 });
   roomState = roomArReducer(roomState, {
@@ -140,34 +121,10 @@ test("AR frame gate is capped at 30fps", () => {
   assert.equal(isArFrameDue(Number.NaN, 0), false);
 });
 
-test("image tracking completes once from acquired or fallback state", () => {
-  let state = createImageArState("sheet01");
-  state = imageArReducer(state, { type: "initialize", atMs: 1 });
-  state = imageArReducer(state, { type: "tracking" });
-  state = imageArReducer(state, { type: "acquired", atMs: 2 });
-  assert.equal(state.phase, "acquired");
-
-  const completed = imageArReducer(state, { type: "complete", atMs: 3 });
-  assert.equal(completed.phase, "completed");
-  assert.equal(didImageArComplete(state, completed), true);
-
-  const duplicate = imageArReducer(completed, {
-    type: "complete",
-    atMs: 4,
-  });
-  assert.strictEqual(duplicate, completed);
-  assert.equal(duplicate.completedAtMs, 3);
-  assert.equal(didImageArComplete(completed, duplicate), false);
-});
-
 test("room placement, shot, hit, collapse, and completion have strict order", () => {
   const acquired = roomReadyToPlace();
   assert.equal(acquired.phase, "acquired");
-
-  assert.strictEqual(
-    roomArReducer(acquired, { type: "fire", atMs: 200 }),
-    acquired,
-  );
+  assert.strictEqual(roomArReducer(acquired, { type: "fire", atMs: 200 }), acquired);
 
   const placed = roomArReducer(acquired, { type: "tap-place", atMs: 200 });
   assert.equal(placed.phase, "placed");
@@ -176,24 +133,15 @@ test("room placement, shot, hit, collapse, and completion have strict order", ()
   const firing = roomArReducer(placed, { type: "fire", atMs: 300 });
   assert.equal(firing.phase, "firing");
   assert.equal(didRoomArShotFire(placed, firing), true);
-  assert.strictEqual(
-    roomArReducer(firing, { type: "collapse", atMs: 400 }),
-    firing,
-  );
+  assert.strictEqual(roomArReducer(firing, { type: "collapse", atMs: 400 }), firing);
 
   const hit = roomArReducer(firing, { type: "hit", atMs: 400 });
   assert.equal(hit.phase, "hit");
-  assert.strictEqual(
-    roomArReducer(hit, { type: "complete", atMs: 500 }),
-    hit,
-  );
+  assert.strictEqual(roomArReducer(hit, { type: "complete", atMs: 500 }), hit);
 
   const collapsing = roomArReducer(hit, { type: "collapse", atMs: 500 });
   assert.equal(collapsing.phase, "collapsing");
-  const completed = roomArReducer(collapsing, {
-    type: "complete",
-    atMs: 600,
-  });
+  const completed = roomArReducer(collapsing, { type: "complete", atMs: 600 });
   assert.equal(completed.phase, "completed");
   assert.equal(didRoomArComplete(collapsing, completed), true);
 });
@@ -210,14 +158,8 @@ test("room shot and completion are one-shot idempotent transitions", () => {
 
   const hit = roomArReducer(firing, { type: "hit", atMs: 400 });
   const collapsing = roomArReducer(hit, { type: "collapse", atMs: 500 });
-  const completed = roomArReducer(collapsing, {
-    type: "complete",
-    atMs: 600,
-  });
-  const duplicateCompletion = roomArReducer(completed, {
-    type: "complete",
-    atMs: 601,
-  });
+  const completed = roomArReducer(collapsing, { type: "complete", atMs: 600 });
+  const duplicateCompletion = roomArReducer(completed, { type: "complete", atMs: 601 });
   assert.strictEqual(duplicateCompletion, completed);
   assert.equal(duplicateCompletion.completedAtMs, 600);
   assert.equal(didRoomArComplete(completed, duplicateCompletion), false);
@@ -236,14 +178,8 @@ test("the first tap locks an immutable room placement", () => {
     zMeters: 9,
     yawRadians: 9,
   };
-  const reacquired = roomArReducer(placed, {
-    type: "acquired",
-    placement: replacement,
-  });
-  const placedAgain = roomArReducer(reacquired, {
-    type: "tap-place",
-    atMs: 201,
-  });
+  const reacquired = roomArReducer(placed, { type: "acquired", placement: replacement });
+  const placedAgain = roomArReducer(reacquired, { type: "tap-place", atMs: 201 });
   assert.strictEqual(reacquired, placed);
   assert.strictEqual(placedAgain, placed);
   assert.strictEqual(placedAgain.placement, lockedPlacement);
@@ -251,19 +187,13 @@ test("the first tap locks an immutable room placement", () => {
 
 test("cancellation has one cleanup transition and then ignores stale events", () => {
   let state = roomReadyToPlace();
-  state = roomArReducer(state, {
-    type: "cancel",
-    reason: "screen-unmounted",
-  });
+  state = roomArReducer(state, { type: "cancel", reason: "screen-unmounted" });
   assert.equal(state.phase, "cancelled");
   assert.equal(state.cancellationReason, "screen-unmounted");
   assert.equal(state.candidatePlacement, null);
 
   const cleanedUp = roomArReducer(state, { type: "cleanup" });
   assert.equal(cleanedUp.phase, "cleanedUp");
-  assert.strictEqual(
-    roomArReducer(cleanedUp, { type: "fire", atMs: 1_000 }),
-    cleanedUp,
-  );
+  assert.strictEqual(roomArReducer(cleanedUp, { type: "fire", atMs: 1_000 }), cleanedUp);
   assert.strictEqual(roomArReducer(cleanedUp, { type: "cleanup" }), cleanedUp);
 });

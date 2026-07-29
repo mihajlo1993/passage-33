@@ -347,3 +347,30 @@ test("critical heartbeat uses one looping source and stops cleanly", async () =>
   assert.equal(heartbeat.stops.length, 1);
   assert.equal(heartbeat.disconnectCalls, 1);
 });
+
+test("silence immediately stops every active source and resolves playback", async () => {
+  const { context, engine } = fixture();
+  await engine.unlock();
+
+  engine.ambient("ambient-a");
+  const ambient = context.sources.at(-1)!;
+  const oneShotFinished = engine.play("hit");
+  const oneShot = context.sources.at(-1)!;
+  const voiceFinished = engine.say("voice-a");
+  const voice = context.sources.at(-1)!;
+  engine.heartbeat(true);
+  const heartbeat = context.sources.at(-1)!;
+
+  engine.silence();
+  await Promise.all([oneShotFinished, voiceFinished]);
+
+  for (const source of [ambient, oneShot, voice, heartbeat]) {
+    assert.equal(source.stops.length, 1);
+    assert.equal(source.disconnectCalls, 1);
+  }
+
+  engine.silence();
+  for (const source of [ambient, oneShot, voice, heartbeat]) {
+    assert.equal(source.stops.length, 1);
+  }
+});

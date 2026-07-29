@@ -24,6 +24,7 @@ export interface AudioControls {
   play: (id: string) => Promise<void>;
   say: (id: string) => Promise<void>;
   heartbeat: (enabled: boolean) => void;
+  silence: () => void;
   master: AudioMasterControls;
 }
 
@@ -33,6 +34,7 @@ const noopAudio: AudioControls = {
   play: async () => undefined,
   say: async () => undefined,
   heartbeat: () => undefined,
+  silence: () => undefined,
   master: {
     unlock: async () => undefined,
     set: () => undefined,

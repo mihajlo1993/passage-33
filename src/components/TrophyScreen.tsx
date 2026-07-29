@@ -1,6 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { MEDIA_ASSETS } from "@/src/media";
+import { useAudio } from "@/src/audio/useAudio";
+import { areFinalPresentsResolved } from "@/src/game/engine";
+import { TOTAL_PIN_COUNT } from "@/src/pins";
+import { motion } from "@/src/tokens";
 import type { GameState } from "@/src/types";
 
 function elapsedLabel(startedAt: number, finishedAt: number): string {
@@ -17,12 +22,31 @@ export interface TrophyScreenProps {
 }
 
 export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
-  const { finishedAt } = state;
-  const won = finishedAt !== null;
-  const fullCircle = state.resolvedPins.includes(27);
+  const { trophyAt } = state;
+  const trophyUnlocked = trophyAt !== null;
+  const corridorPresentOpened = state.resolvedPins.includes(27);
+  const kitchenPresentOpened = state.resolvedPins.includes(28);
+  const finalPresentsOpened = areFinalPresentsResolved(state.resolvedPins);
+  const [quiet, setQuiet] = useState(false);
   const trophy = MEDIA_ASSETS.trophy;
+  const audio = useAudio();
 
-  if (!won) {
+  useEffect(() => {
+    if (!finalPresentsOpened) {
+      setQuiet(false);
+      return;
+    }
+
+    setQuiet(false);
+    const timer = window.setTimeout(() => {
+      audio.ambient(null);
+      audio.silence();
+      setQuiet(true);
+    }, motion.eventMs.saveTheatre);
+    return () => window.clearTimeout(timer);
+  }, [audio, finalPresentsOpened]);
+
+  if (!trophyUnlocked) {
     return (
       <section className="screen trophy-locked" aria-labelledby="trophy-title">
         <p className="eyebrow">THE ALTAR</p>
@@ -34,6 +58,31 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
       </section>
     );
   }
+
+  if (finalPresentsOpened && quiet) {
+    return <section className="trophy-screen trophy-screen--quiet" aria-label="The house is quiet" />;
+  }
+
+  if (finalPresentsOpened) {
+    return (
+      <section className="screen trophy-locked" aria-labelledby="trophy-title">
+        <p className="eyebrow">ALL PRESENTS OPENED</p>
+        <h1 id="trophy-title">THAT IS EVERYTHING.</h1>
+        <p className="host-copy">Both boxes are open. Good. That is everything. Happy birthday.</p>
+      </section>
+    );
+  }
+
+  const remainingMessage = corridorPresentOpened
+    ? "THE CORRIDOR GIFT IS YOURS. THE SEALED PRESENT IS STILL IN THE KITCHEN."
+    : kitchenPresentOpened
+      ? "THE KITCHEN PRESENT IS YOURS. THE CORRIDOR BOX IS WHERE YOU WOKE."
+      : "TWO PRESENTS REMAIN. ONE IS WHERE YOU WOKE. ONE IS HERE IN THE KITCHEN.";
+  const actionLabel = corridorPresentOpened
+    ? "OPEN THE KITCHEN PRESENT"
+    : kitchenPresentOpened
+      ? "RETURN TO THE CORRIDOR"
+      : "OPEN THE LAST PRESENTS";
 
   return (
     <section className="trophy-screen" aria-labelledby="trophy-title">
@@ -55,24 +104,14 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
       <div className="trophy-card">
         <p className="eyebrow">BIRTHDAY RECORD // 33</p>
         <h1 id="trophy-title">THIRTY-THREE CANDLES</h1>
-        <p className="trophy-card__message">
-          {fullCircle
-            ? "THE HOUSE IS SATISFIED. THE HAND AND THE ALTAR ARE YOURS."
-            : "THE WISH IS YOURS. THE LAST PRESENT IS BACK WHERE YOU WOKE."}
-        </p>
+        <p className="trophy-card__message">{remainingMessage}</p>
         <dl className="trophy-stats">
-          <div><dt>CONTACTS</dt><dd>{String(state.resolvedPins.length).padStart(2, "0")} / 27</dd></div>
-          <div><dt>TIME IN HOUSE</dt><dd>{elapsedLabel(state.startedAt, finishedAt)}</dd></div>
+          <div><dt>CONTACTS</dt><dd>{String(state.resolvedPins.length).padStart(2, "0")} / {TOTAL_PIN_COUNT}</dd></div>
+          <div><dt>TIME TO CANDLES</dt><dd>{elapsedLabel(state.startedAt, trophyAt)}</dd></div>
         </dl>
-        {!fullCircle ? (
-          <button className="mechanical-button mechanical-button--primary mechanical-button--full" onClick={() => navigate("/scan")}>
-            COMPLETE THE CIRCLE
-          </button>
-        ) : (
-          <button className="mechanical-button mechanical-button--full" onClick={() => navigate("/inventory")}>
-            EXAMINE YOUR TROPHIES
-          </button>
-        )}
+        <button className="mechanical-button mechanical-button--primary mechanical-button--full" onClick={() => navigate("/scan")}>
+          {actionLabel}
+        </button>
       </div>
     </section>
   );
