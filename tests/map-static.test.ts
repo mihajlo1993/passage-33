@@ -18,6 +18,14 @@ const viewportSource = readFileSync(
   new URL("../src/map/useMapViewport.ts", import.meta.url),
   "utf8",
 );
+const appSource = readFileSync(
+  new URL("../src/components/GameApp.tsx", import.meta.url),
+  "utf8",
+);
+const notesSource = readFileSync(
+  new URL("../src/components/NotesScreen.tsx", import.meta.url),
+  "utf8",
+);
 
 test("the map is an inline SVG survey with the requested paper details", () => {
   assert.match(surveySource, /<svg/);
@@ -26,8 +34,50 @@ test("the map is an inline SVG survey with the requested paper details", () => {
   assert.match(surveySource, /survey-coffee/);
   assert.match(surveySource, /survey-north/);
   assert.match(surveySource, /survey-title-block/);
+  assert.match(surveySource, /survey-legend-swatch--unresolved/);
+  assert.match(surveySource, /survey-legend-swatch--cleared/);
+  assert.match(surveySource, /survey-legend-swatch--unentered/);
   assert.match(surveySource, /START \/\/ FAR END/);
   assert.match(surveySource, /FRONT DOOR \/\/ SEALED/);
+});
+
+test("/map is a chrome-free full-bleed viewport with no scroll surface", () => {
+  assert.match(appSource, /if \(route === "\/map"\) return <MapScreen state=\{state\} \/>;/);
+  assert.doesNotMatch(screenSource, /className="screen|screen-heading|<header|<h1|map-gesture-note|map-state-key/);
+  assert.equal((screenSource.match(/<SurveyMap\b/g) ?? []).length, 1);
+  assert.match(surveySource, /preserveAspectRatio="xMidYMid meet"/);
+  assert.match(
+    mapCss,
+    /\.map-screen\s*\{[\s\S]*?position:\s*fixed[\s\S]*?inset:\s*0[\s\S]*?width:\s*100vw[\s\S]*?height:\s*100dvh[\s\S]*?padding:\s*0[\s\S]*?overflow:\s*hidden/,
+  );
+  assert.match(
+    mapCss,
+    /\.survey-frame\s*\{[\s\S]*?display:\s*grid[\s\S]*?width:\s*100vw[\s\S]*?height:\s*100dvh[\s\S]*?overflow:\s*hidden[\s\S]*?border:\s*0[\s\S]*?border-radius:\s*0/,
+  );
+  assert.match(mapCss, /\.survey-map\s*\{[\s\S]*?width:\s*max\(100vw, 136dvh\)/);
+  assert.match(mapCss, /\.survey-map\s*\{[\s\S]*?height:\s*max\(100dvh, 73\.5294118vw\)/);
+  assert.match(
+    mapCss,
+    /\.vhs-stage:has\(> \.map-screen\)\s*\{[\s\S]*?transform:\s*none !important/,
+  );
+  assert.doesNotMatch(mapCss, /aspect-ratio:\s*3\s*\/\s*2/);
+  assert.doesNotMatch(mapCss, /overflow:\s*(?:auto|scroll)/);
+});
+
+test("map page copy is removed and the Host route text lives in Notes as a document", () => {
+  for (const removed of [
+    "SURVEY // FLAT 33",
+    "THE FLOORPLAN",
+    "SPREAD TO INSPECT",
+    "DRAG TO PAN",
+    "DOUBLE-TAP TO RESET",
+  ]) {
+    assert.ok(!screenSource.includes(removed), `${removed} must not remain on /map`);
+  }
+  assert.doesNotMatch(screenSource, /The front door stays shut/);
+  assert.match(notesSource, /id: "survey-route"/);
+  assert.match(notesSource, /The front door stays shut\. Do not take it personally\./);
+  assert.match(notesSource, /The house has arranged a route/);
 });
 
 test("rendered map surfaces carry room state only, never individual-location data", () => {

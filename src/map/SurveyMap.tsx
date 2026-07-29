@@ -1,8 +1,14 @@
 "use client";
 
 import type { GameState } from "../types";
-import { deriveSurveyMap } from "./model";
-import type { DoorGeometry, MapPoint, MapSegment, RoomStatusLabel } from "./types";
+import { deriveSurveyMap, openingCenterline } from "./model";
+import type {
+  DoorGeometry,
+  MapPoint,
+  MapSegment,
+  OpeningBounds,
+  RoomStatusLabel,
+} from "./types";
 import { useMapViewport } from "./useMapViewport";
 
 function pointList(points: readonly MapPoint[]): string {
@@ -15,6 +21,15 @@ function segmentProps(segment: MapSegment) {
     y1: segment.start.y,
     x2: segment.end.x,
     y2: segment.end.y,
+  };
+}
+
+function openingProps(opening: OpeningBounds) {
+  return {
+    x: opening.x,
+    y: opening.y,
+    width: opening.width,
+    height: opening.height,
   };
 }
 
@@ -87,6 +102,7 @@ export function SurveyMap({ state }: { state: GameState }) {
         className="survey-map"
         style={style}
         viewBox={viewBox}
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-labelledby="survey-map-title survey-map-description"
       >
@@ -149,22 +165,27 @@ export function SurveyMap({ state }: { state: GameState }) {
           fill="url(#survey-paper-fiber)"
           aria-hidden="true"
         />
-          <circle className="survey-coffee" cx="115" cy="108" r="71" />
+          <circle className="survey-coffee" cx="112" cy="84" r="52" />
           <circle
             className="survey-coffee survey-coffee--light"
-            cx="115"
-            cy="108"
-            r="62"
+            cx="112"
+            cy="84"
+            r="45"
           />
           <path
             className="survey-coffee survey-coffee--light"
-            d="M 710 126 C 746 113 784 131 793 165 C 802 199 770 223 733 210"
+            d="M 490 300 C 516 289 544 302 550 328 C 557 353 534 370 507 361"
           />
         </g>
 
         {map.rooms.map((room) => {
-          const { labelPoint, polygon } = room.geometry;
+          const { labelPoint, labelRotation, polygon } = room.geometry;
           const polygonPoints = pointList(polygon);
+          const labelTransform = labelRotation === undefined
+            ? undefined
+            : `rotate(${labelRotation} ${labelPoint.x} ${labelPoint.y})`;
+          const nameY = labelRotation === undefined ? labelPoint.y : labelPoint.y - 8;
+          const stateY = labelRotation === undefined ? labelPoint.y + 18 : labelPoint.y + 8;
 
           return (
             <g
@@ -192,16 +213,18 @@ export function SurveyMap({ state }: { state: GameState }) {
               <text
                 className="survey-room__name"
                 x={labelPoint.x}
-                y={labelPoint.y}
+                y={nameY}
                 textAnchor="middle"
+                transform={labelTransform}
               >
                 {room.label}
               </text>
               <text
                 className="survey-room__state"
                 x={labelPoint.x}
-                y={labelPoint.y + 18}
+                y={stateY}
                 textAnchor="middle"
+                transform={labelTransform}
               >
                 {room.statusLabel}
               </text>
@@ -211,25 +234,26 @@ export function SurveyMap({ state }: { state: GameState }) {
 
         <g aria-label="Doorways and passages">
           {map.connections.map((connection) => {
+            const centerline = openingCenterline(connection.opening);
             const doorClassName = connection.rooms.includes("balcony") && balconyOutlineOnly
               ? "survey-door survey-door--locked"
               : "survey-door";
 
             return (
               <g key={connection.id}>
-                <line
+                <rect
                   className="survey-opening-mask"
-                  {...segmentProps(connection.opening)}
+                  {...openingProps(connection.opening)}
                 />
                 {connection.passage === "open" ? (
                   <>
                     <path
                       className="survey-open-passage"
-                      d={passageTickPath(connection.opening)}
+                      d={passageTickPath(centerline)}
                     />
                     <path
                       className="survey-open-passage survey-ink-echo"
-                      d={passageTickPath(connection.opening)}
+                      d={passageTickPath(centerline)}
                       transform="translate(0.8 0.45)"
                       aria-hidden="true"
                     />
@@ -308,9 +332,9 @@ export function SurveyMap({ state }: { state: GameState }) {
           const outline = pointList(landmark.outline);
           return (
             <g key={landmark.id} aria-label="Sealed front door in the entry">
-              <line
+              <rect
                 className="survey-opening-mask"
-                {...segmentProps(landmark.threshold)}
+                {...openingProps(landmark.opening)}
               />
               <polygon
                 className="survey-door survey-door--sealed"
@@ -342,29 +366,59 @@ export function SurveyMap({ state }: { state: GameState }) {
         })}
 
         <g className="survey-north" aria-label="North points toward the top of the sheet">
-          <path d="M 823 108 L 823 55 L 812 76 M 823 55 L 834 76" />
-          <text className="survey-annotation" x="823" y="46" textAnchor="middle">
+          <path d="M 660 76 L 660 42 L 652 57 M 660 42 L 668 57" />
+          <text className="survey-annotation" x="660" y="34" textAnchor="middle">
             N
           </text>
         </g>
 
-        <g className="survey-title-block" aria-label="Completed architectural survey title block">
-          <rect x="548" y="507" width="329" height="70" />
-          <path d="M 548 534 L 877 534 M 710 534 L 710 577" />
-          <text className="survey-title" x="560" y="527">
-            FLAT 33 // ARCHITECTURAL SURVEY
+        <g
+          className="survey-title-block"
+          aria-label="Survey title block and room state key"
+        >
+          <rect x="474" y="40" width="166" height="110" />
+          <path d="M 474 66 L 640 66 M 474 136 L 640 136" />
+          <text className="survey-title" x="484" y="58">
+            FLAT 33
           </text>
-          <text className="survey-annotation" x="560" y="551">
-            FINAL FIELD DRAWING
+          <text className="survey-title" x="630" y="58" textAnchor="end">
+            SURVEY
           </text>
-          <text className="survey-annotation" x="560" y="568">
-            NOT FOR EGRESS
+          <rect
+            className="survey-legend-swatch survey-legend-swatch--unresolved"
+            x="486"
+            y="76"
+            width="18"
+            height="9"
+          />
+          <text className="survey-legend-label" x="514" y="84">
+            UNRESOLVED
           </text>
-          <text className="survey-annotation" x="722" y="551">
-            ENTRY IS HUB
+          <rect
+            className="survey-legend-swatch survey-legend-swatch--cleared"
+            x="486"
+            y="96"
+            width="18"
+            height="9"
+          />
+          <text className="survey-legend-label" x="514" y="104">
+            CLEARED
           </text>
-          <text className="survey-annotation" x="722" y="568">
-            DOOR STAYS SHUT
+          <rect
+            className="survey-legend-swatch survey-legend-swatch--unentered"
+            x="486"
+            y="116"
+            width="18"
+            height="9"
+          />
+          <text className="survey-legend-label" x="514" y="124">
+            UNENTERED
+          </text>
+          <text className="survey-annotation" x="484" y="146">
+            ENTRY HUB
+          </text>
+          <text className="survey-annotation" x="630" y="146" textAnchor="end">
+            SEALED
           </text>
         </g>
       </svg>

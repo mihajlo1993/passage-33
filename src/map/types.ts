@@ -13,9 +13,18 @@ export interface MapSegment {
   end: MapPoint;
 }
 
+export interface OpeningBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  axis: "horizontal" | "vertical";
+}
+
 export interface RoomGeometry {
   polygon: readonly MapPoint[];
   labelPoint: MapPoint;
+  labelRotation?: number;
 }
 
 export interface RoomDefinition {
@@ -44,7 +53,7 @@ export interface RoomConnection {
   id: string;
   rooms: readonly [ZoneId, ZoneId];
   passage: PassageKind;
-  opening: MapSegment;
+  opening: OpeningBounds;
   door?: DoorGeometry;
 }
 
@@ -56,7 +65,8 @@ export type FurnitureKind =
   | "clothes-hanger"
   | "cupboard"
   | "mirror"
-  | "cabinet";
+  | "cabinet"
+  | "counter-hob";
 
 export interface FurnitureRecord {
   id: string;
@@ -88,6 +98,7 @@ export interface FrontDoorLandmark {
   room: "entry";
   label: string;
   permanentlySealed: true;
+  opening: OpeningBounds;
   threshold: MapSegment;
 
   outline: readonly MapPoint[];

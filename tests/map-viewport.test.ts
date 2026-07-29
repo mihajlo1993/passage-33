@@ -4,12 +4,14 @@ import test from "node:test";
 import {
   MAP_DOUBLE_TAP_DISTANCE_PX,
   MAP_DOUBLE_TAP_WINDOW_MS,
+  MAP_CONTENT_ASPECT_RATIO,
   MAP_TAP_MAX_DURATION_MS,
   MAP_TAP_TRAVEL_PX,
   MAP_VIEWPORT_FRAME_INTERVAL_MS,
   MAP_VIEWPORT_MAX_FPS,
   boundMapViewport,
   clampMapViewportScale,
+  coverMapViewport,
   isMapTapGesture,
   isMapViewportFrameDue,
   panMapViewport,
@@ -18,7 +20,11 @@ import {
   zoomMapViewportAt,
 } from "../src/map/viewport";
 
-const viewport = { width: 300, height: 200 };
+const viewport = { width: 272, height: 200 };
+
+function approximately(actual: number, expected: number, epsilon = 0.000_001) {
+  assert.ok(Math.abs(actual - expected) <= epsilon, `${actual} ≈ ${expected}`);
+}
 
 test("scale and translation stay inside the map viewport", () => {
   assert.equal(clampMapViewportScale(-1), 1);
@@ -32,7 +38,7 @@ test("scale and translation stay inside the map viewport", () => {
   );
   assert.deepEqual(
     boundMapViewport({ x: -900, y: 90, scale: 3 }, viewport),
-    { x: -600, y: 0, scale: 3 },
+    { x: -544, y: 0, scale: 3 },
   );
   assert.deepEqual(
     boundMapViewport({ x: -20, y: -20, scale: 1 }, viewport),
@@ -47,7 +53,7 @@ test("pan and focal zoom math preserve edges and the point under the fingers", (
       { x: -500, y: 500 },
       viewport,
     ),
-    { x: -300, y: 0, scale: 2 },
+    { x: -272, y: 0, scale: 2 },
   );
 
   assert.deepEqual(
@@ -83,8 +89,28 @@ test("pinch combines zoom and centroid pan, then clamps to the 1..3 range", () =
     viewport,
   );
   assert.equal(clamped.scale, 3);
-  assert.ok(clamped.x >= -600 && clamped.x <= 0);
+  assert.ok(clamped.x >= -544 && clamped.x <= 0);
   assert.ok(clamped.y >= -400 && clamped.y <= 0);
+});
+
+test("390 by 844 uses a distortion-free cover plane with pannable crop and no letterbox", () => {
+  const portrait = { width: 390, height: 844 };
+  const cover = coverMapViewport(portrait);
+  assert.equal(MAP_CONTENT_ASPECT_RATIO, 680 / 500);
+  approximately(cover.width, 844 * (680 / 500));
+  assert.equal(cover.height, portrait.height);
+  approximately(cover.width / cover.height, MAP_CONTENT_ASPECT_RATIO);
+  assert.ok(cover.width >= portrait.width);
+  assert.ok(cover.height >= portrait.height);
+  approximately(cover.offsetX, (portrait.width - cover.width) / 2);
+  assert.equal(cover.offsetY, 0);
+
+  const leftEdge = boundMapViewport({ x: -10_000, y: 10_000, scale: 1 }, portrait);
+  const rightEdge = boundMapViewport({ x: 10_000, y: -10_000, scale: 1 }, portrait);
+  approximately(leftEdge.x, cover.offsetX);
+  approximately(rightEdge.x, -cover.offsetX);
+  assert.equal(leftEdge.y, 0);
+  assert.equal(rightEdge.y, 0);
 });
 
 test("tap classification rejects holds and drags", () => {

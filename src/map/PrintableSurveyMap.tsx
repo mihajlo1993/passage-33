@@ -2,6 +2,7 @@ import {
   mapFurniture,
   mapLandmarks,
   mapViewBox,
+  openingCenterline,
   roomConnections,
   roomDefinitions,
 } from "./model";
@@ -9,6 +10,7 @@ import type {
   DoorGeometry,
   MapPoint,
   MapSegment,
+  OpeningBounds,
 } from "./types";
 import type { ZoneId } from "../types";
 
@@ -31,6 +33,15 @@ function segmentProps(segment: MapSegment) {
     y1: segment.start.y,
     x2: segment.end.x,
     y2: segment.end.y,
+  };
+}
+
+function openingProps(opening: OpeningBounds) {
+  return {
+    x: opening.x,
+    y: opening.y,
+    width: opening.width,
+    height: opening.height,
   };
 }
 
@@ -96,6 +107,10 @@ export function PrintableSurveyMap() {
 
       {roomDefinitions.map((room) => {
         const points = pointList(room.geometry.polygon);
+        const { labelPoint, labelRotation } = room.geometry;
+        const labelTransform = labelRotation === undefined
+          ? undefined
+          : `rotate(${labelRotation} ${labelPoint.x} ${labelPoint.y})`;
         return (
           <g
             key={room.id}
@@ -114,9 +129,10 @@ export function PrintableSurveyMap() {
             />
             <text
               className="print-survey__room-name"
-              x={room.geometry.labelPoint.x}
-              y={room.geometry.labelPoint.y}
+              x={labelPoint.x}
+              y={labelPoint.y}
               textAnchor="middle"
+              transform={labelTransform}
             >
               {HOST_ROOM_NAMES[room.id]}
             </text>
@@ -125,11 +141,13 @@ export function PrintableSurveyMap() {
       })}
 
       <g aria-label="Doorways and passages">
-        {roomConnections.map((connection) => (
+        {roomConnections.map((connection) => {
+          const centerline = openingCenterline(connection.opening);
+          return (
           <g key={connection.id}>
-            <line
+            <rect
               className="print-survey__opening-mask"
-              {...segmentProps(connection.opening)}
+              {...openingProps(connection.opening)}
             />
             {connection.passage === "door" && connection.door ? (
               <path
@@ -140,11 +158,12 @@ export function PrintableSurveyMap() {
             ) : (
               <line
                 className="print-survey__open-passage"
-                {...segmentProps(connection.opening)}
+                {...segmentProps(centerline)}
               />
             )}
           </g>
-        ))}
+          );
+        })}
       </g>
 
       <g aria-label="Fixed furniture">
@@ -204,9 +223,9 @@ export function PrintableSurveyMap() {
 
         return (
           <g key={landmark.id}>
-            <line
+            <rect
               className="print-survey__opening-mask"
-              {...segmentProps(landmark.threshold)}
+              {...openingProps(landmark.opening)}
             />
             <polygon
               className="print-survey__landmark"
@@ -233,8 +252,8 @@ export function PrintableSurveyMap() {
       })}
 
       <g className="print-survey__north" aria-label="North">
-        <path d="M 823 108 L 823 55 L 812 76 M 823 55 L 834 76" fill="none" />
-        <text x="823" y="46" textAnchor="middle">
+        <path d="M 660 76 L 660 42 L 652 57 M 660 42 L 668 57" fill="none" />
+        <text x="660" y="34" textAnchor="middle">
           N
         </text>
       </g>
@@ -243,15 +262,16 @@ export function PrintableSurveyMap() {
         className="print-survey__title-block"
         aria-label="The Host's title block"
       >
-        <rect x="548" y="507" width="329" height="70" fill="none" />
-        <path d="M 548 534 L 877 534 M 710 534 L 710 577" fill="none" />
-        <text className="print-survey__title" x="560" y="527">
-          BAKER HOUSE // HOST'S MASTER SURVEY
+        <rect x="474" y="40" width="166" height="110" fill="none" />
+        <path d="M 474 66 L 640 66" fill="none" />
+        <text className="print-survey__title" x="484" y="58">
+          BAKER HOUSE
         </text>
-        <text x="560" y="551">PREPARED FOR THE BIRTHDAY GIRL</text>
-        <text x="560" y="568">NOT FOR EGRESS</text>
-        <text x="722" y="551">ENTRY IS THE HUB</text>
-        <text x="722" y="568">THE DOOR STAYS SHUT</text>
+        <text x="484" y="82">HOST'S MASTER SURVEY</text>
+        <text x="484" y="99">BIRTHDAY GIRL</text>
+        <text x="484" y="116">ENTRY HUB</text>
+        <text x="484" y="133">EXIT SEALED</text>
+        <text x="484" y="146">NOT FOR EGRESS</text>
       </g>
     </svg>
   );

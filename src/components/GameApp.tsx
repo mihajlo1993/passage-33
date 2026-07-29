@@ -245,6 +245,8 @@ export function GameApp() {
     );
   }
 
+  if (route === "/map") return <MapScreen state={state} />;
+
   if (route === "/codes") {
     return (
       <Suspense fallback={<PrintRouteLoading />}>
@@ -307,8 +309,6 @@ export function GameApp() {
             navigate={navigate}
           />
         );
-      case "/map":
-        return <MapScreen state={state} />;
       case "/inventory":
         return <InventoryScreen state={state} onUseFirstAid={() => store.useFirstAid().ok} />;
       case "/scan":

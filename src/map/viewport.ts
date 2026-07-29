@@ -14,6 +14,11 @@ export interface MapViewportTransform extends MapViewportPoint {
   scale: number;
 }
 
+export interface MapViewportCoverLayout extends MapViewportSize {
+  offsetX: number;
+  offsetY: number;
+}
+
 export interface MapTap {
   point: MapViewportPoint;
   atMs: number;
@@ -28,6 +33,7 @@ export const MAP_VIEWPORT_MIN_SCALE = 1;
 export const MAP_VIEWPORT_MAX_SCALE = 3;
 export const MAP_VIEWPORT_MAX_FPS = 30;
 export const MAP_VIEWPORT_FRAME_INTERVAL_MS = 1_000 / MAP_VIEWPORT_MAX_FPS;
+export const MAP_CONTENT_ASPECT_RATIO = 680 / 500;
 
 export const MAP_DOUBLE_TAP_WINDOW_MS = motion.durationMs.base;
 export const MAP_TAP_MAX_DURATION_MS = motion.durationMs.base;
@@ -52,9 +58,45 @@ function usableDimension(value: number): number {
   return Math.max(0, finiteOr(value, 0));
 }
 
-function clampTranslation(value: number, minimum: number): number {
-  const bounded = clamp(finiteOr(value, 0), minimum, 0);
+function clampTranslation(value: number, minimum: number, maximum: number): number {
+  const bounded = clamp(finiteOr(value, 0), minimum, maximum);
+  const nearestInteger = Math.round(bounded);
+  if (Math.abs(bounded - nearestInteger) < 1e-9) {
+    return Object.is(nearestInteger, -0) ? 0 : nearestInteger;
+  }
   return Object.is(bounded, -0) ? 0 : bounded;
+}
+
+/**
+ * Sizes the fixed-ratio survey so it covers the viewport without distortion.
+ * Any overflow is centred and remains reachable by panning at scale 1.
+ */
+export function coverMapViewport(size: MapViewportSize): MapViewportCoverLayout {
+  const viewportWidth = usableDimension(size.width);
+  const viewportHeight = usableDimension(size.height);
+  if (viewportWidth === 0 || viewportHeight === 0) {
+    return {
+      width: viewportWidth,
+      height: viewportHeight,
+      offsetX: 0,
+      offsetY: 0,
+    };
+  }
+
+  const viewportAspectRatio = viewportWidth / viewportHeight;
+  const width = viewportAspectRatio >= MAP_CONTENT_ASPECT_RATIO
+    ? viewportWidth
+    : viewportHeight * MAP_CONTENT_ASPECT_RATIO;
+  const height = viewportAspectRatio >= MAP_CONTENT_ASPECT_RATIO
+    ? viewportWidth / MAP_CONTENT_ASPECT_RATIO
+    : viewportHeight;
+
+  return {
+    width,
+    height,
+    offsetX: (viewportWidth - width) / 2,
+    offsetY: (viewportHeight - height) / 2,
+  };
 }
 
 export function clampMapViewportScale(scale: number): number {
@@ -66,9 +108,9 @@ export function clampMapViewportScale(scale: number): number {
 }
 
 /**
- * Constrains a transform for content whose unscaled size matches its wrapper.
- * At scale 1 the content is fixed at the origin. At larger scales, neither
- * edge can be dragged past the corresponding wrapper edge.
+ * Constrains a fixed-ratio, cover-sized survey. At scale 1 the cropped cover
+ * overflow can still be panned; at larger scales neither edge can cross the
+ * corresponding viewport edge.
  */
 export function boundMapViewport(
   transform: MapViewportTransform,
@@ -77,12 +119,15 @@ export function boundMapViewport(
   const scale = clampMapViewportScale(transform.scale);
   const width = usableDimension(size.width);
   const height = usableDimension(size.height);
-  const minimumX = -width * (scale - MAP_VIEWPORT_MIN_SCALE);
-  const minimumY = -height * (scale - MAP_VIEWPORT_MIN_SCALE);
+  const cover = coverMapViewport({ width, height });
+  const minimumX = width - cover.offsetX - cover.width * scale;
+  const maximumX = -cover.offsetX;
+  const minimumY = height - cover.offsetY - cover.height * scale;
+  const maximumY = -cover.offsetY;
 
   return {
-    x: clampTranslation(transform.x, minimumX),
-    y: clampTranslation(transform.y, minimumY),
+    x: clampTranslation(transform.x, minimumX, maximumX),
+    y: clampTranslation(transform.y, minimumY, maximumY),
     scale,
   };
 }
@@ -110,6 +155,7 @@ export function zoomMapViewportAt(
   size: MapViewportSize,
 ): MapViewportTransform {
   const boundedStart = boundMapViewport(start, size);
+  const cover = coverMapViewport(size);
   const scale = clampMapViewportScale(nextScale);
   const ratio = scale / boundedStart.scale;
   const focalX = finiteOr(focalPoint.x, 0);
@@ -117,8 +163,12 @@ export function zoomMapViewportAt(
 
   return boundMapViewport(
     {
-      x: focalX - (focalX - boundedStart.x) * ratio,
-      y: focalY - (focalY - boundedStart.y) * ratio,
+      x: focalX
+        - (focalX - cover.offsetX - boundedStart.x) * ratio
+        - cover.offsetX,
+      y: focalY
+        - (focalY - cover.offsetY - boundedStart.y) * ratio
+        - cover.offsetY,
       scale,
     },
     size,
@@ -156,6 +206,7 @@ export function pinchMapViewport(
   size: MapViewportSize,
 ): MapViewportTransform {
   const boundedStart = boundMapViewport(start, size);
+  const cover = coverMapViewport(size);
   const usableStartDistance = finiteOr(startDistance, 0);
   const usableCurrentDistance = finiteOr(currentDistance, usableStartDistance);
   const distanceRatio = usableStartDistance > 0
@@ -170,8 +221,12 @@ export function pinchMapViewport(
 
   return boundMapViewport(
     {
-      x: currentX - (startX - boundedStart.x) * scaleRatio,
-      y: currentY - (startY - boundedStart.y) * scaleRatio,
+      x: currentX
+        - (startX - cover.offsetX - boundedStart.x) * scaleRatio
+        - cover.offsetX,
+      y: currentY
+        - (startY - cover.offsetY - boundedStart.y) * scaleRatio
+        - cover.offsetY,
       scale,
     },
     size,

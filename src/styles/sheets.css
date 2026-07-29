@@ -68,7 +68,7 @@
 .print-survey {
   display: block;
   width: 190mm;
-  height: 126.667mm;
+  height: 139.706mm;
   flex: none;
   background: var(--c-print-white);
 }
@@ -108,10 +108,8 @@
 }
 
 .print-survey__opening-mask {
-  stroke: var(--c-print-white);
-  stroke-linecap: square;
-  stroke-width: 5.5mm;
-  vector-effect: non-scaling-stroke;
+  fill: var(--c-print-white);
+  stroke: none;
 }
 
 .print-survey__door,
