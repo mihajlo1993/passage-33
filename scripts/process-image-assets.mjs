@@ -328,7 +328,7 @@ export async function processMediaAssets(options = {}) {
     }
   }
 
-  const placeholderSheets = PROP_SHEET_IDS.filter((sheetId) => records[sheetId]?.available !== true);
+  const placeholderSheets = PROP_SHEET_IDS.filter((sheetId) => records[sheetId]?.reason === "missing");
   if (warnPropSheetPlaceholders && placeholderSheets.length > 0) {
     console.warn(`[media-assets] WARNING: placeholder prop sheets: ${placeholderSheets.join(", ")}`);
   }

@@ -12,13 +12,14 @@ also regenerates the 192 px and 512 px manifest PNGs.
 
 The decorative `sheet01.png` and `sheet02.png` print sources are placed
 without cropping on white 1754 x 2480 A4 portrait canvases and emitted as
-`public/media/sheet01.{png,webp}` and `sheet02.{png,webp}`. A missing or
-undecodable prop sheet never blocks the production build: the repository
-generate/check run emits an uppercase `WARNING` naming exactly which sheet
-IDs will use placeholders, even in quiet mode, and exits zero unless a
-separate runtime-breaking check fails. The AR generator supplies a local
-sprite placeholder for each unavailable sheet. Programmatic calls using
-temporary source directories can enable the same warning with
+`public/media/sheet01.{png,webp}` and `sheet02.{png,webp}`. A missing prop
+sheet never blocks the production build: the repository generate/check run
+emits an uppercase `WARNING` naming exactly which sheet IDs will use
+placeholders, even in quiet mode, and exits zero unless a separate
+runtime-breaking check fails. The AR generator supplies a local sprite
+placeholder for each missing sheet. A present but malformed source is not a
+placeholder and can still fail the runtime-asset generator. Programmatic calls
+using temporary source directories can enable the same warning with
 `warnPropSheetPlaceholders: true`.
 
 The installed canvas binary cannot encode WebP directly. The build script
