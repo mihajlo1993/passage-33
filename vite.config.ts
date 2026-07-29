@@ -152,7 +152,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: [
-          "**/*.{js,css,html,webp,svg,webmanifest,woff,woff2,wav,mp3}",
+          "**/*.{js,css,html,webp,svg,webmanifest,woff,woff2,wav,mp3,glb}",
         ],
         globIgnores: [
           "**/media/sheet*.webp",

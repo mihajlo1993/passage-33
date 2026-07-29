@@ -7,6 +7,7 @@
 @import "./styles/operator.css";
 @import "./styles/tape.css";
 @import "./styles/media.css";
+@import "./styles/examine.css";
 
 *,
 *::before,

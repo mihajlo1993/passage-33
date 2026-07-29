@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { colours } from "@/src/tokens";
 import { itemById } from "@/src/items";
+import { getItemModel } from "@/src/models/manifest";
 import type { GameState, Item } from "@/src/types";
+import { ExamineModel } from "./ExamineModel";
 import { GameIcon } from "./GameIcon";
 
 function healthWord(health: number): "STEADY" | "HURT" | "BAD" | "CRITICAL" {
@@ -20,15 +22,38 @@ export interface InventoryScreenProps {
 
 export function InventoryScreen({ state, onUseFirstAid }: InventoryScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [inspecting3d, setInspecting3d] = useState(false);
+  // A model that fails to load falls back to the icon panel for the session.
+  const [brokenModels, setBrokenModels] = useState<ReadonlySet<string>>(new Set());
   const heldItems = useMemo(
     () => state.inventory.map((id) => itemById[id]).filter((item): item is Item => Boolean(item)),
     [state.inventory],
   );
   const selected = selectedId ? itemById[selectedId] : undefined;
+  const selectedModel =
+    selected && !brokenModels.has(selected.id) ? getItemModel(selected.id) : undefined;
 
   useEffect(() => {
     if (selectedId && !state.inventory.includes(selectedId)) setSelectedId(null);
   }, [selectedId, state.inventory]);
+
+  useEffect(() => {
+    setInspecting3d(false);
+  }, [selectedId]);
+
+  if (selected && selectedModel && inspecting3d) {
+    return (
+      <ExamineModel
+        itemName={selected.name}
+        model={selectedModel}
+        onClose={() => setInspecting3d(false)}
+        onUnavailable={() => {
+          setBrokenModels((current) => new Set(current).add(selected.id));
+          setInspecting3d(false);
+        }}
+      />
+    );
+  }
 
   return (
     <section className="screen inventory-screen" aria-labelledby="inventory-title">
@@ -71,6 +96,14 @@ export function InventoryScreen({ state, onUseFirstAid }: InventoryScreenProps) 
             <div><p className="eyebrow">EXAMINE</p><h2>{selected.name}</h2></div>
           </div>
           <p className="document-copy">{selected.examine}</p>
+          {selectedModel && (
+            <button
+              className="mechanical-button mechanical-button--primary"
+              onClick={() => setInspecting3d(true)}
+            >
+              TURN IT OVER
+            </button>
+          )}
           {selected.id === "firstAid" && (
             <button className="mechanical-button mechanical-button--bile" onClick={() => { if (onUseFirstAid()) setSelectedId(null); }}>
               USE FIRST AID

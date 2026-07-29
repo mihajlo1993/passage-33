@@ -1,0 +1,82 @@
+{
+  "herb": {
+    "file": "/models/herb.glb",
+    "name": "Houseplant",
+    "author": "Quaternius",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/bfLOqIV5uP",
+    "bytes": 16636
+  },
+  "chemFluid": {
+    "file": "/models/chemFluid.glb",
+    "name": "Potion Bottle",
+    "author": "Quaternius",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/WJxYta4Z96",
+    "bytes": 32444
+  },
+  "tape": {
+    "file": "/models/tape.glb",
+    "name": "VHS",
+    "author": "Guillaume Brette",
+    "license": "CC-BY",
+    "source": "https://poly.pizza/m/8vBswoRHx8o",
+    "bytes": 54336
+  },
+  "knife": {
+    "file": "/models/knife.glb",
+    "name": "Knife",
+    "author": "Quaternius",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/N9bfPFP1hr",
+    "bytes": 28692
+  },
+  "pistol": {
+    "file": "/models/pistol.glb",
+    "name": "Revolver",
+    "author": "Quaternius",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/E7IaG9TptR",
+    "bytes": 58204
+  },
+  "valve": {
+    "file": "/models/valve.glb",
+    "name": "Collectible Gear",
+    "author": "Quaternius",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/1tgrqxAQia",
+    "bytes": 16352
+  },
+  "candleLit": {
+    "file": "/models/candleLit.glb",
+    "name": "Candles",
+    "author": "Quaternius",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/AnzHB44wlW",
+    "bytes": 26508
+  },
+  "cake": {
+    "file": "/models/cake.glb",
+    "name": "Cake Birthday",
+    "author": "Kenney",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/38GEFBlOXw",
+    "bytes": 118628
+  },
+  "creature": {
+    "file": "/models/creature.glb",
+    "name": "Doll",
+    "author": "CreativeTrio",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/YUAwclCDrF",
+    "bytes": 96880
+  },
+  "relic": {
+    "file": "/models/relic.glb",
+    "name": "Stag Statue",
+    "author": "Quaternius",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/cKloIsNcT8",
+    "bytes": 125880
+  }
+}
