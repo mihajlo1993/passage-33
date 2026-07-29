@@ -107,13 +107,15 @@ test("/sheets renders exactly three explicit print pages", () => {
   );
 });
 
-test("image sheets load print-only PNGs only when the lazy route mounts", () => {
+test("image sheets load only available print PNGs and label missing decorative sources", () => {
   const markup = renderToStaticMarkup(createElement(SheetsScreen));
-  for (const id of ["sheet01", "sheet02"]) {
-    assert.ok(markup.includes(`/media/${id}.png`));
-    assert.ok(!markup.includes(`/media/${id}.webp`));
-  }
-  assert.doesNotMatch(sheetsSource, /setMissing|SOURCE MISSING|<source\b|<picture\b/);
+  assert.ok(markup.includes("/media/sheet01.png"));
+  assert.ok(!markup.includes("/media/sheet01.webp"));
+  assert.ok(!markup.includes("/media/sheet02.png"));
+  assert.match(markup, /data-sheet="02"[\s\S]*?class="prop-sheet__missing"/);
+  assert.match(markup, /Sheet 02[\s\S]*?Source missing/);
+  assert.match(sheetsSource, /MEDIA_ASSETS\[baseName\]/);
+  assert.doesNotMatch(sheetsSource, /setMissing|<source\b|<picture\b/);
   assert.doesNotMatch(sheetsSource, /fetch\(|https?:\/\//i);
 });
 

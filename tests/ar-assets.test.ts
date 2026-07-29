@@ -61,12 +61,14 @@ async function generator(): Promise<{
     publicDirectory?: string;
     checkOnly?: boolean;
     quiet?: boolean;
+    ffmpegCommand?: string;
   }): Promise<{
     outputFile: string;
     moduleBytes: number;
     publicBytes: number;
     publicFiles: readonly string[];
     stale: boolean;
+    encodingWarnings: readonly string[];
     sourceMode: Record<string, string>;
     sheetOrder: readonly string[];
   }>;
@@ -218,13 +220,23 @@ test("creature uses one local WebP while retaining the exact keyed PNG hash", ()
   );
 });
 
-test("generator output is deterministic and --check/--quiet is clean", async (context) => {
+test("generator is deterministic, warns for placeholders, and retains verified assets", async (context) => {
   const temporaryRoot = mkdtempSync(path.join(tmpdir(), "re7bday-ar-placeholder-"));
   context.after(() => rmSync(temporaryRoot, { recursive: true, force: true }));
   const sourceDirectory = path.join(temporaryRoot, "source");
   const outputDirectory = path.join(temporaryRoot, "generated");
   mkdirSync(sourceDirectory, { recursive: true });
   const { generateArAssets } = await generator();
+  await assert.rejects(
+    generateArAssets({
+      sourceDirectory,
+      outputDirectory: path.join(temporaryRoot, "no-fallback-generated"),
+      ffmpegCommand: "bh7-no-such-ffmpeg",
+      quiet: true,
+    }),
+    /has no verified runtime sprite to preserve/,
+  );
+
   const first = await generateArAssets({ sourceDirectory, outputDirectory, quiet: true });
   const firstSource = readFileSync(first.outputFile, "utf8");
   const firstPublicAssets = first.publicFiles.map((file) => readFileSync(file));
@@ -248,6 +260,19 @@ test("generator output is deterministic and --check/--quiet is clean", async (co
   assert.equal(checked.stale, false);
   assert.deepEqual(checked.sheetOrder, ["sheet01", "sheet02"]);
 
+  const retained = await generateArAssets({
+    sourceDirectory,
+    outputDirectory,
+    ffmpegCommand: "bh7-no-such-ffmpeg",
+    quiet: true,
+  });
+  assert.equal(retained.stale, false);
+  assert.equal(retained.encodingWarnings.length, 3);
+  assert.deepEqual(
+    retained.publicFiles.map((file) => readFileSync(file)),
+    firstPublicAssets,
+  );
+
   const cli = spawnSync(
     process.execPath,
     ["scripts/generate-ar-assets.mjs", "--check", "--quiet"],
@@ -255,7 +280,67 @@ test("generator output is deterministic and --check/--quiet is clean", async (co
   );
   assert.equal(cli.status, 0, cli.stderr || cli.stdout);
   assert.equal(cli.stdout, "");
-  assert.equal(cli.stderr, "");
+  assert.match(cli.stderr, /\[ar-assets\] WARNING: sheet02 is using a decorative placeholder\./);
+});
+
+test("AR generator replaces a verified placeholder but refuses real asset overwrite", async (context) => {
+  const temporaryRoot = mkdtempSync(path.join(tmpdir(), "re7bday-ar-guard-"));
+  context.after(() => rmSync(temporaryRoot, { recursive: true, force: true }));
+  const sourceDirectory = path.join(temporaryRoot, "source");
+  const incomingDirectory = path.join(temporaryRoot, "incoming");
+  const outputDirectory = path.join(temporaryRoot, "generated");
+  mkdirSync(sourceDirectory, { recursive: true });
+  mkdirSync(incomingDirectory, { recursive: true });
+
+  const { generateArAssets } = await generator();
+  const placeholders = await generateArAssets({
+    sourceDirectory,
+    incomingDirectory,
+    outputDirectory,
+    quiet: true,
+  });
+  const placeholderPayload = parseGeneratedModule(placeholders.outputFile);
+  assert.equal(placeholderPayload.sheets.sheet01.placeholder, true);
+
+  const incomingSheet = path.join(incomingDirectory, "sheet01.png");
+  writePng(incomingSheet, 941, 1672, (context2d) => {
+    context2d.fillStyle = "rgba(222, 211, 184, 1)";
+    context2d.fillRect(0, 0, 941, 1672);
+    context2d.fillStyle = "rgba(52, 45, 37, 1)";
+    context2d.fillRect(280, 340, 360, 920);
+  });
+  const replaced = await generateArAssets({
+    sourceDirectory,
+    incomingDirectory,
+    outputDirectory,
+    quiet: true,
+  });
+  const realPayload = parseGeneratedModule(replaced.outputFile);
+  assert.equal(realPayload.sheets.sheet01.placeholder, false);
+  assert.equal(realPayload.sheets.sheet01.sourceMode, "incoming");
+
+  const protectedFiles = [replaced.outputFile, ...replaced.publicFiles];
+  const before = protectedFiles.map((file) => readFileSync(file));
+  writePng(incomingSheet, 941, 1672, (context2d) => {
+    context2d.fillStyle = "rgba(91, 28, 21, 1)";
+    context2d.fillRect(0, 0, 941, 1672);
+    context2d.fillStyle = "rgba(230, 220, 190, 1)";
+    context2d.fillRect(120, 180, 700, 1250);
+  });
+
+  await assert.rejects(
+    generateArAssets({
+      sourceDirectory,
+      incomingDirectory,
+      outputDirectory,
+      quiet: true,
+    }),
+    /Refusing to overwrite existing non-placeholder asset/,
+  );
+  assert.deepEqual(
+    protectedFiles.map((file) => readFileSync(file)),
+    before,
+  );
 });
 
 test("paired source masks isolate sprites without any tracking database", async (context) => {

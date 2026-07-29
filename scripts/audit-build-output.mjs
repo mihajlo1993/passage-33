@@ -42,6 +42,7 @@ const entryMatch = html.match(
 );
 invariant(entryMatch, "could not locate the module entry in dist/index.html");
 const entryUrl = entryMatch[1];
+const normalizedEntryUrl = entryUrl.replace(/^\//, "");
 const entryPath = distPath(entryUrl);
 invariant(existsSync(entryPath), `main entry is missing: ${entryUrl}`);
 const mainBytes = statSync(entryPath).size;
@@ -56,6 +57,20 @@ const precacheUrls = [
 ].map((match) => match[1]);
 const uniqueUrls = [...new Set(precacheUrls)];
 invariant(uniqueUrls.length > 0, "service worker has no precache entries");
+const requiredShellAssets = [
+  "index.html",
+  normalizedEntryUrl,
+  "media/cold-open.webp",
+  "media/trophy.webp",
+  "icons/icon-192.png",
+  "icons/icon-512.png",
+];
+for (const requiredShellAsset of requiredShellAssets) {
+  invariant(
+    uniqueUrls.includes(requiredShellAsset),
+    `offline shell asset is absent from precache: ${requiredShellAsset}`,
+  );
+}
 
 let precacheBytes = 0;
 for (const url of uniqueUrls) {
@@ -79,10 +94,38 @@ invariant(
   precacheBytes < PRECACHE_LIMIT_BYTES,
   `unique precache is ${precacheBytes} bytes; target is below ${PRECACHE_LIMIT_BYTES}`,
 );
-invariant(
-  uniqueUrls.some((url) => /\.(?:wav|mp3)$/i.test(url)),
-  "no local audio files were precached",
+const audioManifest = JSON.parse(
+  readFileSync(path.join(repoRoot, "src", "audio", "manifest.json"), "utf8"),
 );
+const oneShots = audioManifest.audio.filter((entry) => entry.category === "oneshot");
+const voices = audioManifest.audio.filter((entry) => entry.category === "voice");
+const impulses = audioManifest.impulses;
+invariant(oneShots.length === 10, `expected 10 one-shots, found ${oneShots.length}`);
+invariant(voices.length === 5, `expected 5 voices, found ${voices.length}`);
+invariant(impulses.length === 6, `expected 6 impulses, found ${impulses.length}`);
+const requiredAudioAssets = [...oneShots, ...voices, ...impulses]
+  .map((entry) => `audio/${entry.fileName}`);
+invariant(
+  new Set(requiredAudioAssets).size === 21,
+  `expected 21 unique audio paths, found ${new Set(requiredAudioAssets).size}`,
+);
+for (const requiredAudioAsset of requiredAudioAssets) {
+  invariant(
+    uniqueUrls.includes(requiredAudioAsset),
+    `offline audio asset is absent from precache: ${requiredAudioAsset}`,
+  );
+}
+
+const requiredTapeAssets = Array.from(
+  { length: 7 },
+  (_, index) => `media/tape-${String(index + 1).padStart(2, "0")}.webp`,
+);
+for (const requiredTapeAsset of requiredTapeAssets) {
+  invariant(
+    uniqueUrls.includes(requiredTapeAsset),
+    `offline tape still is absent from precache: ${requiredTapeAsset}`,
+  );
+}
 
 const sourceFiles = [
   path.join(repoRoot, "src", "audio", "manifest.ts"),
@@ -149,6 +192,14 @@ console.log(
         uniqueEntries: uniqueUrls.length,
         bytes: precacheBytes,
         limitBytes: PRECACHE_LIMIT_BYTES,
+      },
+      coverage: {
+        oneShots: oneShots.length,
+        voices: voices.length,
+        impulses: impulses.length,
+        tapeWebps: requiredTapeAssets.length,
+        arWebps: 3,
+        shellAssets: requiredShellAssets.length,
       },
     },
     null,

@@ -3,6 +3,12 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  applyProtectedAssetWrite,
+  isVerifiedGeneratedPlaceholder,
+  planProtectedAssetWrite,
+} from "./lib/protected-asset.mjs";
+
 const args = new Set(process.argv.slice(2));
 const unknownArgs = [...args].filter((arg) => !["--check", "--quiet"].includes(arg));
 if (unknownArgs.length > 0) throw new Error(`Unknown argument(s): ${unknownArgs.join(", ")}`);
@@ -509,6 +515,7 @@ invariant(manifest.audio.filter(({ category }) => category === "voice").length =
 invariant(manifest.impulses.length === 6, "Expected six impulses");
 
 const publicOutputs = new Map();
+const knownPlaceholdersByFile = new Map();
 const detailsById = new Map();
 const oneShots = manifest.audio.filter(({ category }) => category === "oneshot");
 oneShots.forEach((entry, index) => {
@@ -521,12 +528,18 @@ for (const entry of manifest.audio.filter(({ category }) => category === "voice"
   const file = publicFile(entry.fileName);
   const placeholderBytes = silentMp3(entry.durationMs);
   const existing = existsSync(file) ? readFileSync(file) : null;
-  const bytes = existing ?? placeholderBytes;
+  const verifiedPreviousPlaceholder = existing !== null
+    && isVerifiedGeneratedPlaceholder(existing, entry);
+  const bytes = verifiedPreviousPlaceholder ? placeholderBytes : (existing ?? placeholderBytes);
   const placeholder = bytes.equals(placeholderBytes);
   const mp3 = inspectMp3(bytes, entry.fileName);
   invariant(mp3.sampleRate === 44_100, `${entry.fileName} must be 44.1 kHz`);
   invariant(mp3.channels === 1, `${entry.fileName} must be mono`);
   publicOutputs.set(file, bytes);
+  knownPlaceholdersByFile.set(file, [
+    placeholderBytes,
+    ...(verifiedPreviousPlaceholder ? [existing] : []),
+  ]);
   detailsById.set(entry.id, {
     ...fileMetadata(bytes),
     sampleRate: mp3.sampleRate,
@@ -556,21 +569,38 @@ const manifestSource = `${JSON.stringify(nextManifest, null, 2)}\n`;
 const totalPublicBytes = [...publicOutputs.values()].reduce((total, bytes) => total + bytes.length, 0);
 
 let stale = false;
-function emit(file, contents) {
+const publicPlans = [...publicOutputs].map(([file, bytes]) => ({
+  file,
+  plan: planProtectedAssetWrite(file, bytes, {
+    knownPlaceholderBytes: knownPlaceholdersByFile.get(file) ?? [],
+    label: path.relative(repoRoot, file),
+  }),
+}));
+
+for (const { file, plan } of publicPlans) {
+  const result = applyProtectedAssetWrite(file, plan, { checkOnly });
+  if (result.stale) {
+    console.error(`[audio-assets] Stale or missing file: ${path.relative(repoRoot, file)}`);
+    stale = true;
+  }
+}
+
+function emitMetadata(file, contents) {
+  const expected = Buffer.isBuffer(contents) ? contents : Buffer.from(contents);
+  const matches = existsSync(file) && readFileSync(file).equals(expected);
   if (checkOnly) {
-    const expected = Buffer.isBuffer(contents) ? contents : Buffer.from(contents);
-    if (!existsSync(file) || !readFileSync(file).equals(expected)) {
+    if (!matches) {
       console.error(`[audio-assets] Stale or missing file: ${path.relative(repoRoot, file)}`);
       stale = true;
     }
     return;
   }
+  if (matches) return;
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, contents);
 }
 
-for (const [file, bytes] of publicOutputs) emit(file, bytes);
-emit(manifestPath, manifestSource);
+emitMetadata(manifestPath, manifestSource);
 if (stale) process.exitCode = 1;
 if (!quiet && !stale) {
   console.log(

@@ -188,13 +188,13 @@ test("2D sprites and room creature use local WebP URLs; pixel work remains build
     .find(([, command]) => command.includes("generate-ar-assets.mjs"));
   assert.ok(generatorScript);
   const [generatorScriptName] = generatorScript;
-  for (const lifecycle of ["prebuild", "pretest"] as const) {
-    const command = packageJson.scripts[lifecycle] ?? "";
-    assert.ok(
-      command.includes("generate-ar-assets.mjs")
-        || command.includes(`npm run ${generatorScriptName}`),
-    );
-  }
+  assert.equal(packageJson.scripts.prebuild, undefined);
+  assert.match(packageJson.scripts["generate:assets"] ?? "", new RegExp(`npm run ${generatorScriptName}`));
+  const pretest = packageJson.scripts.pretest ?? "";
+  assert.ok(
+    pretest.includes("generate-ar-assets.mjs")
+      || pretest.includes(`npm run ${generatorScriptName}`),
+  );
 });
 
 test("scanner hands eligible AR pins to /ar without resolving them as scans", () => {

@@ -30,7 +30,9 @@ test("build order keys the incoming creature and precaches WebP without general 
   const arGenerator = readFileSync("scripts/generate-ar-assets.mjs", "utf8");
   const vite = readFileSync("vite.config.ts", "utf8");
 
-  assert.match(packageJson.scripts.prebuild ?? "", /generate:media.*generate:ar/);
+  assert.equal(packageJson.scripts.prebuild, undefined);
+  assert.equal(packageJson.scripts.build, "tsc -b && vite build");
+  assert.match(packageJson.scripts["generate:assets"] ?? "", /generate:media.*generate:ar/);
   assert.match(processor, /output: "ar\/textures\/creature"/);
   assert.match(processor, /keyBlackToAlpha\(canvas, spec\.source\)/);
   assert.match(arGenerator, /defaultIncomingDirectory/);

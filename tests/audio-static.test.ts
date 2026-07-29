@@ -49,7 +49,13 @@ test("generator writes public files and metadata, never JavaScript audio payload
   const generatorSource = source("scripts/generate-audio-assets.mjs");
   const imports = [...generatorSource.matchAll(/from\s+["']([^"']+)["']/g)]
     .map((match) => match[1]);
-  assert.ok(imports.length > 0 && imports.every((specifier) => specifier.startsWith("node:")));
+  assert.ok(
+    imports.length > 0
+      && imports.every((specifier) => (
+        specifier.startsWith("node:") || specifier === "./lib/protected-asset.mjs"
+      )),
+  );
+  assert.ok(imports.includes("./lib/protected-asset.mjs"));
   assert.doesNotMatch(generatorSource, /node_modules|generated\/audio|generated\/impulses/);
   assert.match(generatorSource, /publicAudioDirectory/);
   assert.match(generatorSource, /manifestPath/);

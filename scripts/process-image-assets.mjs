@@ -4,13 +4,16 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  rmSync,
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createCanvas, loadImage } from "canvas";
+import {
+  applyProtectedAssetWrite,
+  planProtectedAssetWrite,
+} from "./lib/protected-asset.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultSourceDirectory = path.join(repoRoot, "assets-incoming");
@@ -29,7 +32,7 @@ const SOURCE_SPECS = Object.freeze([
     height: 360,
   })),
   { id: "trophy", source: "trophy.png", output: "media/trophy", width: 1280, height: 720 },
-  { id: "creature", source: "creature.png", output: "ar/textures/creature", width: 1024, height: 2048, blackKey: true },
+  { id: "creature", source: "creature.png", output: "ar/textures/creature", width: 1024, height: 2048, blackKey: true, webp: false },
   { id: "appIcon", source: "app-icon.png", output: "media/app-icon", width: 1024, height: 1024, icon: true },
   { id: "sheet01", source: "sheet01.png", output: "media/sheet01", width: 1754, height: 2480, fit: "contain" },
   { id: "sheet02", source: "sheet02.png", output: "media/sheet02", width: 1754, height: 2480, fit: "contain" },
@@ -194,6 +197,39 @@ function bytesRecord(bytes, relativeFile) {
   });
 }
 
+function readPreviousPayload(generatedFile) {
+  if (!existsSync(generatedFile)) return null;
+  const source = readFileSync(generatedFile, "utf8");
+  const match = source.match(/export const generatedMediaAssets = ([\s\S]+) as const;\s*$/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1]);
+  } catch {
+    return null;
+  }
+}
+
+function verifiedPreviousWebp(file, relativeFile, metadata) {
+  if (
+    !metadata
+    || metadata.url !== publicUrl(relativeFile)
+    || typeof metadata.sha256 !== "string"
+    || !existsSync(file)
+  ) {
+    return null;
+  }
+  const bytes = readFileSync(file);
+  if (
+    bytes.length < 12
+    || !bytes.subarray(0, 4).equals(WEBP_RIFF)
+    || !bytes.subarray(8, 12).equals(WEBP_SIGNATURE)
+    || sha256(bytes) !== metadata.sha256
+  ) {
+    return null;
+  }
+  return bytes;
+}
+
 function writeOrCompare(file, bytes, checkOnly) {
   const current = existsSync(file) ? readFileSync(file) : null;
   const stale = current === null || !current.equals(bytes);
@@ -204,14 +240,30 @@ function writeOrCompare(file, bytes, checkOnly) {
   return stale;
 }
 
-function removeOrReport(file, checkOnly) {
-  if (!existsSync(file)) return false;
-  if (!checkOnly) rmSync(file);
-  return true;
-}
 
 function generatedModuleSource(payload) {
   return `/* Deterministic build output. Run npm run generate:media; do not edit. */\n\nexport const generatedMediaAssets = ${JSON.stringify(payload, null, 2)} as const;\n`;
+}
+
+function existingBinaryOutputs(spec, publicDirectory, pngFile, webpFile) {
+  const candidates = [pngFile];
+  if (spec.webp !== false) candidates.push(webpFile);
+  if (spec.id === "trophy") candidates.push(path.join(publicDirectory, "og.png"));
+  if (spec.icon) {
+    candidates.push(
+      path.join(publicDirectory, "icons", "icon-192.png"),
+      path.join(publicDirectory, "icons", "icon-512.png"),
+    );
+  }
+  return candidates.filter((file) => existsSync(file));
+}
+
+function refuseOrphanedAssets(files, reason) {
+  if (files.length === 0) return;
+  const labels = files.map((file) => path.relative(repoRoot, file)).join(", ");
+  throw new Error(
+    `[asset-guard] Refusing to orphan existing non-placeholder asset(s): ${labels} (${reason})`,
+  );
 }
 
 function missingRecord(spec, reason = "missing") {
@@ -235,6 +287,7 @@ export async function processMediaAssets(options = {}) {
   const generatedFile = path.resolve(
     options.generatedFile ?? path.join(repoRoot, "src", "media", "generated", "media.generated.ts"),
   );
+  const previousPayload = readPreviousPayload(generatedFile);
   const legacyTrophyFile = options.legacyTrophyFile === false
     ? null
     : path.resolve(options.legacyTrophyFile ?? path.join(publicDirectory, "og.png"));
@@ -246,6 +299,7 @@ export async function processMediaAssets(options = {}) {
   const records = {};
   const missing = [];
   const errors = [];
+  const publicOutputs = [];
   let stale = false;
 
   for (const spec of SOURCE_SPECS) {
@@ -259,16 +313,22 @@ export async function processMediaAssets(options = {}) {
     const webpRelative = `${spec.output}.webp`;
     const pngFile = path.join(publicDirectory, pngRelative);
     const webpFile = path.join(publicDirectory, webpRelative);
+    const existingOutputs = existingBinaryOutputs(
+      spec,
+      publicDirectory,
+      pngFile,
+      webpFile,
+    );
 
     if (!sourceFile) {
+      refuseOrphanedAssets(existingOutputs, `${spec.source} is missing`);
       records[spec.id] = missingRecord(spec);
       missing.push(spec.source);
-      stale = removeOrReport(pngFile, checkOnly) || stale;
-      stale = removeOrReport(webpFile, checkOnly) || stale;
       continue;
     }
 
     try {
+      const specPublicOutputs = [];
       const image = await decodePng(sourceFile, spec.source);
       const sourceWidth = image.width;
       const sourceHeight = image.height;
@@ -277,21 +337,33 @@ export async function processMediaAssets(options = {}) {
         : coverImage(image, spec.width, spec.height);
       if (spec.blackKey) canvas = keyBlackToAlpha(canvas, spec.source);
       const png = pngBytes(canvas);
-      stale = writeOrCompare(pngFile, png, checkOnly) || stale;
+      specPublicOutputs.push({ file: pngFile, bytes: png });
       let webp = null;
       let webpReason = null;
-      try {
-        const webpBytesValue = webpBytes(canvas, ffmpegCommand);
-        stale = writeOrCompare(webpFile, webpBytesValue, checkOnly) || stale;
-        webp = bytesRecord(webpBytesValue, webpRelative);
-      } catch (error) {
-        webpReason = error instanceof Error ? error.message : String(error);
-        errors.push({ fileName: `${spec.source} (WebP)`, reason: webpReason });
-        stale = removeOrReport(webpFile, checkOnly) || stale;
+      if (spec.webp !== false) {
+        try {
+          const webpBytesValue = webpBytes(canvas, ffmpegCommand);
+          specPublicOutputs.push({ file: webpFile, bytes: webpBytesValue });
+          webp = bytesRecord(webpBytesValue, webpRelative);
+        } catch (error) {
+          webpReason = error instanceof Error ? error.message : String(error);
+          errors.push({ fileName: `${spec.source} (WebP)`, reason: webpReason });
+          const existingWebp = verifiedPreviousWebp(
+            webpFile,
+            webpRelative,
+            previousPayload?.assets?.[spec.id]?.webp,
+          );
+          if (existingWebp) {
+            webp = bytesRecord(existingWebp, webpRelative);
+            webpReason += "; preserved verified existing WebP";
+          } else if (existsSync(webpFile)) {
+            webpReason += "; unverified existing WebP left untouched and unreferenced";
+          }
+        }
       }
 
       if (spec.id === "trophy") {
-        stale = writeOrCompare(path.join(publicDirectory, "og.png"), png, checkOnly) || stale;
+        specPublicOutputs.push({ file: path.join(publicDirectory, "og.png"), bytes: png });
       }
 
       const iconRecords = {};
@@ -301,7 +373,7 @@ export async function processMediaAssets(options = {}) {
           const iconBytes = pngBytes(iconCanvas);
           const relative = `icons/icon-${size}.png`;
           const iconFile = path.join(publicDirectory, relative);
-          stale = writeOrCompare(iconFile, iconBytes, checkOnly) || stale;
+          specPublicOutputs.push({ file: iconFile, bytes: iconBytes });
           iconRecords[size] = bytesRecord(iconBytes, relative);
         }
       }
@@ -319,12 +391,28 @@ export async function processMediaAssets(options = {}) {
         icons: spec.icon ? iconRecords : undefined,
         reason: webpReason,
       };
+      publicOutputs.push(...specPublicOutputs);
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
+      refuseOrphanedAssets(existingOutputs, reason);
       records[spec.id] = missingRecord(spec, reason);
       errors.push({ fileName: spec.source, reason });
-      stale = removeOrReport(pngFile, checkOnly) || stale;
-      stale = removeOrReport(webpFile, checkOnly) || stale;
+    }
+  }
+
+  const publicPlans = publicOutputs.map(({ file, bytes }) => ({
+    file,
+    plan: planProtectedAssetWrite(file, bytes, {
+      label: path.relative(repoRoot, file),
+    }),
+  }));
+  for (const { file, plan } of publicPlans) {
+    const result = applyProtectedAssetWrite(file, plan, { checkOnly });
+    if (result.stale) {
+      stale = true;
+      if (!quiet) {
+        console.error(`[media-assets] Stale or missing file: ${path.relative(repoRoot, file)}`);
+      }
     }
   }
 

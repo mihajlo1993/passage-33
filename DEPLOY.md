@@ -12,7 +12,8 @@ the project owner so the Vercel account scope can be checked by a human.
    `REPLACE-AUDIO.md`.
 4. Run `npm test`.
 5. Run `npm run build`.
-6. Confirm that both commands pass and that the static output is in `dist/`.
+6. Run `npm run audit:build` to enforce the bundle-size and offline-precache gates.
+7. Confirm that all three commands pass and that the static output is in `dist/`.
 
 ## Interactive Vercel deployment
 

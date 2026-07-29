@@ -10,6 +10,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createCanvas, loadImage } from "canvas";
+import {
+  applyProtectedAssetWrite,
+  planProtectedAssetWrite,
+} from "./lib/protected-asset.mjs";
 
 const SHEET_ORDER = Object.freeze(["sheet01", "sheet02"]);
 const SOURCE_SHEET_WIDTH = 1754;
@@ -88,6 +92,46 @@ function webpBytes(canvas, label, ffmpegCommand = "ffmpeg") {
 function publicUrl(relativeFile) {
   return `/${relativeFile.split(path.sep).join("/")}`;
 }
+
+function readPreviousPayload(outputFile) {
+  if (!existsSync(outputFile)) return null;
+  const source = readFileSync(outputFile, "utf8");
+  const match = source.match(/export const generatedArAssets = ([\s\S]+) as const;\s*$/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1]);
+  } catch {
+    return null;
+  }
+}
+
+function verifiedPreviousAsset(
+  publicDirectory,
+  relativeFile,
+  metadata,
+  { urlField, hashField },
+) {
+  if (
+    !metadata
+    || metadata[urlField] !== publicUrl(relativeFile)
+    || typeof metadata[hashField] !== "string"
+  ) {
+    return null;
+  }
+  const file = path.join(publicDirectory, relativeFile);
+  if (!existsSync(file)) return null;
+  const bytes = readFileSync(file);
+  if (
+    bytes.length < 12
+    || !bytes.subarray(0, 4).equals(WEBP_RIFF)
+    || !bytes.subarray(8, 12).equals(WEBP_SIGNATURE)
+    || sha256(bytes) !== metadata[hashField]
+  ) {
+    return null;
+  }
+  return { bytes, metadata };
+}
+
 
 function assertPng(bytes, label) {
   invariant(
@@ -446,24 +490,92 @@ export async function generateArAssets(options = {}) {
   const ffmpegCommand = options.ffmpegCommand ?? "ffmpeg";
   const checkOnly = options.checkOnly === true;
   const quiet = options.quiet === true;
+  const outputFile = path.join(outputDirectory, "ar-assets.generated.ts");
+  const previousPayload = readPreviousPayload(outputFile);
+  const encodingWarnings = [];
 
-  const builtSheetEntries = await Promise.all(
-    SHEET_ORDER.map(async (sheetId) => [
-      sheetId,
-      await buildSheetAsset(
+  const builtSheets = {};
+  for (const sheetId of SHEET_ORDER) {
+    try {
+      const built = await buildSheetAsset(
         sourceDirectory,
         incomingDirectory,
         sheetId,
         ffmpegCommand,
-      ),
-    ]),
-  );
-  const builtSheets = Object.fromEntries(builtSheetEntries);
-  const builtCreature = await buildCreatureAsset(
-    sourceDirectory,
-    incomingDirectory,
-    ffmpegCommand,
-  );
+      );
+      builtSheets[sheetId] = { ...built, assetId: sheetId, assetKind: "sheet" };
+      if (built.metadata.placeholder) {
+        const warning = `${sheetId} is using a decorative placeholder`;
+        encodingWarnings.push(warning);
+        console.warn(`[ar-assets] WARNING: ${warning}.`);
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      if (!/runtime sprite (?:WebP encoder|WebP encode|encoder returned)/.test(reason)) {
+        throw error;
+      }
+      const relativeFile = path.join("ar", "sprites", `${sheetId}.webp`);
+      const previous = verifiedPreviousAsset(
+        publicDirectory,
+        relativeFile,
+        previousPayload?.sheets?.[sheetId],
+        { urlField: "spriteUrl", hashField: "spriteSha256" },
+      );
+      if (!previous) {
+        const warning = `${sheetId} could not be encoded and has no verified runtime sprite (${reason})`;
+        encodingWarnings.push(warning);
+        console.warn(`[ar-assets] WARNING: ${warning}.`);
+        throw new Error(
+          `[ar-assets] ${sheetId} has no verified runtime sprite to preserve`,
+          { cause: error },
+        );
+      }
+      const warning = `${sheetId} could not be encoded; preserving the verified committed sprite (${reason})`;
+      encodingWarnings.push(warning);
+      console.warn(`[ar-assets] WARNING: ${warning}.`);
+      builtSheets[sheetId] = {
+        assetId: sheetId,
+        assetKind: "sheet",
+        relativeFile,
+        bytes: previous.bytes,
+        metadata: previous.metadata,
+      };
+    }
+  }
+
+  let builtCreature;
+  try {
+    const built = await buildCreatureAsset(
+      sourceDirectory,
+      incomingDirectory,
+      ffmpegCommand,
+    );
+    builtCreature = { ...built, assetId: "creature", assetKind: "creature" };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    if (!/room creature (?:WebP encoder|WebP encode|encoder returned)/.test(reason)) {
+      throw error;
+    }
+    const relativeFile = path.join("ar", "textures", "creature.webp");
+    const previous = verifiedPreviousAsset(
+      publicDirectory,
+      relativeFile,
+      previousPayload?.creature,
+      { urlField: "url", hashField: "sha256" },
+    );
+    if (!previous) throw error;
+    const warning = `creature could not be encoded; preserving the verified runtime asset (${reason})`;
+    encodingWarnings.push(warning);
+    console.warn(`[ar-assets] WARNING: ${warning}.`);
+    builtCreature = {
+      assetId: "creature",
+      assetKind: "creature",
+      relativeFile,
+      bytes: previous.bytes,
+      metadata: previous.metadata,
+    };
+  }
+
   const sheets = Object.fromEntries(
     SHEET_ORDER.map((sheetId) => [sheetId, builtSheets[sheetId].metadata]),
   );
@@ -486,33 +598,48 @@ export async function generateArAssets(options = {}) {
     `Generated TypeScript is ${moduleBytes} bytes; budget is ${MAX_GENERATED_MODULE_BYTES}. Reduce source image detail.`,
   );
 
-  const outputFile = path.join(outputDirectory, "ar-assets.generated.ts");
   const publicOutputs = [
     ...SHEET_ORDER.map((sheetId) => builtSheets[sheetId]),
     builtCreature,
-  ];
+  ].filter((output) => Buffer.isBuffer(output.bytes));
   const publicBytes = publicOutputs.reduce(
     (total, output) => total + output.bytes.length,
     0,
   );
   let stale = false;
 
-  for (const output of publicOutputs) {
+  const publicPlans = publicOutputs.map((output) => {
     const file = path.join(publicDirectory, output.relativeFile);
-    const matches = existsSync(file)
-      && readFileSync(file).equals(output.bytes);
-    if (checkOnly) {
-      if (!matches) {
-        stale = true;
-        if (!quiet) {
-          console.error(
-            `[ar-assets] Stale generated file: ${path.relative(repoRoot, file)}`,
-          );
-        }
+    const previousMetadata = output.assetKind === "sheet"
+      ? previousPayload?.sheets?.[output.assetId]
+      : previousPayload?.creature;
+    const previous = verifiedPreviousAsset(
+      publicDirectory,
+      output.relativeFile,
+      previousMetadata,
+      output.assetKind === "sheet"
+        ? { urlField: "spriteUrl", hashField: "spriteSha256" }
+        : { urlField: "url", hashField: "sha256" },
+    );
+    const knownPlaceholderBytes = previous?.metadata?.placeholder === true
+      ? [previous.bytes]
+      : [];
+    return {
+      file,
+      plan: planProtectedAssetWrite(file, output.bytes, {
+        knownPlaceholderBytes,
+        label: path.relative(repoRoot, file),
+      }),
+    };
+  });
+
+  for (const { file, plan } of publicPlans) {
+    const result = applyProtectedAssetWrite(file, plan, { checkOnly });
+    if (result.stale) {
+      stale = true;
+      if (!quiet) {
+        console.error(`[ar-assets] Stale generated file: ${path.relative(repoRoot, file)}`);
       }
-    } else {
-      mkdirSync(path.dirname(file), { recursive: true });
-      writeFileSync(file, output.bytes);
     }
   }
 
@@ -523,7 +650,7 @@ export async function generateArAssets(options = {}) {
     if (moduleStale && !quiet) {
       console.error(`[ar-assets] Stale generated file: ${path.relative(repoRoot, outputFile)}`);
     }
-  } else {
+  } else if (!existsSync(outputFile) || readFileSync(outputFile, "utf8") !== source) {
     mkdirSync(outputDirectory, { recursive: true });
     writeFileSync(outputFile, source);
   }
@@ -543,6 +670,7 @@ export async function generateArAssets(options = {}) {
       publicOutputs.map((output) => path.join(publicDirectory, output.relativeFile)),
     ),
     stale,
+    encodingWarnings: Object.freeze([...encodingWarnings]),
     sourceMode: Object.freeze({ ...sourceMode }),
     sheetOrder: Object.freeze([...SHEET_ORDER]),
   };

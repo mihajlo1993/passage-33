@@ -195,11 +195,7 @@ export const generatedMediaAssets = {
         "bytes": 1481390,
         "sha256": "c0e4a81439ebd2cb6a916abe96ea49389a058a387df790be8e39fa17c47fa546"
       },
-      "webp": {
-        "url": "/ar/textures/creature.webp",
-        "bytes": 167564,
-        "sha256": "8fc8a7f6d84b3cf5ca263397f021bcdc38ac9df4af3aadbd1252eabe26d5b44c"
-      },
+      "webp": null,
       "blackKeyed": true,
       "reason": null
     },

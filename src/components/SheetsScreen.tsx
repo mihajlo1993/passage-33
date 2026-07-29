@@ -1,4 +1,5 @@
 import { PrintableSurveyMap } from "../map/PrintableSurveyMap";
+import { MEDIA_ASSETS } from "../media/assets";
 
 interface ImageSheetProps {
   readonly number: "01" | "02";
@@ -7,6 +8,7 @@ interface ImageSheetProps {
 }
 
 function ImageSheet({ baseName, description, number }: ImageSheetProps) {
+  const asset = MEDIA_ASSETS[baseName];
   return (
     <section
       className="prop-sheet prop-sheet--image"
@@ -15,12 +17,23 @@ function ImageSheet({ baseName, description, number }: ImageSheetProps) {
       data-asset={baseName}
     >
       <h1 className="prop-sheet__accessible-title">Sheet {number}</h1>
-      <img
-        className="prop-sheet__image"
-        src={`/media/${baseName}.png`}
-        alt={description}
-        draggable={false}
-      />
+      {asset.available ? (
+        <img
+          className="prop-sheet__image"
+          src={asset.png.url}
+          alt={description}
+          draggable={false}
+        />
+      ) : (
+        <div
+          className="prop-sheet__missing"
+          role="img"
+          aria-label={`${description} Source asset missing.`}
+        >
+          <strong>Sheet {number}</strong>
+          <span>Source missing</span>
+        </div>
+      )}
     </section>
   );
 }

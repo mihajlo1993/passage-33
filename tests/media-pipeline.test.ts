@@ -266,3 +266,78 @@ test("media pipeline keeps a usable PNG when the optional WebP encoder is unavai
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("media pipeline preserves encoder fallbacks and refuses real asset overwrite", async () => {
+  const { processMediaAssets } = await mediaProcessor();
+  const root = mkdtempSync(path.join(tmpdir(), "bh7-media-guard-"));
+  const incoming = path.join(root, "incoming");
+  const publicDirectory = path.join(root, "public");
+  const generatedFile = path.join(root, "generated", "media.generated.ts");
+  const sourceFile = path.join(incoming, "tape-01.png");
+  const pngFile = path.join(publicDirectory, "media", "tape-01.png");
+  const webpFile = path.join(publicDirectory, "media", "tape-01.webp");
+  mkdirSync(incoming, { recursive: true });
+  writeFileSync(sourceFile, sourcePng(32, 18));
+
+  try {
+    await processMediaAssets({
+      sourceDirectory: incoming,
+      publicDirectory,
+      generatedFile,
+      legacyTrophyFile: false,
+      quiet: true,
+    });
+    const originalWebp = readFileSync(webpFile);
+
+    const withoutEncoder = await processMediaAssets({
+      sourceDirectory: incoming,
+      publicDirectory,
+      generatedFile,
+      legacyTrophyFile: false,
+      ffmpegCommand: "bh7-no-such-ffmpeg",
+      quiet: true,
+    });
+    assert.deepEqual(readFileSync(webpFile), originalWebp);
+    assert.ok(withoutEncoder.records.tape01?.webp);
+    assert.match(
+      String(withoutEncoder.records.tape01?.reason),
+      /preserved verified existing WebP/,
+    );
+
+    const protectedFiles = [pngFile, webpFile, generatedFile];
+    const before = protectedFiles.map((file) => readFileSync(file));
+    rmSync(sourceFile);
+    await assert.rejects(
+      processMediaAssets({
+        sourceDirectory: incoming,
+        publicDirectory,
+        generatedFile,
+        legacyTrophyFile: false,
+        quiet: true,
+      }),
+      /Refusing to orphan existing non-placeholder asset/,
+    );
+    assert.deepEqual(
+      protectedFiles.map((file) => readFileSync(file)),
+      before,
+    );
+
+    writeFileSync(sourceFile, sourcePng(32, 18, true));
+    await assert.rejects(
+      processMediaAssets({
+        sourceDirectory: incoming,
+        publicDirectory,
+        generatedFile,
+        legacyTrophyFile: false,
+        quiet: true,
+      }),
+      /Refusing to overwrite existing non-placeholder asset/,
+    );
+    assert.deepEqual(
+      protectedFiles.map((file) => readFileSync(file)),
+      before,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
