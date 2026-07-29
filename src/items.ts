@@ -189,7 +189,7 @@ export const items: readonly Item[] = [
     icon: 'secret-book',
     tint: 'bone',
     examine:
-      'Melissa. There was no previous guest. It was me, every year, standing in front of your birthday like a man in front of a padlock, and every year it read LOSER. Dinner. Flowers. A card, gone by morning. This year I built you a house instead, and you walked it better than I ever could. The padlock says WINNER now. It is yours. So am I. \u2014 M.',
+      'Melissa. There was no previous guest. It was me, every year, standing in front of your birthday like a man in front of a padlock, and every year it read LOSER. Dinner. Flowers. A card, gone by morning. This year I wanted you to have the one thing I mean to be for you always: someone beside you when it matters the most, in every dark room, holding the light. You walked tonight braver than I ever did. The padlock says WINNER now. It is yours. So am I. Yours, M.',
   },
 ] as const;
 

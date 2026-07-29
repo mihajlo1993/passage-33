@@ -229,7 +229,7 @@ export function OperatorPanel({
         </header>
 
         <dl className="operator-status">
-          <div><dt>PIN</dt><dd>{displayedPin ?? "—"}</dd></div>
+          <div><dt>PIN</dt><dd>{displayedPin ?? "--"}</dd></div>
           <div><dt>ACT</dt><dd>{game.act}</dd></div>
           <div><dt>HEALTH</dt><dd>{game.health}</dd></div>
           <div className="operator-status__wide">
