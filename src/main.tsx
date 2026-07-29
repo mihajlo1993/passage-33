@@ -10,7 +10,7 @@ import { AudioDirector } from "./audio/AudioDirector";
 import { AudioProvider } from "./audio/AudioProvider";
 import { GameApp } from "./components/GameApp";
 import { VHSLayer } from "./fx";
-import { colours, layout, motion, typography } from "./tokens";
+import { colours, effects, layout, motion, typography } from "./tokens";
 import "./styles.css";
 
 const root = document.documentElement;
@@ -47,6 +47,20 @@ const cssTokens: Record<string, string> = {
   "--save-theatre": motion.eventMs.saveTheatre + "ms",
   "--ease-heavy": motion.easing,
   "--vhs-roll": motion.eventMs.trackingRoll + "ms",
+  "--ar-image-reveal": motion.eventMs.arImageReveal + "ms",
+  "--ar-herb-reward": motion.eventMs.arHerbReward + "ms",
+  "--ar-hit": motion.eventMs.arHit + "ms",
+  "--ar-collapse": motion.eventMs.arCollapseDuration + "ms",
+  "--ar-fallback-width": effects.ar.fallbackSpriteWidthPercent + "%",
+  "--ar-wall-peel-scale": String(effects.ar.wallPeelScale),
+  "--ar-wall-reach-scale": String(effects.ar.wallReachScale),
+  "--ar-wall-shoulder": effects.ar.wallShoulderDegrees + "deg",
+  "--ar-wall-reach-x": effects.ar.wallFallbackReachXPercent + "%",
+  "--ar-wall-reach-y": effects.ar.wallFallbackReachYPercent + "%",
+  "--ar-herb-pulse-scale": String(effects.ar.herbPulseScale),
+  "--ar-herb-lift": effects.ar.herbFallbackLiftPercent + "%",
+  "--ar-monster-collapse": effects.ar.monsterCollapseDegrees + "deg",
+  "--ar-shake": effects.ar.screenShakePx + "px",
   "--vhs-damage": motion.eventMs.vhsDamageSpike + "ms",
   "--vhs-drop": motion.eventMs.vhsCriticalDrop + "ms",
   "--vhs-drop-interval": motion.eventMs.vhsCriticalInterval + "ms",

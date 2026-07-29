@@ -6,6 +6,7 @@ const noopControls: VHSControls = {
   glitch: () => undefined,
   dropFrames: () => undefined,
   setTimecode: () => undefined,
+  suspend: () => undefined,
 };
 
 export const VHSContext = createContext<VHSControls>(noopControls);

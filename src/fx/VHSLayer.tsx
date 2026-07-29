@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 
 import { colours, effects, motion } from "../tokens";
@@ -53,7 +54,12 @@ function writeRenderProfile(
   );
 }
 
-export function VHSLayer({ children, disabled }: VHSLayerProps) {
+export function VHSLayer({
+  children,
+  disabled: permanentlyDisabled,
+}: VHSLayerProps) {
+  const [suspended, setSuspended] = useState(false);
+  const disabled = permanentlyDisabled || suspended;
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const timecodeElementRef = useRef<HTMLOutputElement>(null);
@@ -105,6 +111,7 @@ export function VHSLayer({ children, disabled }: VHSLayerProps) {
       output.textContent = timecode ?? "";
       output.dataset.active = String(!disabled && timecode !== null);
     },
+    suspend: setSuspended,
   }), [disabled]);
 
   useEffect(() => {

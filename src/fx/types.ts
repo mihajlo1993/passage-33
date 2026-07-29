@@ -5,6 +5,7 @@ export interface VHSControls {
   glitch: (durationMs: number) => void;
   dropFrames: (durationMs: number) => void;
   setTimecode: (timecode: string | null) => void;
+  suspend: (suspended: boolean) => void;
 }
 
 export interface VHSLayerProps {

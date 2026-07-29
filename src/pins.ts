@@ -44,6 +44,7 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'item',
     arTarget: 'sheet01',
+    resolution: 'ar',
     bodyText:
       'I marked this wall especially for you. Hold the camera steady and let the shape settle into place. The last guest rushed this part. He was terribly eager to reach the bathroom. You have always had better patience. Consider that my first birthday compliment.',
   },
@@ -217,6 +218,7 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.herb, itemIds.valve],
     kind: 'item',
     arTarget: 'sheet02',
+    resolution: 'ar',
     bodyText:
       'The planter has produced a splendid crop: one living thing and one piece of plumbing. Take the herb and the valve. I planted neither, which makes their devotion to your birthday especially touching. Let the camera notice what else has taken root here.',
   },
@@ -230,6 +232,7 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'scare',
     scare: 'roomMonster',
+    resolution: 'ar',
     damage: 20,
     bodyText:
       'Back inside already? Wonderful. You brought the pistol, exactly as I congratulated you for doing. The room has acquired another guest while you were out. Do try the obvious answer. He dislikes being ignored more than he dislikes being shot.',

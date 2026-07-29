@@ -46,6 +46,16 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
   const handleScan = async (pinId: number) => {
     contact();
     const pin = getPinById(pinId);
+    if (pin?.resolution === "ar" && (pinId === 3 || pinId === 17 || pinId === 18)) {
+      const preview = previewPin(pinId, "ar");
+      if (!preview.ok) {
+        await presentAttempt(preview);
+        return;
+      }
+      navigate("/ar?pin=" + String(pinId));
+      return;
+    }
+
     if (pin?.resolution === "dial" && (pinId === 8 || pinId === 16)) {
       const preview = previewPin(pinId, "dial");
       if (!preview.ok) {

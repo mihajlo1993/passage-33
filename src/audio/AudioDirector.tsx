@@ -55,7 +55,7 @@ export function AudioDirector() {
     void audio.play("ui-found");
     void audio.say("voice-pin-" + String(pin.id).padStart(2, "0"));
 
-    if (pin.scare) {
+    if (pin.scare && pin.scare !== "roomMonster") {
       void audio.play(SCARE_CUES[pin.scare]);
     }
     const pinCue = PIN_CUES[pin.id];

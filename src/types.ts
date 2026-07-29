@@ -10,7 +10,7 @@ export type ZoneId =
 
 export type Act = 1 | 2 | 3 | 4 | 5;
 export type ItemId = string;
-export type PinResolutionMode = 'scan' | 'dial' | 'action';
+export type PinResolutionMode = 'scan' | 'dial' | 'action' | 'ar';
 export type PinResolutionMethod = PinResolutionMode | 'dev';
 
 

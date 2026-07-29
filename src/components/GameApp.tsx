@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState,
+} from "react";
 import { useGameStore } from "@/src/game";
 import { useHaptics, useWakeLock } from "@/src/device";
 import { getVHSHealthProfile, useVHS } from "@/src/fx";
@@ -17,6 +19,10 @@ import { DevScreen } from "./DevScreen";
 import { CodesScreen } from "./CodesScreen";
 import { GlyphsScreen } from "./GlyphsScreen";
 
+const LazyARScreen = lazy(() => import("../ar/ARScreen").then((module) => ({
+  default: module.ARScreen,
+})));
+
 const PLAY_ROUTES = new Set([
   "/",
   "/map",
@@ -28,6 +34,7 @@ const PLAY_ROUTES = new Set([
   "/codes",
   "/glyphs",
   "/dev",
+  "/ar",
 ]);
 
 function currentPath(): string {
@@ -264,6 +271,21 @@ export function GameApp() {
             navigate={navigate}
           />
         );
+      case "/ar":
+        return (
+          <Suspense
+            fallback={(
+              <section className="ar-screen ar-screen--loading" role="status">
+                <div className="ar-instrument-panel">
+                  <p className="eyebrow">OPTICAL BENCH</p>
+                  <h1>PREPARING CONTACT</h1>
+                </div>
+              </section>
+            )}
+          >
+            <LazyARScreen navigate={navigate} />
+          </Suspense>
+        );
       default:
         return (
           <section className="screen missing-screen">
@@ -275,7 +297,7 @@ export function GameApp() {
     }
   })();
 
-  const hideChrome = route === "/" && coldOpen;
+  const hideChrome = route === "/ar" || (route === "/" && coldOpen);
 
   return (
     <main className="game-shell" data-route={route}>
