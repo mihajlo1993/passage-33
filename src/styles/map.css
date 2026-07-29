@@ -157,14 +157,14 @@
 }
 
 .survey-room__name {
-  font-size: 18px;
+  font-size: var(--text-heading);
   font-weight: 700;
 }
 
 .survey-room__state,
 .survey-furniture-label,
 .survey-annotation {
-  font-size: 10px;
+  font-size: var(--text-micro);
 }
 
 .survey-room__state {
@@ -176,7 +176,18 @@
 }
 
 .survey-title {
-  font-size: 15px;
+  font-family: var(--font-award);
+  font-size: var(--text-body);
+}
+
+.survey-ink-echo {
+  opacity: 0.34;
+  stroke-dasharray: var(--space-hair) var(--space-xs);
+  stroke-width: var(--hairline);
+}
+
+.survey-paper-fiber {
+  pointer-events: none;
 }
 
 .survey-coffee {

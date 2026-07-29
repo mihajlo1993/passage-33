@@ -23,7 +23,7 @@ export function MapScreen({ state }: { state: GameState }) {
       <div className="map-state-key" aria-label="Room state key">
         <span>
           <i className="map-state-key__swatch map-state-key__swatch--active" />
-          SEARCH INCOMPLETE
+          UNRESOLVED
         </span>
         <span>
           <i className="map-state-key__swatch map-state-key__swatch--clear" />
@@ -31,7 +31,7 @@ export function MapScreen({ state }: { state: GameState }) {
         </span>
         <span>
           <i className="map-state-key__swatch map-state-key__swatch--unseen" />
-          NOT ENTERED
+          UNENTERED
         </span>
       </div>
 

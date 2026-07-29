@@ -70,3 +70,26 @@ test("map interaction is event-driven, frame-capped, and locally cleaned up", ()
   assert.doesNotMatch(viewportSource, /fetch\(|XMLHttpRequest|WebSocket|EventSource/i);
   assert.doesNotMatch(viewportSource, /setInterval|setTimeout/);
 });
+
+test("the renderer consumes the tested model and canonical room vocabulary", () => {
+  assert.match(surveySource, /deriveSurveyMap/);
+  assert.match(surveySource, /map\.rooms\.map/);
+  assert.match(surveySource, /map\.connections\.map/);
+  assert.match(surveySource, /map\.furniture\.map/);
+  assert.match(surveySource, /map\.landmarks\.map/);
+  assert.doesNotMatch(surveySource, /ROOM_GEOMETRY/);
+  assert.match(surveySource, /room\.statusLabel/);
+  assert.doesNotMatch(
+    surveySource + screenSource,
+    /SEARCHING|UNSEEN|SEARCH INCOMPLETE|NOT ENTERED/,
+  );
+});
+
+test("survey typography and uneven ink stay on static design tokens", () => {
+  assert.doesNotMatch(mapCss, /font-size:\s*\d+(?:\.\d+)?px/);
+  assert.match(mapCss, /\.survey-title[\s\S]*?font-family:\s*var\(--font-award\)/);
+  assert.match(mapCss, /\.survey-ink-echo[\s\S]*?stroke-dasharray/);
+  assert.match(surveySource, /survey-ink-echo/);
+  assert.match(surveySource, /survey-paper-fiber/);
+  assert.doesNotMatch(mapCss, /animation\s*:/);
+});

@@ -1,6 +1,7 @@
 import type { ZoneId } from "../types";
 
 export type RoomStatus = "unresolved" | "cleared" | "unentered";
+export type RoomStatusLabel = "UNRESOLVED" | "CLEARED" | "UNENTERED";
 
 export interface MapPoint {
   x: number;
@@ -26,7 +27,7 @@ export interface RoomDefinition {
 
 export interface RoomState extends RoomDefinition {
   status: RoomStatus;
-  statusLabel: string;
+  statusLabel: RoomStatusLabel;
   /** A visual outline treatment only; it deliberately carries no unlock ID. */
   outlineLocked: boolean;
 }
@@ -64,6 +65,8 @@ export interface FurnitureRecord {
   label: string;
   footprint: readonly MapPoint[];
   labelPoint: MapPoint;
+  labelAnchor?: "start" | "middle" | "end";
+  detailSegments?: readonly MapSegment[];
   profile?: "notched" | "full-height-thin-left";
 }
 
@@ -74,6 +77,9 @@ export interface StartLandmark {
   label: string;
   placement: "far-end";
   point: MapPoint;
+  radius: number;
+  crossHalfSpan: number;
+  labelPoint: MapPoint;
 }
 
 export interface FrontDoorLandmark {
@@ -83,8 +89,11 @@ export interface FrontDoorLandmark {
   label: string;
   permanentlySealed: true;
   threshold: MapSegment;
-}
 
+  outline: readonly MapPoint[];
+  sealBars: readonly MapSegment[];
+  labelPoint: MapPoint;
+}
 export type MapLandmark = StartLandmark | FrontDoorLandmark;
 
 export interface MapViewBox {

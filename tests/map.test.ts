@@ -124,3 +124,20 @@ test("render-facing map data has no pin IDs, pin fields, or contact counts", () 
   assert.doesNotMatch(JSON.stringify(model), /lockedUntilPin|pinId|pinCount|remainingCount/i);
   assert.ok(model.rooms.every((room) => ["unresolved", "cleared", "unentered"].includes(room.status)));
 });
+
+test("the actual renderer model owns one bounded 900 by 600 drawing", () => {
+  const model = deriveSurveyMap(createDefaultGameState(1_000));
+  assert.deepEqual(model.viewBox, { x: 0, y: 0, width: 900, height: 600 });
+
+  const inside = (point: { x: number; y: number }) =>
+    point.x >= 0 && point.x <= 900 && point.y >= 0 && point.y <= 600;
+  assert.ok(model.rooms.every((room) => room.geometry.polygon.every(inside)));
+  assert.equal(model.connections.length, 5);
+  assert.equal(model.furniture.length, 8);
+  assert.equal(model.landmarks.length, 2);
+  assert.deepEqual(roomStatusLabels, {
+    unresolved: "UNRESOLVED",
+    cleared: "CLEARED",
+    unentered: "UNENTERED",
+  });
+});
