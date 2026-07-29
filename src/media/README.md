@@ -10,14 +10,16 @@ files under `public/media/` (the keyed creature lives under
 `public/ar/textures/`). Tape stills are always 640 x 360. The app icon source
 also regenerates the 192 px and 512 px manifest PNGs.
 
-The `sheet01.png` and `sheet02.png` sources are placed without cropping on
-white 1754 x 2480 A4 portrait canvases and emitted as
-`public/media/sheet01.{png,webp}` and `sheet02.{png,webp}`. `sheet02.png` is a
-required production source: the default repository generate/check run stops
-before changing generated output if it is missing, and also rejects a source
-that cannot produce the exact 1754 x 2480 PNG/WebP pair. Programmatic calls that use
-temporary source directories remain permissive for pipeline fixture tests;
-they can opt into the same gate with `requireSheet02: true`.
+The decorative `sheet01.png` and `sheet02.png` print sources are placed
+without cropping on white 1754 x 2480 A4 portrait canvases and emitted as
+`public/media/sheet01.{png,webp}` and `sheet02.{png,webp}`. A missing or
+undecodable prop sheet never blocks the production build: the repository
+generate/check run emits an uppercase `WARNING` naming exactly which sheet
+IDs will use placeholders, even in quiet mode, and exits zero unless a
+separate runtime-breaking check fails. The AR generator supplies a local
+sprite placeholder for each unavailable sheet. Programmatic calls using
+temporary source directories can enable the same warning with
+`warnPropSheetPlaceholders: true`.
 
 The installed canvas binary cannot encode WebP directly. The build script
 therefore invokes the existing local FFmpeg executable with deterministic

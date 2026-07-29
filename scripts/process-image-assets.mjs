@@ -17,6 +17,7 @@ const defaultSourceDirectory = path.join(repoRoot, "assets-incoming");
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const WEBP_RIFF = Buffer.from("RIFF", "ascii");
 const WEBP_SIGNATURE = Buffer.from("WEBP", "ascii");
+const PROP_SHEET_IDS = Object.freeze(["sheet01", "sheet02"]);
 
 const SOURCE_SPECS = Object.freeze([
   { id: "coldOpen", source: "cold-open.png", output: "media/cold-open", width: 1080, height: 1920 },
@@ -240,19 +241,12 @@ export async function processMediaAssets(options = {}) {
   const checkOnly = options.checkOnly === true;
   const quiet = options.quiet === true;
   const ffmpegCommand = options.ffmpegCommand ?? "ffmpeg";
-  const requireSheet02 = options.requireSheet02 === true
-    || (options.requireSheet02 !== false && sourceDirectory === defaultSourceDirectory);
+  const warnPropSheetPlaceholders = options.warnPropSheetPlaceholders === true
+    || (options.warnPropSheetPlaceholders !== false && sourceDirectory === defaultSourceDirectory);
   const records = {};
   const missing = [];
   const errors = [];
   let stale = false;
-
-  if (requireSheet02) {
-    invariant(
-      existsSync(path.join(sourceDirectory, "sheet02.png")),
-      `Required source is missing: ${path.join(sourceDirectory, "sheet02.png")}`,
-    );
-  }
 
   for (const spec of SOURCE_SPECS) {
     const incomingFile = path.join(sourceDirectory, spec.source);
@@ -334,16 +328,9 @@ export async function processMediaAssets(options = {}) {
     }
   }
 
-  if (requireSheet02) {
-    const sheet02 = records.sheet02;
-    invariant(sheet02?.available === true, "Required source sheet02.png could not be processed");
-    invariant(
-      sheet02.width === 1754
-        && sheet02.height === 2480
-        && sheet02.png !== null
-        && sheet02.webp !== null,
-      "Required Sheet 02 outputs must be a 1754 x 2480 PNG/WebP pair",
-    );
+  const placeholderSheets = PROP_SHEET_IDS.filter((sheetId) => records[sheetId]?.available !== true);
+  if (warnPropSheetPlaceholders && placeholderSheets.length > 0) {
+    console.warn(`[media-assets] WARNING: placeholder prop sheets: ${placeholderSheets.join(", ")}`);
   }
 
   const payload = {
@@ -367,6 +354,7 @@ export async function processMediaAssets(options = {}) {
     records: Object.freeze(records),
     missing: Object.freeze([...missing]),
     errors: Object.freeze([...errors]),
+    placeholderSheets: Object.freeze([...placeholderSheets]),
     generatedFile,
     stale,
   });

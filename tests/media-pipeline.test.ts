@@ -19,6 +19,7 @@ interface MediaProcessorModule {
     }>;
     readonly missing: readonly string[];
     readonly errors: readonly unknown[];
+    readonly placeholderSheets: readonly string[];
     readonly stale: boolean;
   }>;
 }
@@ -179,39 +180,46 @@ test("media pipeline is deterministic, non-fatal for missing sources, and emits 
   }
 });
 
-test("media pipeline requires Sheet 02 in strict production mode", async () => {
+test("media pipeline loudly warns but does not fail for decorative prop-sheet placeholders", async () => {
   const { processMediaAssets } = await mediaProcessor();
-  const root = mkdtempSync(path.join(tmpdir(), "bh7-media-required-sheet-"));
+  const root = mkdtempSync(path.join(tmpdir(), "bh7-media-placeholder-sheet-"));
   const incoming = path.join(root, "incoming");
   const publicDirectory = path.join(root, "public");
   const generatedFile = path.join(root, "generated", "media.generated.ts");
   mkdirSync(incoming, { recursive: true });
+  writeFileSync(path.join(incoming, "sheet01.png"), sourcePng(20, 20));
+  const warnings: string[] = [];
+  const originalWarn = console.warn;
+  console.warn = (...values: unknown[]) => warnings.push(values.map(String).join(" "));
 
   try {
-    await assert.rejects(
-      processMediaAssets({
-        sourceDirectory: incoming,
-        publicDirectory,
-        generatedFile,
-        legacyTrophyFile: false,
-        requireSheet02: true,
-        quiet: true,
-      }),
-      /Required source is missing:.*sheet02\.png/,
-    );
-    assert.equal(existsSync(generatedFile), false, "the strict gate runs before generated output changes");
+    const placeholderResult = await processMediaAssets({
+      sourceDirectory: incoming,
+      publicDirectory,
+      generatedFile,
+      legacyTrophyFile: false,
+      warnPropSheetPlaceholders: true,
+      quiet: true,
+    });
+
+    assert.equal(existsSync(generatedFile), true, "decorative sheets never block generated output");
+    assert.deepEqual(placeholderResult.placeholderSheets, ["sheet02"]);
+    assert.deepEqual(warnings, ["[media-assets] WARNING: placeholder prop sheets: sheet02"]);
 
     writeFileSync(path.join(incoming, "sheet02.png"), sourcePng(20, 20));
+    warnings.length = 0;
     const result = await processMediaAssets({
       sourceDirectory: incoming,
       publicDirectory,
       generatedFile,
       legacyTrophyFile: false,
-      requireSheet02: true,
+      warnPropSheetPlaceholders: true,
       quiet: true,
     });
 
     assert.equal(result.records.sheet02?.available, true);
+    assert.deepEqual(result.placeholderSheets, []);
+    assert.deepEqual(warnings, []);
     assert.deepEqual(
       await imageDimensions(path.join(publicDirectory, "media", "sheet02.png")),
       [1754, 2480],
@@ -221,6 +229,7 @@ test("media pipeline requires Sheet 02 in strict production mode", async () => {
       [1754, 2480],
     );
   } finally {
+    console.warn = originalWarn;
     rmSync(root, { recursive: true, force: true });
   }
 });
