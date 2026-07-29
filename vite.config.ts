@@ -41,6 +41,7 @@ const INCLUDED_GAME_ICONS = [
   "key-card",
   "pistol-gun",
   "secret-book",
+  "soda-can",
   "star-altar",
   "treasure-map",
   "valve",

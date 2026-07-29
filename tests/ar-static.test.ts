@@ -214,7 +214,7 @@ test("scanner hands eligible AR pins to /ar without resolving them as scans", ()
   );
 
   assert.ok(arGate >= 0);
-  assert.match(normalized.slice(arGate, preview), /pinId === 3.*pinId === 17.*pinId === 18/);
+  assert.match(normalized.slice(arGate, preview), /pin\?\.resolution === "ar"/);
   assert.ok(preview > arGate);
   assert.ok(navigation > preview);
   assert.ok(ordinaryScan > navigation);
@@ -252,7 +252,7 @@ test("pins 3 and 17 are immediate QR-selected 2D tap placements", () => {
   const imageScreen = compact(source("src/ar/ImageARScreen.tsx"));
   const arScreen = compact(source("src/ar/ARScreen.tsx"));
 
-  assert.match(arScreen, /pinId === 3 \? ["']sheet01["'] : ["']sheet02["']/);
+  assert.match(arScreen, /getPinById\(pinId\)\?\.arTarget \?\? ["']sheet01["']/);
   assert.match(imageScreen, /useSharedCameraVideo\(true\)/);
   assert.match(imageScreen, /onPointerDown=\{placeSprite\}/);
   assert.match(imageScreen, /AR_SHEET_ASSETS\[scene\.sheetId\]/);

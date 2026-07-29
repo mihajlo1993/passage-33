@@ -1,4 +1,5 @@
 import { layout, motion } from "../tokens";
+import { mapViewBox } from "./model";
 
 export interface MapViewportPoint {
   x: number;
@@ -29,21 +30,22 @@ export interface MapTapRegistration {
   nextTap: MapTap | null;
 }
 
-export const MAP_VIEWPORT_MIN_SCALE = 1;
 export const MAP_VIEWPORT_MAX_SCALE = 3;
 export const MAP_VIEWPORT_MAX_FPS = 30;
 export const MAP_VIEWPORT_FRAME_INTERVAL_MS = 1_000 / MAP_VIEWPORT_MAX_FPS;
-export const MAP_CONTENT_ASPECT_RATIO = 680 / 500;
+export const MAP_CONTENT_ASPECT_RATIO = mapViewBox.width / mapViewBox.height;
+export const MAP_DOUBLE_TAP_ZOOM_SCALE = 2;
 
 export const MAP_DOUBLE_TAP_WINDOW_MS = motion.durationMs.base;
 export const MAP_TAP_MAX_DURATION_MS = motion.durationMs.base;
 export const MAP_DOUBLE_TAP_DISTANCE_PX = layout.spacingPx.xxl;
 export const MAP_TAP_TRAVEL_PX = layout.spacingPx.lg;
 
+/** Neutral pre-measure transform; replaced by `initialMapViewport` once the frame is measured. */
 export const INITIAL_MAP_VIEWPORT: Readonly<MapViewportTransform> = Object.freeze({
   x: 0,
   y: 0,
-  scale: MAP_VIEWPORT_MIN_SCALE,
+  scale: 1,
 });
 
 function finiteOr(value: number, fallback: number): number {
@@ -99,37 +101,75 @@ export function coverMapViewport(size: MapViewportSize): MapViewportCoverLayout 
   };
 }
 
-export function clampMapViewportScale(scale: number): number {
-  return clamp(
-    finiteOr(scale, MAP_VIEWPORT_MIN_SCALE),
-    MAP_VIEWPORT_MIN_SCALE,
-    MAP_VIEWPORT_MAX_SCALE,
-  );
+/**
+ * The scale at which the entire survey fits inside the viewport at once,
+ * letterboxed on the shorter axis. This is the zoom floor: the whole flat
+ * is always reachable without panning.
+ */
+export function fitMapViewportScale(size: MapViewportSize): number {
+  const width = usableDimension(size.width);
+  const height = usableDimension(size.height);
+  if (width === 0 || height === 0) {
+    return 1;
+  }
+  const cover = coverMapViewport({ width, height });
+  return Math.min(width / cover.width, height / cover.height);
+}
+
+export function clampMapViewportScale(
+  scale: number,
+  size: MapViewportSize,
+): number {
+  const minimum = Math.min(fitMapViewportScale(size), MAP_VIEWPORT_MAX_SCALE);
+  return clamp(finiteOr(scale, minimum), minimum, MAP_VIEWPORT_MAX_SCALE);
+}
+
+function boundAxis(
+  translation: number,
+  viewportDimension: number,
+  contentDimension: number,
+  coverOffset: number,
+): number {
+  if (contentDimension <= viewportDimension) {
+    // Content is narrower than the viewport on this axis: keep it centred.
+    return clampTranslation(
+      (viewportDimension - contentDimension) / 2 - coverOffset,
+      Number.NEGATIVE_INFINITY,
+      Number.POSITIVE_INFINITY,
+    );
+  }
+  const minimum = viewportDimension - coverOffset - contentDimension;
+  const maximum = -coverOffset;
+  return clampTranslation(translation, minimum, maximum);
 }
 
 /**
- * Constrains a fixed-ratio, cover-sized survey. At scale 1 the cropped cover
- * overflow can still be panned; at larger scales neither edge can cross the
- * corresponding viewport edge.
+ * Constrains a fixed-ratio, cover-sized survey. Below cover scale the drawing
+ * letterboxes and stays centred; above it, neither drawing edge may cross the
+ * corresponding viewport edge, so every room is always reachable by panning.
  */
 export function boundMapViewport(
   transform: MapViewportTransform,
   size: MapViewportSize,
 ): MapViewportTransform {
-  const scale = clampMapViewportScale(transform.scale);
   const width = usableDimension(size.width);
   const height = usableDimension(size.height);
+  const scale = clampMapViewportScale(transform.scale, { width, height });
   const cover = coverMapViewport({ width, height });
-  const minimumX = width - cover.offsetX - cover.width * scale;
-  const maximumX = -cover.offsetX;
-  const minimumY = height - cover.offsetY - cover.height * scale;
-  const maximumY = -cover.offsetY;
 
   return {
-    x: clampTranslation(transform.x, minimumX, maximumX),
-    y: clampTranslation(transform.y, minimumY, maximumY),
+    x: boundAxis(transform.x, width, cover.width * scale, cover.offsetX),
+    y: boundAxis(transform.y, height, cover.height * scale, cover.offsetY),
     scale,
   };
+}
+
+/** The opening view: the whole flat visible at once, centred. */
+export function initialMapViewport(size: MapViewportSize): MapViewportTransform {
+  return boundMapViewport(
+    { x: 0, y: 0, scale: fitMapViewportScale(size) },
+    size,
+  );
 }
 
 export function panMapViewport(
@@ -156,7 +196,7 @@ export function zoomMapViewportAt(
 ): MapViewportTransform {
   const boundedStart = boundMapViewport(start, size);
   const cover = coverMapViewport(size);
-  const scale = clampMapViewportScale(nextScale);
+  const scale = clampMapViewportScale(nextScale, size);
   const ratio = scale / boundedStart.scale;
   const focalX = finiteOr(focalPoint.x, 0);
   const focalY = finiteOr(focalPoint.y, 0);
@@ -212,7 +252,7 @@ export function pinchMapViewport(
   const distanceRatio = usableStartDistance > 0
     ? usableCurrentDistance / usableStartDistance
     : 1;
-  const scale = clampMapViewportScale(boundedStart.scale * distanceRatio);
+  const scale = clampMapViewportScale(boundedStart.scale * distanceRatio, size);
   const scaleRatio = scale / boundedStart.scale;
   const startX = finiteOr(startCentroid.x, 0);
   const startY = finiteOr(startCentroid.y, 0);

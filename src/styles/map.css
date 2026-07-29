@@ -6,6 +6,9 @@ body:has(.map-screen),
   height: 100dvh;
   overflow: hidden;
   transform: none !important;
+  /* A live filter would make this the containing block for the fixed map
+     and force a full-screen composite on every pan frame. */
+  filter: none !important;
 }
 
 .map-screen {
@@ -65,9 +68,12 @@ body:has(.map-screen),
   z-index: 1;
   grid-area: 1 / 1;
   display: block;
-  width: max(100vw, 136dvh);
+
+  /* Cover sizing derived from the drawing's viewBox via --map-aspect
+     (injected from map/model.ts in main.tsx). Never hardcode the ratio. */
+  width: max(100vw, calc(100dvh * var(--map-aspect)));
   max-width: none;
-  height: max(100dvh, 73.5294118vw);
+  height: max(100dvh, calc(100vw / var(--map-aspect)));
   max-height: none;
   transform-origin: 0 0;
   user-select: none;

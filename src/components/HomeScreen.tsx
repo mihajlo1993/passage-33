@@ -1,7 +1,7 @@
 "use client";
 
 import { MEDIA_ASSETS } from "@/src/media";
-import { pins, TOTAL_PIN_COUNT } from "@/src/pins";
+import { pins, TOTAL_PIN_COUNT, RELIGHT_ACTION_PIN_ID } from "@/src/pins";
 import type { GameState } from "@/src/types";
 import { RelightAction } from "./RelightAction";
 
@@ -53,7 +53,7 @@ export function HomeScreen({ state, coldOpen, onBegin, onRelight, navigate }: Ho
     );
   }
 
-  if (nextPin?.id === 24 && currentZone === "kitchen") {
+  if (nextPin?.id === RELIGHT_ACTION_PIN_ID && currentZone === "kitchen") {
     return <RelightAction onSubmit={onRelight} />;
   }
 

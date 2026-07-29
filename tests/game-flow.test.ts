@@ -164,7 +164,7 @@ test("walking pins 1 through 28 completes the whole chain", () => {
   }
 
   assert.deepEqual(state.resolvedPins, pins.map((pin) => pin.id));
-  assert.equal(state.health, 45);
+  assert.equal(state.health, 25);
   assert.equal(state.trophyAt, 1_026, "the final presents must not move the trophy time");
   assert.equal(state.finishedAt, 1_028, "the game ends only when the second present opens");
   assert.equal(areFinalPresentsResolved(state.resolvedPins), true);
@@ -330,7 +330,7 @@ test("a resolved pin cannot grant or damage twice", () => {
 
   assertRefusal(result, state);
   assert.equal(result.reason, "already-resolved");
-  assert.equal(state.health, 85);
+  assert.equal(state.health, 80);
 });
 
 test("critical is strictly below 40 and first aid is consumed on use", () => {

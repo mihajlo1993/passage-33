@@ -11,6 +11,10 @@ export const ALPHA_DIAL_SYMBOLS = Object.freeze(
   ),
 );
 
+/**
+ * Default wheel counts only. The rendered wheel count always derives from the
+ * configured code's length so a code edit can never desynchronise the lock.
+ */
 export const DIAL_LENGTHS: Readonly<Record<DialLockKind, number>> = {
   numeric: 3,
   alpha: 5,
@@ -28,16 +32,20 @@ export function isValidDialCode(value: string, kind: DialLockKind): boolean {
   const normalised = normaliseDialCode(value);
   const symbols = symbolsForDial(kind);
   return (
-    normalised.length === DIAL_LENGTHS[kind] &&
+    normalised.length > 0 &&
     Array.from(normalised).every((symbol) => symbols.includes(symbol))
   );
 }
 
-export function createDialValue(kind: DialLockKind): readonly string[] {
+export function createDialValue(
+  kind: DialLockKind,
+  length = DIAL_LENGTHS[kind],
+): readonly string[] {
+  const count = Number.isInteger(length) && length > 0
+    ? length
+    : DIAL_LENGTHS[kind];
   const firstSymbol = symbolsForDial(kind)[0];
-  return Object.freeze(
-    Array.from({ length: DIAL_LENGTHS[kind] }, () => firstSymbol),
-  );
+  return Object.freeze(Array.from({ length: count }, () => firstSymbol));
 }
 
 export function rotateDialSymbol(

@@ -3,12 +3,9 @@
 import { useState } from "react";
 import { itemById } from "@/src/items";
 import { motion } from "@/src/tokens";
-import {
-  BALCONY_DIAL_WORD,
-  CABINET_DIAL_CODE,
-  getPinById,
-} from "@/src/pins";
+import { TAPE_PLAYBACK_PIN_ID, dialConfigByPin, getPinById } from "@/src/pins";
 import type { PinResolutionMethod } from "@/src/types";
+import { useVHS } from "@/src/fx";
 import { DialLockScreen } from "./DialLockScreen";
 import { FieldDeskTorch } from "./FieldDeskTorch";
 import type { PinResolutionResult } from "@/src/game";
@@ -20,17 +17,19 @@ import { ScannerView, type ScannerStatus } from "@/src/scanner";
 export interface ScanScreenProps {
   resolvePin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
   previewPin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
+  sufferSetback: () => number;
   flushPersistence: () => Promise<void>;
   navigate: (path: string) => void;
 }
 
-export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate }: ScanScreenProps) {
+export function ScanScreen({ resolvePin, previewPin, sufferSetback, flushPersistence, navigate }: ScanScreenProps) {
   const [result, setResult] = useState<PinResolutionResult | null>(null);
-  const [pendingDial, setPendingDial] = useState<8 | 16 | null>(null);
+  const [pendingDial, setPendingDial] = useState<number | null>(null);
   const [status, setStatus] = useState<ScannerStatus>("initializing");
   const [cameraError, setCameraError] = useState(false);
   const torch = useTorch();
   const audio = useAudio();
+  const vhs = useVHS();
 
   const presentAttempt = async (
     attempt: PinResolutionResult,
@@ -51,8 +50,11 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
   };
 
   const handleScan = async (pinId: number) => {
+    // Dispatch is driven entirely by the pin record; this screen carries no
+    // pin-id literals of its own.
     const pin = getPinById(pinId);
-    if (pinId === 12) {
+    if (pinId === TAPE_PLAYBACK_PIN_ID) {
+      // The recovered tape plays before it can teach anything.
       const preview = previewPin(pinId, "scan");
       if (!preview.ok) {
         await presentAttempt(preview, true);
@@ -61,7 +63,7 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
       navigate("/tape");
       return;
     }
-    if (pin?.resolution === "ar" && (pinId === 3 || pinId === 17 || pinId === 18)) {
+    if (pin?.resolution === "ar") {
       const preview = previewPin(pinId, "ar");
       if (!preview.ok) {
         await presentAttempt(preview, true);
@@ -71,7 +73,7 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
       return;
     }
 
-    if (pin?.resolution === "dial" && (pinId === 8 || pinId === 16)) {
+    if (pin?.resolution === "dial" && dialConfigByPin[pinId]) {
       const preview = previewPin(pinId, "dial");
       if (!preview.ok) {
         await presentAttempt(preview, true);
@@ -84,7 +86,7 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
     await presentAttempt(resolvePin(pinId, "scan"));
   };
 
-  const completeDial = async (pinId: 8 | 16) => {
+  const completeDial = async (pinId: number) => {
     setPendingDial(null);
     await presentAttempt(resolvePin(pinId, "dial"));
   };
@@ -110,25 +112,22 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
     setResult(null);
   };
 
-  if (pendingDial) {
-    const numeric = pendingDial === 8;
+  const dialConfig = pendingDial === null ? undefined : dialConfigByPin[pendingDial];
+  if (pendingDial !== null && dialConfig) {
     return (
       <DialLockScreen
-        kind={numeric ? "numeric" : "alpha"}
-        correctValue={numeric ? CABINET_DIAL_CODE : BALCONY_DIAL_WORD}
-        title={numeric ? "On-Screen Dial" : "Balcony Padlock"}
-        hostText={
-          numeric
-            ? "The cabinet kept only the square. The mirror introduced three figures. Turn the wheels here on the screen."
-            : "Five letters. The tape was almost embarrassingly clear. Spell what our previous guest became."
-        }
-        wrongText={
-          numeric
-            ? "Those are three numbers, certainly. They are not my three. Again, birthday girl."
-            : "A word, but not the one the balcony enjoys. The shackle is still listening."
-        }
+        kind={dialConfig.kind}
+        correctValue={dialConfig.value}
+        title={dialConfig.title}
+        hostText={dialConfig.hostText}
+        wrongText={dialConfig.wrongText}
         onSubmit={() => completeDial(pendingDial)}
         onCancel={() => setPendingDial(null)}
+        onWrongAttempt={() => {
+          // A wrong turn stings: the house notices, the tape degrades.
+          sufferSetback();
+          vhs.glitch(motion.eventMs.vhsDamageSpike);
+        }}
       />
     );
   }

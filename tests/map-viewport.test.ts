@@ -12,6 +12,8 @@ import {
   boundMapViewport,
   clampMapViewportScale,
   coverMapViewport,
+  fitMapViewportScale,
+  initialMapViewport,
   isMapTapGesture,
   isMapViewportFrameDue,
   panMapViewport,
@@ -19,7 +21,9 @@ import {
   registerMapTap,
   zoomMapViewportAt,
 } from "../src/map/viewport";
+import { mapViewBox } from "../src/map/model";
 
+// 272x200 matches the drawing's aspect exactly, so cover == viewport and fit == 1.
 const viewport = { width: 272, height: 200 };
 
 function approximately(actual: number, expected: number, epsilon = 0.000_001) {
@@ -27,10 +31,10 @@ function approximately(actual: number, expected: number, epsilon = 0.000_001) {
 }
 
 test("scale and translation stay inside the map viewport", () => {
-  assert.equal(clampMapViewportScale(-1), 1);
-  assert.equal(clampMapViewportScale(2), 2);
-  assert.equal(clampMapViewportScale(9), 3);
-  assert.equal(clampMapViewportScale(Number.NaN), 1);
+  assert.equal(clampMapViewportScale(-1, viewport), 1);
+  assert.equal(clampMapViewportScale(2, viewport), 2);
+  assert.equal(clampMapViewportScale(9, viewport), 3);
+  assert.equal(clampMapViewportScale(Number.NaN, viewport), 1);
 
   assert.deepEqual(
     boundMapViewport({ x: 90, y: -900, scale: 2 }, viewport),
@@ -93,11 +97,14 @@ test("pinch combines zoom and centroid pan, then clamps to the 1..3 range", () =
   assert.ok(clamped.y >= -400 && clamped.y <= 0);
 });
 
-test("390 by 844 uses a distortion-free cover plane with pannable crop and no letterbox", () => {
+test("the aspect ratio derives from the drawing, never a hand-copied constant", () => {
+  assert.equal(MAP_CONTENT_ASPECT_RATIO, mapViewBox.width / mapViewBox.height);
+});
+
+test("390 by 844 uses a distortion-free cover plane with pannable crop at scale 1", () => {
   const portrait = { width: 390, height: 844 };
   const cover = coverMapViewport(portrait);
-  assert.equal(MAP_CONTENT_ASPECT_RATIO, 680 / 500);
-  approximately(cover.width, 844 * (680 / 500));
+  approximately(cover.width, 844 * MAP_CONTENT_ASPECT_RATIO);
   assert.equal(cover.height, portrait.height);
   approximately(cover.width / cover.height, MAP_CONTENT_ASPECT_RATIO);
   assert.ok(cover.width >= portrait.width);
@@ -111,6 +118,39 @@ test("390 by 844 uses a distortion-free cover plane with pannable crop and no le
   approximately(rightEdge.x, -cover.offsetX);
   assert.equal(leftEdge.y, 0);
   assert.equal(rightEdge.y, 0);
+});
+
+test("every edge of the drawing is reachable on a phone: pan right reaches the bathroom wall", () => {
+  const portrait = { width: 390, height: 844 };
+  const cover = coverMapViewport(portrait);
+  // Pan hard right at scale 1: the drawing's right edge must land exactly on
+  // the viewport's right edge, i.e. the full 680-unit width is reachable.
+  const rightStop = boundMapViewport({ x: -10_000, y: 0, scale: 1 }, portrait);
+  const onScreenRightEdge = cover.offsetX + rightStop.x + cover.width;
+  approximately(onScreenRightEdge, portrait.width);
+});
+
+test("fit scale letterboxes the whole flat inside a portrait phone", () => {
+  const portrait = { width: 390, height: 844 };
+  const fit = fitMapViewportScale(portrait);
+  const cover = coverMapViewport(portrait);
+  assert.ok(fit < 1);
+  approximately(cover.width * fit, portrait.width);
+  assert.ok(cover.height * fit <= portrait.height);
+
+  const opening = initialMapViewport(portrait);
+  assert.equal(opening.scale, fit);
+  // The full drawing is on screen and centred.
+  approximately(cover.offsetX + opening.x, 0);
+  approximately(
+    cover.offsetY + opening.y,
+    (portrait.height - cover.height * fit) / 2,
+  );
+
+  // Below-fit scales are refused; panning at fit keeps the drawing centred.
+  assert.equal(clampMapViewportScale(0.01, portrait), fit);
+  const nudged = panMapViewport(opening, { x: 500, y: -500 }, portrait);
+  assert.deepEqual(nudged, opening);
 });
 
 test("tap classification rejects holds and drags", () => {

@@ -30,16 +30,16 @@ const LazyRoomARScreen = lazy(() =>
   }))
 );
 
-type ArPinId = 3 | 17 | 18;
-
 export interface ARScreenProps {
   readonly navigate: (path: string) => void;
 }
 
-function requestedArPin(): ArPinId | null {
+function requestedArPin(): number | null {
   if (typeof window === "undefined") return null;
   const value = Number(new URLSearchParams(window.location.search).get("pin"));
-  return value === 3 || value === 17 || value === 18 ? value : null;
+  // Any pin whose data declares an AR resolution is admissible; the pin
+  // record, not this route, is the source of truth.
+  return getPinById(value)?.resolution === "ar" ? value : null;
 }
 
 function ArLoadingPlate() {
@@ -90,7 +90,7 @@ export function ARScreen({ navigate }: ARScreenProps) {
     }
 
     reportOperatorContext(pinId, getPinById(pinId)?.zone ?? null);
-    const unsubscribe = pinId === 18
+    const unsubscribe = getPinById(pinId)?.scare === "roomMonster"
       ? subscribeToOperatorScareSkip(() => {
           if (resolve()) leave();
         })
@@ -139,11 +139,11 @@ export function ARScreen({ navigate }: ARScreenProps) {
         </p>
       )}
       <Suspense fallback={<ArLoadingPlate />}>
-        {pinId === 18 ? (
+        {getPinById(pinId)?.scare === "roomMonster" ? (
           <LazyRoomARScreen onResolved={resolve} onExit={leave} />
         ) : (
           <LazyImageARScreen
-            scene={getImageArScene(pinId === 3 ? "sheet01" : "sheet02")}
+            scene={getImageArScene(getPinById(pinId)?.arTarget ?? "sheet01")}
             onResolved={resolve}
             onExit={leave}
           />

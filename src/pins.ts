@@ -8,7 +8,47 @@ import type { ItemId, Pin } from './types';
 export const CABINET_DIAL_CODE = '731';
 
 export const BALCONY_DIAL_WORD = 'LOSER';
-export const NON_PRINTED_PIN_IDS = new Set([24]);
+
+export interface DialPinConfig {
+  readonly kind: 'numeric' | 'alpha';
+  readonly value: string;
+  readonly title: string;
+  readonly hostText: string;
+  readonly wrongText: string;
+}
+
+/**
+ * Lock configuration for every dial-resolved pin. Screens read this table;
+ * they never carry their own pin-id literals or copy.
+ */
+export const dialConfigByPin: Readonly<Partial<Record<number, DialPinConfig>>> = {
+  8: {
+    kind: 'numeric',
+    value: CABINET_DIAL_CODE,
+    title: 'On-Screen Dial',
+    hostText:
+      'The cabinet kept only the square. The mirror introduced three figures. Turn the wheels here on the screen.',
+    wrongText:
+      'Those are three numbers, certainly. They are not my three. Again, birthday girl.',
+  },
+  16: {
+    kind: 'alpha',
+    value: BALCONY_DIAL_WORD,
+    title: 'Balcony Padlock',
+    hostText:
+      'Five letters. The tape was almost embarrassingly clear. Spell what our previous guest became.',
+    wrongText:
+      'A word, but not the one the balcony enjoys. The shackle is still listening.',
+  },
+};
+
+/** The pin whose scan routes to the tape playback screen before resolving. */
+export const TAPE_PLAYBACK_PIN_ID = 12;
+
+/** The in-app relight action; it has no printed code. */
+export const RELIGHT_ACTION_PIN_ID = 24;
+
+export const NON_PRINTED_PIN_IDS = new Set([RELIGHT_ACTION_PIN_ID]);
 export const TROPHY_PIN_ID = 26;
 export const SEALED_PRESENT_PIN_ID = 28;
 export const FINAL_PRESENT_PIN_IDS = [27, SEALED_PRESENT_PIN_ID] as const;
@@ -122,7 +162,7 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'scare',
     scare: 'torchKill',
-    damage: 15,
+    damage: 20,
     bodyText:
       'Happy birthday. Lights out. I do adore the moment a room stops pretending to be empty. Hold still if you like; it will not make you safer. The last guest tried running. He made the corridor sound wonderfully alive. You can do better.',
   },
@@ -236,7 +276,7 @@ export const pins: readonly Pin[] = [
     kind: 'scare',
     scare: 'roomMonster',
     resolution: 'ar',
-    damage: 20,
+    damage: 30,
     bodyText:
       'Back inside already? Wonderful. You brought the pistol, exactly as I congratulated you for doing. The room has acquired another guest while you were out. Do try the obvious answer. He dislikes being ignored more than he dislikes being shot.',
   },
@@ -278,7 +318,7 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'scare',
     scare: 'closeQuarters',
-    damage: 20,
+    damage: 25,
     bodyText:
       'Did you feel that? Of course you did. Turn around, birthday girl. Quickly would be entertaining. Slowly would be brave. Either way, I have placed this guest close enough to admire your expression. The previous player never offered such a good view.',
   },

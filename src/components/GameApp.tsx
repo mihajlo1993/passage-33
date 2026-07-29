@@ -4,6 +4,7 @@ import {
   Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState,
 } from "react";
 import { Phase2IntegrationCoordinator, useGameStore } from "@/src/game";
+import { RELIGHT_ACTION_PIN_ID, TAPE_PLAYBACK_PIN_ID, getPinById } from "@/src/pins";
 import { useHaptics, useWakeLock } from "@/src/device";
 import { getVHSHealthProfile, useVHS } from "@/src/fx";
 import { motion } from "@/src/tokens";
@@ -225,7 +226,7 @@ export function GameApp() {
   }, [store.flushPersistence]);
 
   const startTapeVoice = useCallback(
-    () => coordinator.startVoiceForPin(12),
+    () => coordinator.startVoiceForPin(TAPE_PLAYBACK_PIN_ID),
     [coordinator],
   );
 
@@ -271,7 +272,9 @@ export function GameApp() {
 
   if (route === "/save") {
     const ticket = typeof window === "undefined" ? null : Number(sessionStorage.getItem("bh7-save-ticket"));
-    const valid = (store.lastSavePin === 2 || store.lastSavePin === 8) && ticket === store.lastSavePin;
+    const valid = store.lastSavePin !== null
+      && getPinById(store.lastSavePin)?.kind === "save"
+      && ticket === store.lastSavePin;
     return (
       <SaveScreen
         pinId={store.lastSavePin}
@@ -303,7 +306,7 @@ export function GameApp() {
             coldOpen={coldOpen}
             onBegin={begin}
             onRelight={() => {
-              const result = store.resolvePin(24, "action");
+              const result = store.resolvePin(RELIGHT_ACTION_PIN_ID, "action");
               if (!result.ok) throw new Error(result.reason);
             }}
             navigate={navigate}
@@ -316,6 +319,7 @@ export function GameApp() {
           <ScanScreen
             resolvePin={store.resolvePin}
             previewPin={store.previewPin}
+            sufferSetback={store.sufferSetback}
             flushPersistence={store.flushPersistence}
             navigate={navigate}
           />
@@ -355,7 +359,7 @@ export function GameApp() {
             health={store.health}
             operatorSkipToken={operatorRuntime.skipScareRevision}
             startVoice={startTapeVoice}
-            onComplete={() => store.resolvePin(12, "scan").ok}
+            onComplete={() => store.resolvePin(TAPE_PLAYBACK_PIN_ID, "scan").ok}
             onExit={() => navigate("/map")}
           />
         );

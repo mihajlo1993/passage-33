@@ -1,15 +1,19 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import type { CSSProperties, PointerEvent as ReactPointerEvent, PointerEventHandler } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, PointerEventHandler, RefObject } from "react";
 import {
   INITIAL_MAP_VIEWPORT,
+  MAP_DOUBLE_TAP_ZOOM_SCALE,
   boundMapViewport,
   distanceBetweenMapViewportPoints,
+  fitMapViewportScale,
+  initialMapViewport,
   isMapTapGesture,
   isMapViewportFrameDue,
   mapViewportTransformsEqual,
@@ -17,6 +21,7 @@ import {
   panMapViewport,
   pinchMapViewport,
   registerMapTap,
+  zoomMapViewportAt,
 } from "./viewport";
 import type {
   MapTap,
@@ -37,6 +42,7 @@ export interface MapViewportController {
   handlers: MapViewportHandlers;
   style: CSSProperties;
   state: MapViewportTransform;
+  frameRef: RefObject<HTMLDivElement | null>;
   reset: () => void;
 }
 
@@ -91,6 +97,8 @@ function copyInitialTransform(): MapViewportTransform {
 
 export function useMapViewport(): MapViewportController {
   const [state, setState] = useState<MapViewportTransform>(copyInitialTransform);
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const sizeRef = useRef<MapViewportSize | null>(null);
   const desiredTransformRef = useRef<MapViewportTransform>(copyInitialTransform());
   const renderedTransformRef = useRef<MapViewportTransform>(copyInitialTransform());
   const pointersRef = useRef(new Map<number, MapViewportPoint>());
@@ -98,19 +106,19 @@ export function useMapViewport(): MapViewportController {
   const gestureRef = useRef<Gesture | null>(null);
   const tapCandidateRef = useRef<TapCandidate | null>(null);
   const lastTapRef = useRef<MapTap | null>(null);
-  const frameRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
   const lastFrameAtRef = useRef<number | null>(null);
   const dirtyRef = useRef(false);
   const mountedRef = useRef(true);
 
   const flushFrame = useCallback(function flushMapViewportFrame(timestampMs: number) {
-    frameRef.current = null;
+    rafRef.current = null;
     if (!mountedRef.current || !dirtyRef.current) {
       return;
     }
 
     if (!isMapViewportFrameDue(timestampMs, lastFrameAtRef.current)) {
-      frameRef.current = requestAnimationFrame(flushMapViewportFrame);
+      rafRef.current = requestAnimationFrame(flushMapViewportFrame);
       return;
     }
 
@@ -126,22 +134,66 @@ export function useMapViewport(): MapViewportController {
 
     if (mapViewportTransformsEqual(next, renderedTransformRef.current)) {
       dirtyRef.current = false;
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
       }
       return;
     }
 
     dirtyRef.current = true;
-    if (frameRef.current === null) {
-      frameRef.current = requestAnimationFrame(flushFrame);
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(flushFrame);
     }
   }, [flushFrame]);
 
+  const applyTransformImmediately = useCallback((next: MapViewportTransform) => {
+    desiredTransformRef.current = next;
+    renderedTransformRef.current = next;
+    dirtyRef.current = false;
+    if (mountedRef.current) {
+      setState(next);
+    }
+  }, []);
+
   const reset = useCallback(() => {
-    queueTransform(copyInitialTransform());
+    const size = sizeRef.current;
+    queueTransform(size ? initialMapViewport(size) : copyInitialTransform());
   }, [queueTransform]);
+
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) {
+      return;
+    }
+
+    const measure = () => {
+      const rect = frame.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        return;
+      }
+      const size = { width: rect.width, height: rect.height };
+      const previous = sizeRef.current;
+      sizeRef.current = size;
+      if (previous === null) {
+        // First measure before paint: open on the whole flat.
+        applyTransformImmediately(initialMapViewport(size));
+        return;
+      }
+      if (previous.width !== size.width || previous.height !== size.height) {
+        // URL bar collapse or rotation mid-session: re-clamp, never jump.
+        queueTransform(boundMapViewport(desiredTransformRef.current, size));
+      }
+    };
+
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [applyTransformImmediately, queueTransform]);
 
   const beginGesture = useCallback(() => {
     const pointers = [...pointersRef.current.entries()];
@@ -173,6 +225,7 @@ export function useMapViewport(): MapViewportController {
 
   const onPointerDown = useCallback<PointerEventHandler<HTMLDivElement>>((event) => {
     const measured = measurePointer(event);
+    sizeRef.current = measured.size;
     pointersRef.current.set(event.pointerId, measured.point);
     capturesRef.current.set(event.pointerId, event.currentTarget);
     try {
@@ -201,6 +254,7 @@ export function useMapViewport(): MapViewportController {
     }
 
     const measured = measurePointer(event);
+    sizeRef.current = measured.size;
     pointersRef.current.set(event.pointerId, measured.point);
     const tapCandidate = tapCandidateRef.current;
     if (tapCandidate?.pointerId === event.pointerId) {
@@ -286,10 +340,24 @@ export function useMapViewport(): MapViewportController {
       const registration = registerMapTap(lastTapRef.current, completedTap);
       lastTapRef.current = registration.nextTap;
       if (registration.isDoubleTap) {
-        reset();
+        const size = sizeRef.current ?? measured.size;
+        const current = desiredTransformRef.current;
+        const fit = fitMapViewportScale(size);
+        if (current.scale > fit * 1.05) {
+          // Zoomed in: double-tap returns to the whole flat.
+          queueTransform(initialMapViewport(size));
+        } else {
+          // At fit: double-tap dives into the tapped spot.
+          queueTransform(zoomMapViewportAt(
+            current,
+            MAP_DOUBLE_TAP_ZOOM_SCALE,
+            completedTap.point,
+            size,
+          ));
+        }
       }
     }
-  }, [beginGesture, reset]);
+  }, [beginGesture, queueTransform]);
 
   const onPointerUp = useCallback<PointerEventHandler<HTMLDivElement>>((event) => {
     onPointerMove(event);
@@ -309,9 +377,9 @@ export function useMapViewport(): MapViewportController {
     return () => {
       mountedRef.current = false;
       dirtyRef.current = false;
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
       }
       for (const [pointerId, target] of capturesRef.current) {
         try {
@@ -350,5 +418,5 @@ export function useMapViewport(): MapViewportController {
     transformOrigin: "0 0",
   }), [state]);
 
-  return { handlers, style, state, reset };
+  return { handlers, style, state, frameRef, reset };
 }

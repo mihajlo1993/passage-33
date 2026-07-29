@@ -49,7 +49,7 @@ test("build order keys the incoming creature and precaches WebP without general 
 
 test("pin 12 is previewed and routed to tape without resolving on scan", () => {
   const scanner = readFileSync("src/components/ScanScreen.tsx", "utf8");
-  const start = scanner.indexOf("if (pinId === 12)");
+  const start = scanner.indexOf("if (pinId === TAPE_PLAYBACK_PIN_ID)");
   const end = scanner.indexOf("if (pin?.resolution", start);
   assert.ok(start >= 0 && end > start);
   const branch = scanner.slice(start, end);
@@ -62,7 +62,7 @@ test("app shell owns the tape route and resolves pin 12 only after playback", ()
   const app = readFileSync("src/components/GameApp.tsx", "utf8");
   assert.match(app, /"\/tape"/);
   assert.match(app, /TapePlaybackScreen/);
-  assert.match(app, /resolvePin\(12, "scan"\)/);
+  assert.match(app, /resolvePin\(TAPE_PLAYBACK_PIN_ID, "scan"\)/);
   assert.match(app, /navigate\("\/map"\)/);
   assert.match(app, /route === "\/tape"/);
 });

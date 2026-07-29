@@ -301,6 +301,15 @@ export function attemptResolvePin(
   };
 }
 
+export const SETBACK_DAMAGE = 5;
+
+/** A failed physical attempt stings; it never blocks progress. */
+export function applySetback(state: GameState, amount = SETBACK_DAMAGE): GameState {
+  const damage = Math.max(0, Math.trunc(amount));
+  if (damage === 0) return state;
+  return { ...state, health: Math.max(0, Math.min(100, state.health - damage)) };
+}
+
 /** Restore health completely and consume exactly one first-aid item. */
 export function attemptUseFirstAid(state: GameState): FirstAidUseResult {
   const firstAidIndex = state.inventory.indexOf("firstAid");

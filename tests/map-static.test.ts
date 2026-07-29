@@ -45,7 +45,9 @@ test("/map is a chrome-free full-bleed viewport with no scroll surface", () => {
   assert.match(appSource, /if \(route === "\/map"\) return <MapScreen state=\{state\} \/>;/);
   assert.doesNotMatch(screenSource, /className="screen|screen-heading|<header|<h1|map-gesture-note|map-state-key/);
   assert.equal((screenSource.match(/<SurveyMap\b/g) ?? []).length, 1);
-  assert.match(surveySource, /preserveAspectRatio="xMidYMid meet"/);
+  // `slice` crops any box/viewBox mismatch instead of silently shrinking the
+  // drawing inside its own element, which is what clipped the bathroom.
+  assert.match(surveySource, /preserveAspectRatio="xMidYMid slice"/);
   assert.match(
     mapCss,
     /\.map-screen\s*\{[\s\S]*?position:\s*fixed[\s\S]*?inset:\s*0[\s\S]*?width:\s*100vw[\s\S]*?height:\s*100dvh[\s\S]*?padding:\s*0[\s\S]*?overflow:\s*hidden/,
@@ -54,11 +56,14 @@ test("/map is a chrome-free full-bleed viewport with no scroll surface", () => {
     mapCss,
     /\.survey-frame\s*\{[\s\S]*?display:\s*grid[\s\S]*?width:\s*100vw[\s\S]*?height:\s*100dvh[\s\S]*?overflow:\s*hidden[\s\S]*?border:\s*0[\s\S]*?border-radius:\s*0/,
   );
-  assert.match(mapCss, /\.survey-map\s*\{[\s\S]*?width:\s*max\(100vw, 136dvh\)/);
-  assert.match(mapCss, /\.survey-map\s*\{[\s\S]*?height:\s*max\(100dvh, 73\.5294118vw\)/);
+  // The cover ratio must come from the single injected token, never a
+  // hand-copied literal (the 136dvh/73.5294118vw pair caused the clipping).
+  assert.match(mapCss, /\.survey-map\s*\{[\s\S]*?width:\s*max\(100vw, calc\(100dvh \* var\(--map-aspect\)\)\)/);
+  assert.match(mapCss, /\.survey-map\s*\{[\s\S]*?height:\s*max\(100dvh, calc\(100vw \/ var\(--map-aspect\)\)\)/);
+  assert.doesNotMatch(mapCss, /136dvh|73\.52/);
   assert.match(
     mapCss,
-    /\.vhs-stage:has\(> \.map-screen\)\s*\{[\s\S]*?transform:\s*none !important/,
+    /\.vhs-stage:has\(> \.map-screen\)\s*\{[\s\S]*?transform:\s*none !important[\s\S]*?filter:\s*none !important/,
   );
   assert.doesNotMatch(mapCss, /aspect-ratio:\s*3\s*\/\s*2/);
   assert.doesNotMatch(mapCss, /overflow:\s*(?:auto|scroll)/);

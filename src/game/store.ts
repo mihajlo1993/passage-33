@@ -4,6 +4,7 @@ import { create } from "zustand";
 
 import type { GameState, HostVoiceId, PinResolutionMethod } from "../types";
 import {
+  applySetback,
   attemptResolvePin,
   attemptUseFirstAid,
   createDefaultGameState,
@@ -27,6 +28,7 @@ export interface GameStore extends GameState {
   previewPin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
   claimVoice: (id: HostVoiceId) => boolean;
   useFirstAid: () => FirstAidUseResult;
+  sufferSetback: (amount?: number) => number;
   resetGame: (startedAt?: number) => GameState;
   replaceStateFromOperator: (state: GameState) => GameState;
   flushPersistence: () => Promise<void>;
@@ -168,6 +170,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       });
     }
     return result;
+  },
+
+  sufferSetback: (amount) => {
+    const next = applySetback(selectGameState(get()), amount);
+    set({
+      ...next,
+      critical: isCritical(next.health),
+    });
+    return next.health;
   },
 
   resetGame: (startedAt = Date.now()) => {

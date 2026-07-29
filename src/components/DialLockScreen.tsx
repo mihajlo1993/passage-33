@@ -5,8 +5,8 @@ import {
   createDialValue,
   dialCodeMatches,
   dialValue,
-  DIAL_LENGTHS,
   isValidDialCode,
+  normaliseDialCode,
   rotateDialAt,
   symbolsForDial,
   type DialDirection,
@@ -25,6 +25,7 @@ export interface DialLockScreenProps {
   cancelLabel?: string;
   onSubmit: (value: string) => void | Promise<void>;
   onCancel: () => void;
+  onWrongAttempt?: (attempts: number) => void;
 }
 
 const DEFAULT_HOST_TEXT =
@@ -43,11 +44,14 @@ export function DialLockScreen({
   cancelLabel = "STEP AWAY",
   onSubmit,
   onCancel,
+  onWrongAttempt,
 }: DialLockScreenProps) {
   const audio = useAudio();
   const symbols = useMemo(() => symbolsForDial(kind), [kind]);
+  // Wheel count derives from the configured code so an edited code can never
+  // leave the lock physically unopenable.
   const [wheels, setWheels] = useState<readonly string[]>(() =>
-    createDialValue(kind),
+    createDialValue(kind, normaliseDialCode(correctValue).length),
   );
   const [attempts, setAttempts] = useState(0);
   const [feedback, setFeedback] = useState(hostText);
@@ -69,8 +73,10 @@ export function DialLockScreen({
     const value = dialValue(wheels);
     if (!dialCodeMatches(value, correctValue)) {
       void audio.play(phase2DialAudioCue(false));
-      setAttempts((current) => current + 1);
+      const nextAttempts = attempts + 1;
+      setAttempts(nextAttempts);
       setFeedback(wrongText);
+      onWrongAttempt?.(nextAttempts);
       return;
     }
 
@@ -103,7 +109,7 @@ export function DialLockScreen({
           <div
             className="padlock__wheels"
             role="group"
-            aria-label={`${DIAL_LENGTHS[kind]} position combination`}
+            aria-label={`${wheels.length} position combination`}
           >
             {wheels.map((symbol, position) => (
               <div className="dial-wheel" key={position}>
@@ -142,8 +148,8 @@ export function DialLockScreen({
 
       {!setupIsValid && (
         <p className="system-warning" role="alert">
-          LOCK SETUP FAULT. EXPECTED A {DIAL_LENGTHS[kind]} CHARACTER{" "}
-          {kind === "numeric" ? "NUMBER" : "WORD"}.
+          LOCK SETUP FAULT. EXPECTED A{" "}
+          {kind === "numeric" ? "NUMBER" : "WORD"} USING ONLY DIAL SYMBOLS.
         </p>
       )}
 

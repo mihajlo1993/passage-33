@@ -11,6 +11,7 @@ import { AudioProvider } from "./audio/AudioProvider";
 import { GameApp } from "./components/GameApp";
 import { VHSLayer } from "./fx";
 import { OperatorPanel } from "./operator";
+import { MAP_CONTENT_ASPECT_RATIO } from "./map/viewport";
 import { colours, effects, layout, motion, typography } from "./tokens";
 import "./styles.css";
 
@@ -84,6 +85,7 @@ const cssTokens: Record<string, string> = {
   "--icon-body": layout.iconSizePx.body + "px",
   "--icon-large": layout.iconSizePx.large + "px",
   "--icon-examine": layout.iconSizePx.examine + "px",
+  "--map-aspect": String(MAP_CONTENT_ASPECT_RATIO),
 };
 
 Object.entries(cssTokens).forEach(([name, value]) => root.style.setProperty(name, value));

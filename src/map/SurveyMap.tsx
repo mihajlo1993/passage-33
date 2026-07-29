@@ -83,7 +83,7 @@ export function SurveyMap({ state }: { state: GameState }) {
   const map = deriveSurveyMap(state);
   const balconyOutlineOnly =
     map.rooms.find((room) => room.id === "balcony")?.outlineLocked ?? true;
-  const { handlers, reset, style } = useMapViewport();
+  const { handlers, frameRef, style } = useMapViewport();
   const viewBox = [
     map.viewBox.x,
     map.viewBox.y,
@@ -93,16 +93,16 @@ export function SurveyMap({ state }: { state: GameState }) {
 
   return (
     <div
+      ref={frameRef}
       className="survey-frame"
       aria-label="Hand-drafted survey map of the flat"
-      onDoubleClick={reset}
       {...handlers}
     >
       <svg
         className="survey-map"
         style={style}
         viewBox={viewBox}
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio="xMidYMid slice"
         role="img"
         aria-labelledby="survey-map-title survey-map-description"
       >

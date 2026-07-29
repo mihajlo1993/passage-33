@@ -241,8 +241,8 @@ test("Phase 2 coordinator walks every pin with state-driven effect spies", () =>
     [2, 8],
   );
 
-  assert.deepEqual(trace.glitches.map(({ pin }) => pin), [9, 18, 22]);
-  assert.deepEqual(trace.contacts, [9, 18, 22]);
+  assert.deepEqual(trace.glitches.map(({ pin }) => pin), [9, 18, 22, 23]);
+  assert.deepEqual(trace.contacts, [9, 18, 22, 23]);
   assert.deepEqual(trace.stutters, [9]);
   assert.deepEqual(trace.torch, [
     { pin: 15, value: "on" },
@@ -269,8 +269,8 @@ test("Phase 2 coordinator walks every pin with state-driven effect spies", () =>
   assert.deepEqual(trace.bedTension, [0, 0.5, 0.75, 1, 0.75]);
   assert.deepEqual(trace.timecode, [null, null, "REC --:--:--", "REC --:--:--", "REC --:--:--"]);
   assert.equal(trace.drops.length, 1);
-  assert.deepEqual(trace.audioHeartbeat, [true, false]);
-  assert.deepEqual(trace.hapticHeartbeat, [true, false]);
+  assert.deepEqual(trace.audioHeartbeat, [false, true, false]);
+  assert.deepEqual(trace.hapticHeartbeat, [false, true, false]);
 
   coordinator.stopSession();
   assert.deepEqual(trace.wake, ["acquire", "release"]);
@@ -452,7 +452,7 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   assert.match(mapModel, /const cleared = new Set\(state\.clearedZones\)/);
   assert.match(mapModel, /state\.resolvedPins\.includes\(BALCONY_UNLOCK_PIN\)/);
 
-  assert.match(scanner, /pinId === 3 \|\| pinId === 17 \|\| pinId === 18/);
+  assert.match(scanner, /pin\?\.resolution === "ar"/);
   assert.match(scanner, /navigate\("\/ar\?pin=" \+ String\(pinId\)\)/);
   assert.match(pinSource, /id: 18,[\s\S]*requires: \[itemIds\.pistol\][\s\S]*resolution: 'ar'/);
   assert.match(room, /shotFiredRef\.current = true;[\s\S]*onResolved\(\)/);

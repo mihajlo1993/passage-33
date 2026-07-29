@@ -31,7 +31,7 @@ test("operator resolution bypasses act, item, prerequisite, and mechanism gates"
   const roomScare = resolvePinForOperator(initial, 18, 2_000);
 
   assert.deepEqual(roomScare.resolvedPins, [18]);
-  assert.equal(roomScare.health, 80);
+  assert.equal(roomScare.health, 70);
   assert.equal(roomScare.act, 1);
 
   const cabinet = resolvePinForOperator(roomScare, 8, 2_100);

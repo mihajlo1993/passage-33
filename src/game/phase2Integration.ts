@@ -1,14 +1,21 @@
 import type { VoicePlaybackHandle } from "../audio/types";
 import { getVHSHealthProfile, type VHSHealthProfile } from "../fx";
 import { itemIds } from "../items";
-import { getPinById } from "../pins";
+import { getPinById, pins } from "../pins";
 import { motion } from "../tokens";
 import type { GameState, HostVoiceId, Pin, ZoneId } from "../types";
 import type { PinResolutionResult } from "./engine";
 
-export const PHASE2_SCARE_PIN_IDS = [9, 18, 22] as const;
-export const IMAGE_AR_PIN_IDS = [3, 17] as const;
-export const ROOM_AR_PIN_ID = 18;
+// Derived from the pin data so an edited chapter graph can never drift from
+// the effect wiring.
+export const PHASE2_SCARE_PIN_IDS: readonly number[] = pins
+  .filter((pin) => pin.kind === "scare")
+  .map((pin) => pin.id);
+export const IMAGE_AR_PIN_IDS: readonly number[] = pins
+  .filter((pin) => pin.resolution === "ar" && pin.scare !== "roomMonster")
+  .map((pin) => pin.id);
+export const ROOM_AR_PIN_ID = pins
+  .find((pin) => pin.scare === "roomMonster")?.id ?? -1;
 export const FIELD_DESK_PIN_ID = 15;
 
 export type Phase2ArRoute = "image" | "room" | null;
