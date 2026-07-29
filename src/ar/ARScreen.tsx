@@ -4,12 +4,19 @@ import {
   Suspense,
   lazy,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 
 import { useGameStore } from "../game";
+import { getPinById } from "../pins";
+import {
+  reportOperatorArInitialization,
+  reportOperatorContext,
+  subscribeToOperatorScareSkip,
+} from "../operator/runtime";
 import { getImageArScene } from "./config";
 
 const LazyImageARScreen = lazy(() =>
@@ -74,6 +81,26 @@ export function ARScreen({ navigate }: ARScreenProps) {
   }, [flushPersistence, pinId, resolvePin]);
 
   const leave = useCallback(() => navigate("/"), [navigate]);
+
+  useEffect(() => {
+    if (pinId === null || admission === null || !admission.ok) {
+      reportOperatorArInitialization("error");
+      reportOperatorContext(null, null);
+      return;
+    }
+
+    reportOperatorContext(pinId, getPinById(pinId)?.zone ?? null);
+    const unsubscribe = pinId === 18
+      ? subscribeToOperatorScareSkip(() => {
+          if (resolve()) leave();
+        })
+      : () => undefined;
+
+    return () => {
+      unsubscribe();
+      reportOperatorContext(null, null);
+    };
+  }, [admission, leave, pinId, resolve]);
 
   if (pinId === null || admission === null) {
     return (

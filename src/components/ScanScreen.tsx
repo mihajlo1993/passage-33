@@ -12,7 +12,9 @@ import type { PinResolutionMethod } from "@/src/types";
 import { DialLockScreen } from "./DialLockScreen";
 import { FieldDeskTorch } from "./FieldDeskTorch";
 import type { PinResolutionResult } from "@/src/game";
-import { contact, found, stutter, useTorch } from "@/src/device";
+import { phase2AudioCuesForResolution } from "@/src/game/phase2Integration";
+import { useAudio } from "@/src/audio/useAudio";
+import { useTorch } from "@/src/device";
 import { ScannerView, type ScannerStatus } from "@/src/scanner";
 
 export interface ScanScreenProps {
@@ -28,28 +30,41 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
   const [status, setStatus] = useState<ScannerStatus>("initializing");
   const [cameraError, setCameraError] = useState(false);
   const torch = useTorch();
+  const audio = useAudio();
 
-  const presentAttempt = async (attempt: PinResolutionResult) => {
+  const presentAttempt = async (
+    attempt: PinResolutionResult,
+    locallyAudible = false,
+  ) => {
     setResult(attempt);
+    if (locallyAudible) {
+      for (const cue of phase2AudioCuesForResolution(attempt)) {
+        void audio.play(cue);
+      }
+    }
     if (!attempt.ok) {
-      stutter();
       return;
     }
-
-    found();
-    if (attempt.pin.scare) stutter();
     if (attempt.pin.scare === "torchKill") {
       await torch.kill(motion.eventMs.torchKill);
     }
   };
 
   const handleScan = async (pinId: number) => {
-    contact();
     const pin = getPinById(pinId);
+    if (pinId === 12) {
+      const preview = previewPin(pinId, "scan");
+      if (!preview.ok) {
+        await presentAttempt(preview, true);
+        return;
+      }
+      navigate("/tape");
+      return;
+    }
     if (pin?.resolution === "ar" && (pinId === 3 || pinId === 17 || pinId === 18)) {
       const preview = previewPin(pinId, "ar");
       if (!preview.ok) {
-        await presentAttempt(preview);
+        await presentAttempt(preview, true);
         return;
       }
       navigate("/ar?pin=" + String(pinId));
@@ -59,7 +74,7 @@ export function ScanScreen({ resolvePin, previewPin, flushPersistence, navigate 
     if (pin?.resolution === "dial" && (pinId === 8 || pinId === 16)) {
       const preview = previewPin(pinId, "dial");
       if (!preview.ok) {
-        await presentAttempt(preview);
+        await presentAttempt(preview, true);
         return;
       }
       setPendingDial(pinId);

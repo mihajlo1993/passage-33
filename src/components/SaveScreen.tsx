@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "@/src/tokens";
+import { useAudio } from "@/src/audio/useAudio";
+import { SAVE_WRITTEN_AUDIO_CUE } from "@/src/game/phase2Integration";
 
 export interface SaveScreenProps {
   pinId: number | null;
@@ -12,14 +14,23 @@ export interface SaveScreenProps {
 
 export function SaveScreen({ pinId, valid, onCommit, navigate }: SaveScreenProps) {
   const [complete, setComplete] = useState(false);
+  const audio = useAudio();
+  const committedPin = useRef<number | null>(null);
 
   useEffect(() => {
     if (!valid) return;
     setComplete(false);
-    void onCommit();
+    if (pinId !== null && committedPin.current !== pinId) {
+      committedPin.current = pinId;
+      void onCommit()
+        .then(() => audio.play(SAVE_WRITTEN_AUDIO_CUE))
+        .catch(() => {
+          committedPin.current = null;
+        });
+    }
     const timer = window.setTimeout(() => setComplete(true), motion.eventMs.saveTheatre);
     return () => window.clearTimeout(timer);
-  }, [onCommit, pinId, valid]);
+  }, [audio, onCommit, pinId, valid]);
 
   if (!valid) {
     return (

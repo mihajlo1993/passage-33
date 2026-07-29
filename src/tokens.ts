@@ -68,6 +68,14 @@ export const motion = {
     arHit: 180,
     arCollapseLead: 700,
     arCollapseDuration: 2400,
+    operatorLongPress: 3000,
+    operatorSequenceWindow: 2000,
+  },
+  tape: {
+    stillDurationsMs: [4800, 5200, 4600, 5000, 5400, 4800, 6500],
+    blackoutMs: 1200,
+    timecodeTickMs: 100,
+    headSwitchMs: 180,
   },
   easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
 } as const;
@@ -109,6 +117,10 @@ export const effects = {
     roomTransferYPercent: 72,
     herbFallbackLiftPercent: -8,
     screenShakePx: 8,
+  },
+  tape: {
+    forcedVhsIntensity: 0.9,
+    timecodeFps: 30,
   },
 } as const;
 

@@ -1,0 +1,38 @@
+.cold-open__media {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.cold-open__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cold-open[data-has-cover="true"] {
+  justify-content: flex-end;
+  gap: var(--space-md);
+}
+
+.cold-open[data-has-cover="true"] > :not(.cold-open__media) {
+  position: relative;
+  z-index: 1;
+}
+
+.cold-open[data-has-cover="true"] .cold-open__copy {
+  gap: var(--space-sm);
+  margin-top: auto;
+}
+
+.trophy-image {
+  aspect-ratio: 16 / 9;
+}
+
+.trophy-image picture,
+.trophy-image picture img {
+  width: 100%;
+  height: 100%;
+}

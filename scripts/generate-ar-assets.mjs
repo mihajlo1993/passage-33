@@ -22,6 +22,7 @@ const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultSourceDirectory = path.join(repoRoot, "src", "ar", "assets", "source");
+const defaultIncomingDirectory = path.join(repoRoot, "assets-incoming");
 const defaultOutputDirectory = path.join(repoRoot, "src", "ar", "generated");
 
 function invariant(condition, message) {
@@ -61,6 +62,26 @@ function canvasFromImage(image, width, height) {
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
   context.drawImage(image, 0, 0, width, height);
+  return canvas;
+}
+
+function canvasContainingImageOnBlack(image, width, height) {
+  const canvas = createCanvas(width, height);
+  const context = canvas.getContext("2d");
+  context.fillStyle = "rgb(0, 0, 0)";
+  context.fillRect(0, 0, width, height);
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  const scale = Math.min(width / image.width, height / image.height);
+  const drawWidth = image.width * scale;
+  const drawHeight = image.height * scale;
+  context.drawImage(
+    image,
+    (width - drawWidth) / 2,
+    (height - drawHeight) / 2,
+    drawWidth,
+    drawHeight,
+  );
   return canvas;
 }
 
@@ -302,6 +323,19 @@ async function loadSourcePng(file, label, width, height) {
   return image;
 }
 
+async function loadIncomingCreaturePng(file, label) {
+  const bytes = readFileSync(file);
+  assertPng(bytes, label);
+  let image;
+  try {
+    image = await loadImage(bytes);
+  } catch (error) {
+    throw new Error(`[ar-assets] ${label} could not be decoded: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  invariant(image.width > 0 && image.height > 0, `${label} has invalid dimensions`);
+  return image;
+}
+
 async function buildSheetAsset(sourceDirectory, id) {
   const paperName = `${id}.png`;
   const maskName = `${id}-mask.png`;
@@ -417,17 +451,27 @@ function keyBlackToAlpha(source, label) {
   return keyed;
 }
 
-async function buildCreatureAsset(sourceDirectory) {
-  const sourceFileName = "monster-source.png";
-  const sourceFile = path.join(sourceDirectory, sourceFileName);
+async function buildCreatureAsset(sourceDirectory, incomingDirectory) {
+  const incomingFileName = "creature.png";
+  const incomingFile = incomingDirectory
+    ? path.join(incomingDirectory, incomingFileName)
+    : null;
+  const useIncoming = incomingFile !== null && existsSync(incomingFile);
+  const sourceFileName = useIncoming ? incomingFileName : "monster-source.png";
+  const sourceFile = useIncoming
+    ? incomingFile
+    : path.join(sourceDirectory, sourceFileName);
   const placeholder = !existsSync(sourceFile);
-  const source = placeholder
+  const sourceImage = placeholder
+    ? null
+    : useIncoming
+      ? await loadIncomingCreaturePng(sourceFile, sourceFileName)
+      : await loadSourcePng(sourceFile, sourceFileName, CREATURE_WIDTH, CREATURE_HEIGHT);
+  const source = sourceImage === null
     ? drawPlaceholderCreatureSource()
-    : canvasFromImage(
-      await loadSourcePng(sourceFile, sourceFileName, CREATURE_WIDTH, CREATURE_HEIGHT),
-      CREATURE_WIDTH,
-      CREATURE_HEIGHT,
-    );
+    : useIncoming
+      ? canvasContainingImageOnBlack(sourceImage, CREATURE_WIDTH, CREATURE_HEIGHT)
+      : canvasFromImage(sourceImage, CREATURE_WIDTH, CREATURE_HEIGHT);
   const keyed = keyBlackToAlpha(source, sourceFileName);
   const bytes = pngBytes(keyed);
   return {
@@ -494,13 +538,17 @@ function generatedModuleSource(payload) {
 
 export async function generateArAssets(options = {}) {
   const sourceDirectory = path.resolve(options.sourceDirectory ?? defaultSourceDirectory);
+  const incomingDirectory = options.incomingDirectory === false
+    || (options.sourceDirectory !== undefined && options.incomingDirectory === undefined)
+    ? null
+    : path.resolve(options.incomingDirectory ?? defaultIncomingDirectory);
   const outputDirectory = path.resolve(options.outputDirectory ?? defaultOutputDirectory);
   const checkOnly = options.checkOnly === true;
   const quiet = options.quiet === true;
 
   const sheet01 = await buildSheetAsset(sourceDirectory, "sheet01");
   const sheet02 = await buildSheetAsset(sourceDirectory, "sheet02");
-  const creature = await buildCreatureAsset(sourceDirectory);
+  const creature = await buildCreatureAsset(sourceDirectory, incomingDirectory);
   const targetDatabase = await buildTargetDatabase(sourceDirectory);
   const sourceMode = {
     sheet01: sheet01.placeholder ? "placeholder" : "source",

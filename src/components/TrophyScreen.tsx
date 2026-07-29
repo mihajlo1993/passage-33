@@ -1,5 +1,6 @@
 "use client";
 
+import { MEDIA_ASSETS } from "@/src/media";
 import type { GameState } from "@/src/types";
 
 function elapsedLabel(startedAt: number, finishedAt: number): string {
@@ -19,6 +20,7 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   const { finishedAt } = state;
   const won = finishedAt !== null;
   const fullCircle = state.resolvedPins.includes(27);
+  const trophy = MEDIA_ASSETS.trophy;
 
   if (!won) {
     return (
@@ -36,7 +38,19 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   return (
     <section className="trophy-screen" aria-labelledby="trophy-title">
       <div className="trophy-image">
-        <img src="/og.png" width="1672" height="941" alt="A dark birthday cake burning with thirty-three candles in the abandoned kitchen" />
+        {trophy.available ? (
+          <picture>
+            {trophy.webp && <source srcSet={trophy.webp.url} type="image/webp" />}
+            <img
+              src={trophy.png.url}
+              width={trophy.width}
+              height={trophy.height}
+              alt="A dark birthday cake burning with thirty-three candles in the abandoned kitchen"
+            />
+          </picture>
+        ) : (
+          <img src="/og.png" width="1280" height="720" alt="A dark birthday cake burning with thirty-three candles in the abandoned kitchen" />
+        )}
       </div>
       <div className="trophy-card">
         <p className="eyebrow">BIRTHDAY RECORD // 33</p>

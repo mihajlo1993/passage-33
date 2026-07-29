@@ -10,6 +10,7 @@ import { AudioDirector } from "./audio/AudioDirector";
 import { AudioProvider } from "./audio/AudioProvider";
 import { GameApp } from "./components/GameApp";
 import { VHSLayer } from "./fx";
+import { OperatorPanel } from "./operator";
 import { colours, effects, layout, motion, typography } from "./tokens";
 import "./styles.css";
 
@@ -92,6 +93,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <VHSLayer disabled={false}>
         <AudioDirector />
         <GameApp />
+        <OperatorPanel />
       </VHSLayer>
     </AudioProvider>
   </React.StrictMode>,

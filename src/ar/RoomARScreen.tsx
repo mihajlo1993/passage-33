@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import { useAudio } from "../audio/useAudio";
-import { useHaptics } from "../device/useHaptics";
+import { reportOperatorArInitialization } from "../operator/runtime";
 import { useVHS } from "../fx";
 import { effects, motion } from "../tokens";
 import { AR_CREATURE_ASSET } from "./assets";
@@ -80,7 +80,6 @@ export function RoomARScreen({
   onResolved,
   onExit,
 }: RoomARScreenProps) {
-  const overlayRootRef = useRef<HTMLElement>(null);
   const rendererMountRef = useRef<HTMLDivElement>(null);
   const runtimeRef = useRef<RoomXrRuntime | null>(null);
   const timersRef = useRef<number[]>([]);
@@ -101,7 +100,6 @@ export function RoomARScreen({
   const { videoRef, playback, error: cameraError } =
     useSharedCameraVideo(fallbackCameraActive);
   const audio = useAudio();
-  const haptics = useHaptics();
   const { suspend } = useVHS();
 
   const clearPlacementTimer = useCallback(() => {
@@ -147,6 +145,8 @@ export function RoomARScreen({
       return;
     }
 
+    reportOperatorArInitialization("error");
+
     // Invalidate every callback owned by this XR attempt before disposal can
     // synchronously emit an error or end notification.
     const fallbackGeneration = transition.expectedGeneration + 1;
@@ -181,6 +181,7 @@ export function RoomARScreen({
 
   useEffect(() => {
     mountedRef.current = true;
+    reportOperatorArInitialization("not-started");
     suspend(true);
     audio.setZone("living");
     audio.ambient("ambient-living");
@@ -225,7 +226,6 @@ export function RoomARScreen({
       !mountedRef.current
       || runtimeRef.current !== null
       || view !== "briefing"
-      || !overlayRootRef.current
       || !rendererMountRef.current
     ) {
       return;
@@ -245,9 +245,10 @@ export function RoomARScreen({
       });
     };
 
+    const immersiveOverlayRoot = document.body;
     const runtime = createRoomXrRuntime({
       mount: rendererMountRef.current,
-      overlayRoot: overlayRootRef.current,
+      overlayRoot: immersiveOverlayRoot,
       onPhaseChange: (phase) => {
         if (isCurrentSession() && phase === "tracking") {
           updateView("finding-floor");
@@ -288,13 +289,17 @@ export function RoomARScreen({
 
     // Keep this call directly inside the user gesture. The runtime performs
     // requestSession before its first await.
-    void runtime.start().catch((reason: unknown) => {
-      transferToFallback(
-        reason instanceof Error
-          ? reason.message
-          : "The immersive room would not open.",
-      );
-    });
+    void runtime.start()
+      .then(() => {
+        if (isCurrentSession()) reportOperatorArInitialization("ready");
+      })
+      .catch((reason: unknown) => {
+        transferToFallback(
+          reason instanceof Error
+            ? reason.message
+            : "The immersive room would not open.",
+        );
+      });
   };
 
   const placeInRoom = () => {
@@ -322,7 +327,6 @@ export function RoomARScreen({
     }
 
     shotFiredRef.current = true;
-    haptics.contact();
     updateView("firing");
     void audio.play("pistol-fire");
 
@@ -357,7 +361,6 @@ export function RoomARScreen({
 
   return (
     <section
-      ref={overlayRootRef}
       className="ar-screen"
       data-mechanism="room"
       data-shaking={String(view === "firing" || view === "hit")}

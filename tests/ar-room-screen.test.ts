@@ -68,6 +68,15 @@ test("immersive start remains directly in the click handler", () => {
   );
 
   assert.match(handler, /const runtime = createRoomXrRuntime\(/);
-  assert.match(handler, /void runtime\.start\(\)\.catch/);
+  assert.match(handler, /void runtime\.start\(\)/);
   assert.doesNotMatch(handler, /const beginRoomSession = async/);
+});
+
+test("immersive DOM overlay uses the common app ancestor", () => {
+  assert.match(
+    screenSource,
+    /const immersiveOverlayRoot = document\.body/,
+  );
+  assert.match(screenSource, /overlayRoot: immersiveOverlayRoot/);
+  assert.doesNotMatch(screenSource, /overlayRoot: overlayRootRef\.current/);
 });

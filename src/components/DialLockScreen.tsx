@@ -12,6 +12,8 @@ import {
   type DialDirection,
   type DialLockKind,
 } from "@/src/locks";
+import { phase2DialAudioCue } from "@/src/game/phase2Integration";
+import { useAudio } from "@/src/audio/useAudio";
 
 export interface DialLockScreenProps {
   kind: DialLockKind;
@@ -42,6 +44,7 @@ export function DialLockScreen({
   onSubmit,
   onCancel,
 }: DialLockScreenProps) {
+  const audio = useAudio();
   const symbols = useMemo(() => symbolsForDial(kind), [kind]);
   const [wheels, setWheels] = useState<readonly string[]>(() =>
     createDialValue(kind),
@@ -65,6 +68,7 @@ export function DialLockScreen({
 
     const value = dialValue(wheels);
     if (!dialCodeMatches(value, correctValue)) {
+      void audio.play(phase2DialAudioCue(false));
       setAttempts((current) => current + 1);
       setFeedback(wrongText);
       return;

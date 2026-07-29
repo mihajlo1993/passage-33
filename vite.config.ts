@@ -130,7 +130,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: [
-          "**/*.{js,css,html,png,svg,webmanifest,woff,woff2}",
+          "**/*.{js,css,html,png,webp,svg,webmanifest,woff,woff2}",
         ],
         navigateFallback: "index.html",
         navigateFallbackDenylist: [/^\/codes\/print-only/],

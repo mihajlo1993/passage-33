@@ -44,8 +44,10 @@ test("visibility lifecycle delegates without muting on hidden", () => {
 });
 test("zone direction selects both its impulse and matching ambient bed", () => {
   const directorSource = source("../src/audio/AudioDirector.tsx");
-  const zoneOffset = directorSource.indexOf("audio.setZone(zone)");
-  const bedOffset = directorSource.indexOf('audio.ambient("ambient-" + zone)');
+  const integrationSource = source("../src/game/phase2Integration.ts");
+  assert.match(directorSource, /coordinator\.syncZoneFromResolvedPins\(resolvedPins\)/);
+  const zoneOffset = integrationSource.indexOf("this.ports.audio?.setZone(zone)");
+  const bedOffset = integrationSource.indexOf('this.ports.audio?.ambient("ambient-" + zone)');
   assert.ok(zoneOffset >= 0);
   assert.ok(bedOffset > zoneOffset);
 });

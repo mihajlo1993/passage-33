@@ -1,5 +1,6 @@
 "use client";
 
+import { MEDIA_ASSETS } from "@/src/media";
 import { pins } from "@/src/pins";
 import type { GameState } from "@/src/types";
 import { RelightAction } from "./RelightAction";
@@ -19,8 +20,15 @@ export function HomeScreen({ state, coldOpen, onBegin, onRelight, navigate }: Ho
   const currentZone = latestPin?.zone ?? "corridor";
   if (coldOpen) {
     const resumed = state.resolvedPins.length > 0;
+    const cover = MEDIA_ASSETS.coldOpen;
     return (
-      <section className="cold-open" aria-labelledby="cold-title">
+      <section className="cold-open" data-has-cover={String(cover.available)} aria-labelledby="cold-title">
+        {cover.available && (
+          <picture className="cold-open__media" aria-hidden="true">
+            {cover.webp && <source srcSet={cover.webp.url} type="image/webp" />}
+            <img src={cover.png.url} width={cover.width} height={cover.height} alt="" />
+          </picture>
+        )}
         <div className="cold-open__rule" />
         <p className="eyebrow">PRIVATE EVENT // THIRTY-THREE</p>
         <div className="cold-open__copy">

@@ -6,6 +6,9 @@
 @import "./styles/map.css";
 @import "./styles/fx.css";
 @import "./styles/ar.css";
+@import "./styles/operator.css";
+@import "./styles/tape.css";
+@import "./styles/media.css";
 
 *,
 *::before,

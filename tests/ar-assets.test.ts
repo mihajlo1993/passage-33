@@ -198,7 +198,7 @@ test("creature is decoded at 1024x2048 after exact black-to-alpha keying", async
       placeholder: AR_CREATURE_ASSET.placeholder,
       blackKeyed: AR_CREATURE_ASSET.blackKeyed,
     },
-    { width: 1024, height: 2048, placeholder: true, blackKeyed: true },
+    { width: 1024, height: 2048, placeholder: false, blackKeyed: true },
   );
   const creature = await decodePng(AR_CREATURE_ASSET.dataUri);
   assert.deepEqual([creature.width, creature.height], [1024, 2048]);

@@ -270,16 +270,17 @@ test("the scanner hands eligible AR pins to /ar without resolving them as scans"
 
 test("room-monster arrival audio is not auto-fired by the global audio director", () => {
   const directorSource = compact(source("src/audio/AudioDirector.tsx"));
+  const integrationSource = compact(source("src/game/phase2Integration.ts"));
   assert.doesNotMatch(
     directorSource,
     /audio\.play\(\s*["']room-monster-arrival["']\s*\)/,
   );
 
-  const computedScarePlay = directorSource.match(
-    /if \(pin\.scare && pin\.scare !== ["']roomMonster["']\) \{([^}]*)\}/,
+  const computedScarePlay = integrationSource.match(
+    /if \(result\.pin\.scare && result\.pin\.scare !== ["']roomMonster["']\) \{([^}]*)\}/,
   );
   assert.ok(computedScarePlay, "the global scare cue branch excludes roomMonster");
-  assert.match(computedScarePlay[1], /audio\.play\(SCARE_CUES\[pin\.scare\]\)/);
+  assert.match(computedScarePlay[1], /cues\.push\(SCARE_AUDIO_CUES\[result\.pin\.scare\]\)/);
 });
 
 test("/ar is a real app route and cannot render the normal game chrome", () => {

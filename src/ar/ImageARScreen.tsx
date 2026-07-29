@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { useAudio } from "../audio/useAudio";
+import { reportOperatorArInitialization } from "../operator/runtime";
 import { useVHS } from "../fx";
 import { motion } from "../tokens";
 import { AR_SHEET_ASSETS } from "./assets";
@@ -78,6 +79,7 @@ export function ImageARScreen({
   }, [clearAcquisitionTimer, onResolved]);
 
   const enterFallback = useCallback((reason: string) => {
+    reportOperatorArInitialization("error");
     fallbackEnteredRef.current = true;
     clearAcquisitionTimer();
     runtimeRef.current?.dispose();
@@ -93,6 +95,7 @@ export function ImageARScreen({
   }, [clearAcquisitionTimer, enterFallback]);
 
   useEffect(() => {
+    reportOperatorArInitialization("not-started");
     suspend(true);
     audio.setZone(scene.targetId === "sheet01" ? "corridor" : "balcony");
     audio.ambient(
@@ -188,6 +191,9 @@ export function ImageARScreen({
       });
       runtimeRef.current = runtime;
       await runtime.start();
+      if (!cancelled && !fallbackEnteredRef.current) {
+        reportOperatorArInitialization("ready");
+      }
     }).catch((reason: unknown) => {
       if (
         cancelled

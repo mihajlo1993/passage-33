@@ -18,6 +18,8 @@ import { TrophyScreen } from "./TrophyScreen";
 import { DevScreen } from "./DevScreen";
 import { CodesScreen } from "./CodesScreen";
 import { GlyphsScreen } from "./GlyphsScreen";
+import { TapePlaybackScreen } from "./TapePlaybackScreen";
+import { useOperatorRuntime } from "../operator";
 
 const LazyARScreen = lazy(() => import("../ar/ARScreen").then((module) => ({
   default: module.ARScreen,
@@ -35,6 +37,7 @@ const PLAY_ROUTES = new Set([
   "/glyphs",
   "/dev",
   "/ar",
+  "/tape",
 ]);
 
 function currentPath(): string {
@@ -116,6 +119,7 @@ export function GameApp() {
   );
   const vhs = useVHS();
   const audio = useAudio();
+  const operatorRuntime = useOperatorRuntime();
   const lastDamageResolution = useRef<unknown>(null);
 
   useWakeLock();
@@ -286,6 +290,15 @@ export function GameApp() {
             <LazyARScreen navigate={navigate} />
           </Suspense>
         );
+      case "/tape":
+        return (
+          <TapePlaybackScreen
+            health={store.health}
+            operatorSkipToken={operatorRuntime.skipScareRevision}
+            onComplete={() => store.resolvePin(12, "scan").ok}
+            onExit={() => navigate("/map")}
+          />
+        );
       default:
         return (
           <section className="screen missing-screen">
@@ -297,7 +310,8 @@ export function GameApp() {
     }
   })();
 
-  const hideChrome = route === "/ar" || (route === "/" && coldOpen);
+  const hideChrome = route === "/ar" || route === "/tape"
+    || (route === "/" && coldOpen);
 
   return (
     <main className="game-shell" data-route={route}>

@@ -27,6 +27,7 @@ export interface GameStore extends GameState {
   previewPin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
   useFirstAid: () => FirstAidUseResult;
   resetGame: (startedAt?: number) => GameState;
+  replaceStateFromOperator: (state: GameState) => GameState;
   flushPersistence: () => Promise<void>;
 }
 
@@ -58,6 +59,7 @@ function gameStateChanged(current: GameStore, previous: GameStore): boolean {
 
 const initialGameState = createDefaultGameState();
 let hydrationPromise: Promise<GameState> | null = null;
+let operatorMutationRevision = 0;
 
 export const useGameStore = create<GameStore>((set, get) => ({
   ...initialGameState,
@@ -76,10 +78,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     set({ hydrating: true });
+    const hydrationRevision = operatorMutationRevision;
     hydrationPromise = (async () => {
       try {
         const stored = await loadGameState();
-        const gameState = stored ?? selectGameState(get());
+        // A production recovery mutation made while IndexedDB opens must win
+        // over the older record returned by that in-flight hydration.
+        const gameState = operatorMutationRevision === hydrationRevision
+          ? (stored ?? selectGameState(get()))
+          : selectGameState(get());
         set({
           ...gameState,
           critical: isCritical(gameState.health),
@@ -148,6 +155,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
       hydrating: false,
       lastResolution: null,
     });
+    return gameState;
+  },
+
+  replaceStateFromOperator: (state) => {
+    const gameState = selectGameState(state);
+    operatorMutationRevision += 1;
+    set({
+      ...gameState,
+      critical: isCritical(gameState.health),
+      hydrated: true,
+      hydrating: false,
+      lastResolution: null,
+    });
+    // Recovery changes are rare and must not wait in the health-write queue.
+    void persistGameStateImmediately(gameState).catch(() => undefined);
     return gameState;
   },
 
