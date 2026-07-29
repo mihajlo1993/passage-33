@@ -1,0 +1,241 @@
+.map-screen {
+  overflow: hidden;
+}
+
+.survey-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border: var(--hairline) solid var(--c-bone-dim);
+  background: var(--c-surface);
+  cursor: grab;
+  touch-action: none;
+}
+
+.survey-frame:active {
+  cursor: grabbing;
+}
+
+.survey-frame::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.12;
+  background-image:
+    repeating-linear-gradient(
+      91deg,
+      transparent 0,
+      transparent var(--space-xl),
+      var(--c-hairline) calc(var(--space-xl) + var(--hairline))
+    ),
+    repeating-linear-gradient(
+      2deg,
+      transparent 0,
+      transparent var(--space-xxl),
+      var(--c-bone-dim) calc(var(--space-xxl) + var(--hairline))
+    );
+}
+
+.survey-map {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.survey-map text {
+  fill: var(--c-bone);
+  font-family: var(--font-doc);
+  letter-spacing: var(--tracking-ui);
+  paint-order: stroke;
+  stroke: var(--c-surface);
+  stroke-width: var(--hairline);
+}
+
+.survey-room__fill {
+  stroke: none;
+}
+
+.survey-room[data-room-state="unresolved"] .survey-room__fill {
+  fill: var(--c-rust);
+}
+
+.survey-room[data-room-state="cleared"] .survey-room__fill {
+  fill: var(--c-slate);
+}
+
+.survey-room[data-room-state="unentered"] .survey-room__fill {
+  fill: var(--c-surface);
+}
+
+.survey-room[data-outline-only="true"] .survey-room__fill {
+  fill: none;
+}
+
+.survey-room__hatch {
+  fill: none;
+  stroke: url("#survey-wall-hatch");
+  stroke-width: 16px;
+}
+
+.survey-room[data-room-state="unentered"] .survey-room__hatch,
+.survey-room[data-outline-only="true"] .survey-room__hatch {
+  display: none;
+}
+
+.survey-room__line,
+.survey-wall-detail,
+.survey-door,
+.survey-furniture,
+.survey-title-block,
+.survey-north,
+.survey-start {
+  fill: none;
+  stroke: var(--c-bone-dim);
+  stroke-linecap: square;
+  stroke-linejoin: bevel;
+  vector-effect: non-scaling-stroke;
+}
+
+.survey-opening-mask {
+  fill: none;
+  stroke: var(--c-surface);
+  stroke-linecap: square;
+  stroke-width: 18px;
+  vector-effect: non-scaling-stroke;
+}
+
+.survey-room__line {
+  stroke-width: 1.4px;
+}
+
+.survey-room[data-room-state="unentered"] .survey-room__line {
+  stroke: var(--c-hairline);
+  stroke-width: 1px;
+}
+
+.survey-wall-detail {
+  stroke-width: 1px;
+}
+
+.survey-door {
+  stroke: var(--c-bone);
+  stroke-width: 2px;
+}
+
+.survey-door--sealed {
+  stroke: var(--c-rust-hot);
+}
+
+.survey-door--locked {
+  stroke: var(--c-amber);
+}
+
+.survey-open-passage {
+  fill: var(--c-surface);
+  stroke: var(--c-bone-dim);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.survey-furniture {
+  stroke-width: 1.2px;
+}
+
+.survey-furniture__fill {
+  fill: var(--c-raised);
+  stroke: var(--c-bone-dim);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.survey-room__name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.survey-room__state,
+.survey-furniture-label,
+.survey-annotation {
+  font-size: 10px;
+}
+
+.survey-room__state {
+  fill: var(--c-bone-dim);
+}
+
+.survey-title-block {
+  stroke-width: 1px;
+}
+
+.survey-title {
+  font-size: 15px;
+}
+
+.survey-coffee {
+  fill: none;
+  stroke: var(--c-amber);
+  stroke-width: 7px;
+  opacity: 0.2;
+}
+
+.survey-coffee--light {
+  stroke-width: 2px;
+  opacity: 0.14;
+}
+
+.survey-start {
+  stroke: var(--c-bone);
+  stroke-width: 2px;
+}
+
+.map-gesture-note {
+  margin-top: var(--space-sm);
+  color: var(--c-bone-dim);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-ui);
+  line-height: var(--line-ui);
+  text-align: center;
+}
+
+.map-state-key {
+  display: grid;
+  gap: var(--space-sm);
+  margin-block: var(--space-lg);
+  padding-block: var(--space-md);
+  border-block: var(--hairline) solid var(--c-hairline);
+}
+
+.map-state-key span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--c-bone-dim);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-ui);
+}
+
+.map-state-key__swatch {
+  width: var(--space-lg);
+  height: var(--space-sm);
+  border: var(--hairline) solid var(--c-hairline);
+}
+
+.map-state-key__swatch--active {
+  background: var(--c-rust);
+}
+
+.map-state-key__swatch--clear {
+  background: var(--c-slate);
+}
+
+.map-state-key__swatch--unseen {
+  background: var(--c-surface);
+}
