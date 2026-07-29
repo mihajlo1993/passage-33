@@ -53,6 +53,8 @@ export interface Pin {
   scare?: 'torchKill' | 'roomMonster' | 'closeQuarters';
   damage?: number;
   resolution?: PinResolutionMode;
+  /** Pin-specific line used when this pin refuses for missing items or pins. */
+  refusalHint?: string;
   bodyText: string;
 }
 

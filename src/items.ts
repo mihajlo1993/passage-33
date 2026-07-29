@@ -22,6 +22,7 @@ export const itemIds = {
   carbonator: 'carbonator',
   theHand: 'theHand',
   theAltar: 'theAltar',
+  note02: 'note02',
 } as const satisfies Record<string, ItemId>;
 
 /**
@@ -99,7 +100,7 @@ export const items: readonly Item[] = [
     icon: 'key-card',
     tint: 'rust',
     examine:
-      'A red access card, worn white around the edges. It is one half of a paired lock.',
+      'The red half of a paired invitation. Three printed lines of numbers run down its face. Not codes. Chances. Keep it very safe after tonight.',
   },
   {
     id: itemIds.keycardBlue,
@@ -107,7 +108,7 @@ export const items: readonly Item[] = [
     icon: 'key-card',
     tint: 'slate',
     examine:
-      'A blue access card pulled from the marked cell. Its contacts match the red card exactly.',
+      'The blue half, pulled from the marked cell. Three more printed lines. Between red and blue you now hold six chances, and the Host insists they stay valuable long after his locks are open.',
   },
   {
     id: itemIds.knowKitchen,
@@ -172,7 +173,7 @@ export const items: readonly Item[] = [
     icon: 'hand',
     tint: 'bone',
     examine:
-      'A carved hand recovered at the end of the Host\'s route. It is posed as if waiting to receive an offering.',
+      'The Hand. It fits under your palm and clicks when pressed, which is a strange property for a relic. It will move a cursor with uncanny grace once the ceremony is over.',
   },
   {
     id: itemIds.theAltar,
@@ -180,7 +181,15 @@ export const items: readonly Item[] = [
     icon: 'star-altar',
     tint: 'amber',
     examine:
-      'A miniature altar prepared for a private ceremony. Thirty-three shallow marks circle its blackened top.',
+      'The Altar: a soft, flat rectangle on which the Hand is meant to rest and glide. Domestic ritual equipment of the highest order. The pair belong on a desk you already own.',
+  },
+  {
+    id: itemIds.note02,
+    name: 'The Last Letter',
+    icon: 'secret-book',
+    tint: 'bone',
+    examine:
+      'Melissa. There was no previous guest. It was me, every year, standing in front of your birthday like a man in front of a padlock, and every year it read LOSER. Dinner. Flowers. A card, gone by morning. This year I built you a house instead, and you walked it better than I ever could. The padlock says WINNER now. It is yours. So am I. \u2014 M.',
   },
 ] as const;
 

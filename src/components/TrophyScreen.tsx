@@ -65,9 +65,13 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   if (finalPresentsOpened) {
     return (
       <section className="screen trophy-locked" aria-labelledby="trophy-title">
-        <p className="eyebrow">ALL PRESENTS OPENED</p>
-        <h1 id="trophy-title">THAT IS EVERYTHING.</h1>
-        <p className="host-copy">Both boxes are open. Good. That is everything. Happy birthday.</p>
+        <p className="eyebrow">THE PADLOCK READS</p>
+        <h1 id="trophy-title">WINNER.</h1>
+        <p className="host-copy">
+          Both presents are open. The letter is in your notes, signed by the only
+          person who was ever here with you. The water can sparkle whenever you
+          ask it to. Happy birthday, Melissa. The house is yours.
+        </p>
       </section>
     );
   }

@@ -121,6 +121,7 @@ export function ScanScreen({ resolvePin, previewPin, sufferSetback, flushPersist
         title={dialConfig.title}
         hostText={dialConfig.hostText}
         wrongText={dialConfig.wrongText}
+        hints={dialConfig.hints}
         onSubmit={() => completeDial(pendingDial)}
         onCancel={() => setPendingDial(null)}
         onWrongAttempt={() => {

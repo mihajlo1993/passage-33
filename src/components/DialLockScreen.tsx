@@ -26,13 +26,15 @@ export interface DialLockScreenProps {
   onSubmit: (value: string) => void | Promise<void>;
   onCancel: () => void;
   onWrongAttempt?: (attempts: number) => void;
+  /** Escalating help; hints[n] plays on the (n+2)th wrong attempt. */
+  hints?: readonly string[];
 }
 
 const DEFAULT_HOST_TEXT =
   "A little wheel for every little certainty. Set them carefully. I have all evening.";
 
 const DEFAULT_WRONG_TEXT =
-  "No. But the lock enjoyed your confidence. Again, birthday girl.";
+  "No. But the lock enjoyed your confidence. Again.";
 
 export function DialLockScreen({
   kind,
@@ -45,6 +47,7 @@ export function DialLockScreen({
   onSubmit,
   onCancel,
   onWrongAttempt,
+  hints = [],
 }: DialLockScreenProps) {
   const audio = useAudio();
   const symbols = useMemo(() => symbolsForDial(kind), [kind]);
@@ -75,7 +78,12 @@ export function DialLockScreen({
       void audio.play(phase2DialAudioCue(false));
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
-      setFeedback(wrongText);
+      // The Host never lets her stall: from the second failure he starts
+      // helping, one step more direct each time.
+      const hint = nextAttempts >= 2
+        ? hints[Math.min(nextAttempts - 2, hints.length - 1)]
+        : undefined;
+      setFeedback(hint ?? wrongText);
       onWrongAttempt?.(nextAttempts);
       return;
     }

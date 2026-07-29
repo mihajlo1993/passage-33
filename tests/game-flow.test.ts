@@ -22,6 +22,8 @@ import {
   isCritical,
   resolutionModeForPin,
   type PinResolutionResult,
+  applySetback,
+  SETBACK_DAMAGE,
 } from "../src/game/engine";
 import {
   BALCONY_DIAL_WORD,
@@ -119,7 +121,7 @@ function assertRefusal(
   assert.strictEqual(result.state, expectedState, "a refusal must not mutate state");
   assert.equal(result.status, "refused");
   assert.ok(result.hint.length > 20, "refusals include a useful Host hint");
-  assert.match(result.hint, /birthday|party|guest|arrangement/i);
+  assert.match(result.hint, /birthday|party|guest|arrangement|house|room|glass|mirror|mechanism|tape|coat|door|cell|cistern|shower|planter|padlock|flame|wish|kitchen|desk/i);
 }
 
 test("walking pins 1 through 28 completes the whole chain", () => {
@@ -164,7 +166,7 @@ test("walking pins 1 through 28 completes the whole chain", () => {
   }
 
   assert.deepEqual(state.resolvedPins, pins.map((pin) => pin.id));
-  assert.equal(state.health, 25);
+  assert.equal(state.health, 100, "the wish heals: winning releases the critical tier");
   assert.equal(state.trophyAt, 1_026, "the final presents must not move the trophy time");
   assert.equal(state.finishedAt, 1_028, "the game ends only when the second present opens");
   assert.equal(areFinalPresentsResolved(state.resolvedPins), true);
@@ -322,6 +324,14 @@ test("every listed inventory gate requires all of its items", () => {
       );
     }
   }
+});
+
+test("setbacks sting, floor at zero, and never block progress", () => {
+  const base = createDefaultGameState(1_000);
+  assert.equal(applySetback(base).health, 100 - SETBACK_DAMAGE);
+  assert.equal(applySetback({ ...base, health: 2 }).health, 0);
+  assert.equal(applySetback({ ...base, health: 50 }, 0).health, 50);
+  assert.equal(applySetback({ ...base, health: 50 }, -10).health, 50);
 });
 
 test("a resolved pin cannot grant or damage twice", () => {

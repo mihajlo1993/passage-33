@@ -269,8 +269,8 @@ test("Phase 2 coordinator walks every pin with state-driven effect spies", () =>
   assert.deepEqual(trace.bedTension, [0, 0.5, 0.75, 1, 0.75]);
   assert.deepEqual(trace.timecode, [null, null, "REC --:--:--", "REC --:--:--", "REC --:--:--"]);
   assert.equal(trace.drops.length, 1);
-  assert.deepEqual(trace.audioHeartbeat, [false, true, false]);
-  assert.deepEqual(trace.hapticHeartbeat, [false, true, false]);
+  assert.deepEqual(trace.audioHeartbeat, [true, false]);
+  assert.deepEqual(trace.hapticHeartbeat, [true, false]);
 
   coordinator.stopSession();
   assert.deepEqual(trace.wake, ["acquire", "release"]);

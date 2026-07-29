@@ -15,6 +15,8 @@ export interface DialPinConfig {
   readonly title: string;
   readonly hostText: string;
   readonly wrongText: string;
+  /** Escalating help, one step per wrong attempt from the second on. */
+  readonly hints: readonly string[];
 }
 
 /**
@@ -29,7 +31,12 @@ export const dialConfigByPin: Readonly<Partial<Record<number, DialPinConfig>>> =
     hostText:
       'The cabinet kept only the square. The mirror introduced three figures. Turn the wheels here on the screen.',
     wrongText:
-      'Those are three numbers, certainly. They are not my three. Again, birthday girl.',
+      'Those are three numbers, certainly. They are not my three. Again.',
+    hints: [
+      'The mirror gave you three figures, and it gave them in an order. The order was part of the gift.',
+      'Steam remembers what fingers wrote. If the figures have faded, go back to the glass and breathe again.',
+      'Very well, since it is your birthday: seven, three, one. Tell no one I said so.',
+    ],
   },
   16: {
     kind: 'alpha',
@@ -39,6 +46,11 @@ export const dialConfigByPin: Readonly<Partial<Record<number, DialPinConfig>>> =
       'Five letters. The tape was almost embarrassingly clear. Spell what our previous guest became.',
     wrongText:
       'A word, but not the one the balcony enjoys. The shackle is still listening.',
+    hints: [
+      'It is not a name. It is a verdict.',
+      'The tape spelled it out on a padlock exactly like this one. Five letters, one loser.',
+      'L, O, S, E, R. What he became. What you are not.',
+    ],
   },
 };
 
@@ -63,7 +75,7 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'flavour',
     bodyText:
-      'Up you get, birthday girl. Thirty-three deserves a proper beginning, and I have prepared every inch of one. The corridor is waiting. Try not to keep the party waiting with it.',
+      'There she is. Awake at last, birthday girl. Thirty-three years old today, and the house has been holding its breath all morning. Everything that happens next, I arranged for you. Walk the corridor slowly. Anticipation is the only gift I get to keep.',
   },
   {
     id: 2,
@@ -75,7 +87,7 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.knife, itemIds.note01],
     kind: 'save',
     bodyText:
-      'Look at that. You found the first present before I had to worry. A knife, because every birthday cake needs one, and a note from your devoted Host. Take both. The little deck nearby remembers this moment better than people do. Let it make the occasion official.',
+      'A knife and a note, exactly where I promised myself you would find them. Take both. Every celebration needs something sharp, and every guest deserves instructions. The little deck beside you keeps memories better than people do. Give it this one.',
   },
   {
     id: 3,
@@ -89,7 +101,7 @@ export const pins: readonly Pin[] = [
     arTarget: 'sheet01',
     resolution: 'ar',
     bodyText:
-      'I marked this wall especially for you. Hold the camera steady and let the shape settle into place. The last guest rushed this part. He was terribly eager to reach the bathroom. You have always had better patience. Consider that my first birthday compliment.',
+      'Hold the camera to my mark and let the shape settle. The last guest rushed this part. He was in such a hurry to be finished with the evening that he never saw what the wall was offering him. You were never like that. Look properly.',
   },
   {
     id: 4,
@@ -101,7 +113,7 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'flavour',
     bodyText:
-      'Welcome to the bathroom. Intimate, echoing, impossible to ignore. A fine room for birthday preparations. Everything you need is already in here, though not necessarily where a polite host would leave it.',
+      'The bathroom. Every morning you stand in here half-asleep, certain nothing is watching. Tonight the room would like to correct the record. Everything you need is already inside. None of it is where a polite host would leave it.',
   },
   {
     id: 5,
@@ -113,7 +125,7 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.code3],
     kind: 'puzzle',
     bodyText:
-      'There she is. Thirty-three years, and the mirror still has the nerve to keep secrets. Do not ask it for the answer. Look at what it chooses to repeat. Three figures will introduce themselves when you stop trying to make them behave.',
+      'Closer, Melissa. The mirror has kept every version of you it ever held, and tonight it will part with three of its figures. Do not ask the glass questions. Breathe on it, the way you do on cold mornings, and watch what it chooses to repeat.',
   },
   {
     id: 6,
@@ -125,7 +137,7 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.kallaxGlyph],
     kind: 'item',
     bodyText:
-      'The cistern has been saving a card for you. Thoughtful, isn\'t it? Reach in. One mark on it belongs to one square shelf. The previous player stared at every cell except the right one. You have the advantage of a birthday clue.',
+      'Reach into the cistern. Yes. In. There is a card waiting in the dark water with one mark on it, and one square shelf in this flat wears the same mark. The last guest checked every cell except the right one. He did not trust the water. Trust the water.',
   },
   {
     id: 7,
@@ -137,7 +149,7 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.pistol],
     kind: 'item',
     bodyText:
-      'A shower should wash trouble away. This one has been collecting it. Your next present is close, heavy, and rather less festive than ribbon. Pick it up carefully. I would hate for the birthday girl to arrive at the next surprise improperly dressed.',
+      'Behind the curtain. Heavy, oiled, and not remotely festive. I would apologise for the tone of this particular present, but you will want it before the night is done, and I have never once heard you complain about being prepared.',
   },
   {
     id: 8,
@@ -149,8 +161,10 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.chemFluid],
     kind: 'save',
     resolution: 'dial',
+    refusalHint:
+      'The wheels want the mirror\'s three figures, in the mirror\'s order. If the glass has not introduced them yet, go back and breathe on it.',
     bodyText:
-      'The cabinet held only my little square. The three wheels are here on your screen, where they belong. You found the numbers in the mirror and set them correctly. Take the chem fluid. The cassette deck is ready for another memory, too.',
+      'Three wheels, and a mirror that has already made the introductions. Set them in the order the glass remembers and the cabinet gives up its chemistry. Then let the deck take another memory. You are doing better than he did. I keep the comparisons honest.',
   },
   {
     id: 9,
@@ -164,7 +178,7 @@ export const pins: readonly Pin[] = [
     scare: 'torchKill',
     damage: 20,
     bodyText:
-      'Happy birthday. Lights out. I do adore the moment a room stops pretending to be empty. Hold still if you like; it will not make you safer. The last guest tried running. He made the corridor sound wonderfully alive. You can do better.',
+      'Lights out. Forgive me. No. I planned this for weeks and I regret nothing. Stand still if it helps. The dark in this flat is mine, and it has waited all day to meet you. The last guest ran. The corridor still remembers how he sounded.',
   },
   {
     id: 10,
@@ -176,7 +190,7 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'flavour',
     bodyText:
-      'The front door remembers being useful. Tonight it is decoration. No need to sulk; the party is inside, and I have arranged far more interesting exits for a woman turning thirty-three.',
+      'The front door has been told it is furniture tonight. Do not take it personally. Everything worth having is already on this side of it. I made very sure of that before you woke.',
   },
   {
     id: 11,
@@ -188,7 +202,7 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.tape],
     kind: 'item',
     bodyText:
-      'Someone left a coat for the occasion. Check the pocket. The tape inside belonged to the player before you, though he never understood what a generous gift it was. Take it somewhere comfortable. Birthdays are better with old home movies.',
+      'Check the coat. Not your coat. The pocket has been carrying a home movie for a long time and has grown tired of the weight. Take it somewhere with a screen. Every household has one tape it never labels honestly.',
   },
   {
     id: 12,
@@ -199,8 +213,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [11],
     grants: [itemIds.knowLoser],
     kind: 'puzzle',
+    refusalHint:
+      'You arrived at the screening empty-handed. Check the coat by the front door; its pocket has been keeping something for you.',
     bodyText:
-      'Go on, press play. Our previous player left one useful lesson between the static: what makes a loser. He did not enjoy the screening. You have the advantage of a birthday audience and my undivided attention.',
+      'Press play. The guest before you left his finest hour on this tape. All of it true, none of it flattering. Watch what the padlock decided he was. He left you one useful word, and it cost him everything he came here to win.',
   },
   {
     id: 13,
@@ -209,10 +225,10 @@ export const pins: readonly Pin[] = [
     name: 'The Cushion',
     requires: [],
     requiresPin: [12],
-    grants: [itemIds.keycardRed],
+    grants: [itemIds.keycardRed, itemIds.theAltar],
     kind: 'item',
     bodyText:
-      'The sofa has been holding your seat and one red little invitation. Search the cushion properly. Yes, there. A keycard is not much of a birthday card, but this one opens more interesting things than good wishes ever could tonight.',
+      'Under the seat you always take. A red card, one half of a paired invitation, and beneath it, flat and patient, the Altar. Lift the cushion properly and take both into your keeping. The ceremony they belong to is closer than you think.',
   },
   {
     id: 14,
@@ -221,10 +237,12 @@ export const pins: readonly Pin[] = [
     name: 'The Kallax',
     requires: [itemIds.kallaxGlyph],
     requiresPin: [13],
-    grants: [itemIds.keycardBlue],
+    grants: [itemIds.keycardBlue, itemIds.theHand],
     kind: 'puzzle',
+    refusalHint:
+      'Bare fingers will not choose the right cell. The card in the cistern knows which square; go and get your hand wet.',
     bodyText:
-      'All those square cells, lined up so neatly. Match the mark on the damp little card to the labels. The correct compartment has been waiting to offer its blue companion. Red alone is merely dramatic. Together they become a proper invitation.',
+      'Sixteen cells, and one of them wears your wet little mark. Inside, the blue half of the invitation and the Hand. Yes, a hand. It will answer to yours and no one else\'s. The house has strange ideas about gifts. So does your Host.',
   },
   {
     id: 15,
@@ -236,7 +254,7 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.knowKitchen],
     kind: 'puzzle',
     bodyText:
-      'Lay the phone torch flat against the paper. A raking light makes pressed-in writing throw a shadow. What appears is not a map, exactly, but it knows how the kitchen wants to be approached. The previous player held the light above it and remained hungry.',
+      'Lay the torch flat against the desk and let the light rake sideways. Pressed writing throws a shadow when the angle is cruel enough. The last guest held his light straight above it, like a man reading a menu. He remained hungry.',
   },
   {
     id: 16,
@@ -248,8 +266,10 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'gate',
     resolution: 'dial',
+    refusalHint:
+      'The padlock listens for one word, and only the tape can teach it. Watch the screening to its end.',
     bodyText:
-      'The balcony door likes the right sort of loser. Strange taste, but every party has a guest list. If the tape taught you the word, the lock will listen. Step outside. The air has been saving a birthday breath for you.',
+      'The padlock out here has a vocabulary of exactly one word, and the tape has already taught it to you. Spell what he became. Then step out and breathe. You have earned one cold, honest breath before the finale begins.',
   },
   {
     id: 17,
@@ -263,7 +283,7 @@ export const pins: readonly Pin[] = [
     arTarget: 'sheet02',
     resolution: 'ar',
     bodyText:
-      'The planter has produced an herb and one useful instruction. Take the herb. Remember that the fan can be stopped when the draught begins. I planted neither idea, which makes their devotion to your birthday especially touching. Let the camera notice what else has taken root here.',
+      'The planter has been growing your insurance since spring. Take the herb. Study the valve. The draught you are about to meet is machinery pretending to be weather, and machinery can be made to stop. I planted everything here except the part that matters.',
   },
   {
     id: 18,
@@ -277,8 +297,10 @@ export const pins: readonly Pin[] = [
     scare: 'roomMonster',
     resolution: 'ar',
     damage: 30,
+    refusalHint:
+      'You walked in on our guest empty-handed. The shower left you something heavy for exactly this introduction. He will wait. He enjoys waiting.',
     bodyText:
-      'Back inside already? Wonderful. You brought the pistol, exactly as I congratulated you for doing. The room has acquired another guest while you were out. Do try the obvious answer. He dislikes being ignored more than he dislikes being shot.',
+      'Back inside. Slowly. The living room acquired a guest while you were out breathing my cold air, and nobody told him it is your birthday. You are carrying the shower\'s heavy present. Use it. He hates being ignored far more than he hates being shot.',
   },
   {
     id: 19,
@@ -293,8 +315,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [18],
     grants: [],
     kind: 'gate',
+    refusalHint:
+      'This door wants the red half, the blue half, and the desk\'s route. Arrive with all three, or do not arrive.',
     bodyText:
-      'Two colours for one door, and a route hidden in the desk\'s scratches. Present all three properly. The kitchen has been terribly patient. So have I. Your birthday supper is nearly ready, though the cook may object to your methods.',
+      'Both halves of the invitation, presented the way the desk taught you. The kitchen has been patient with you. So has your supper. So, frankly, have I, and patience was never the strongest part of my character.',
   },
   {
     id: 20,
@@ -305,8 +329,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [19],
     grants: [itemIds.firstAid],
     kind: 'craft',
+    refusalHint:
+      'The glass wants both halves of the medicine: something grown and something poured. Half a recipe is only a poison, and I want you standing at the end.',
     bodyText:
-      'Herb first. Fluid second. Put them in a glass and mix them. Drink the result when you need the room to stop swimming. It will pull you back from one ugly edge, once. I do hope your birthday toast is memorable.',
+      'Herb first, fluid second. Put them in a glass, mix, and drink it down when the edge gets close. It will taste like a garden fire, and it will pull you back. Once. That sound is your own heart. I checked.',
   },
   {
     id: 22,
@@ -320,7 +346,7 @@ export const pins: readonly Pin[] = [
     scare: 'closeQuarters',
     damage: 25,
     bodyText:
-      'Did you feel that? Of course you did. Turn around, birthday girl. Quickly would be entertaining. Slowly would be brave. Either way, I have placed this guest close enough to admire your expression. The previous player never offered such a good view.',
+      'Do not finish reading this. Turn around first. There. He stood close enough to count your eyelashes, and all he did was watch, because I asked nicely and I outrank him. That was the last favour I call in tonight. Steady hands now. The candle is next.',
   },
   {
     id: 21,
@@ -332,7 +358,7 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.candleLit],
     kind: 'item',
     bodyText:
-      'Now that our close guest has finished admiring you, every celebration needs a flame. Light the candle and guard it like the tiny, unreasonable life it is. Thirty-three candles would be excessive, so we shall let one stand in for the crowd.',
+      'Light the candle. One flame standing in for thirty-two absent friends. Guard it like it owes you money. The kitchen has opinions about open fire, and the loudest of them hangs on a wall, spinning, waiting to be introduced.',
   },
   {
     id: 23,
@@ -344,7 +370,7 @@ export const pins: readonly Pin[] = [
     grants: [],
     kind: 'scare',
     bodyText:
-      'A draught. Such a small thing to ruin such careful ceremony. Your flame is gone, and I am devastated on your behalf. Truly. Fortunately, birthdays permit second wishes. Go and earn another light while the dark enjoys what I arranged behind it.',
+      'Out. Just like that. One breath of moving air, and your little wish is smoke. I am nearly sorry. I needed you to feel it go out once, so that keeping it alive would mean something. Nothing in the dark behind you is new. Go and find another light.',
   },
   {
     id: 24,
@@ -357,7 +383,7 @@ export const pins: readonly Pin[] = [
     kind: 'item',
     resolution: 'action',
     bodyText:
-      'Back for another spark. I knew you would not let a little darkness cancel the party. Relight the candle. Cup your hand around it this time. The flat has developed opinions about open flames, and not all of them are architectural.',
+      'Strike. Cup. Shield. The flat has learned what your hands look like when they are protecting something, and so have I. This time, the flame travels with an escort.',
   },
   {
     id: 25,
@@ -368,8 +394,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [24],
     grants: [itemIds.fanOff],
     kind: 'puzzle',
+    refusalHint:
+      'The fan cannot be argued with bare-handed. The balcony planter holds the piece that knows how it dies.',
     bodyText:
-      'The draught can be stopped. Find whatever is making it and switch it off. Yes, the real fan. Listen to the blades surrender. There. Your candle may finally travel without being bullied. Thank you for correcting the machinery.',
+      'The draught has a source. Switch it off. Yes, the real fan, the one moving the air. The planter already told you it could be stopped, and you are carrying the how. Listen. Blades surrendering: the house admitting it cannot take this from you anymore. Nothing between you and the wish now but your own two feet.',
   },
   {
     id: 26,
@@ -380,8 +408,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [25],
     grants: [],
     kind: 'win',
+    refusalHint:
+      'The wish needs a living flame and dead air. You are missing at least one, and the kitchen knows which.',
     bodyText:
-      'Bring the living flame to the silent fan. Imagine the other thirty-two candles. You made it to the wish, exactly as promised. Your corridor box is where you woke. The sealed present is here in the kitchen. Both may open now. I shall stop making you guess.',
+      'Bring the flame into the still air and make the wish. Picture the other thirty-two candles: every year that carried you here, to my house, to my game, to the end of it. You won. He never did. Two last presents are unlocked: the box where you woke, and the paper in the kitchen. The house is finished being cruel.',
   },
   {
     id: 27,
@@ -390,10 +420,10 @@ export const pins: readonly Pin[] = [
     name: 'Full Circle',
     requires: [],
     requiresPin: [26],
-    grants: [itemIds.theHand, itemIds.theAltar],
+    grants: [itemIds.note02],
     kind: 'flavour',
     bodyText:
-      'The corridor box is where you woke. Open it. The Hand and the Altar are yours now. Thirty-three suited you beautifully. If the kitchen paper is still unbroken, you may open that present too. I have finished hiding things from you.',
+      'The corridor box, back where you woke. Inside is the last thing I ever hid from you: a letter. Read it in good light, all the way to the signature. It was not written in the Host\'s hand. It never was.',
   },
   {
     id: SEALED_PRESENT_PIN_ID,
@@ -412,7 +442,7 @@ export const pins: readonly Pin[] = [
       'Again? Wonderful. Your curiosity is the best part of this party. Candles first. Then the paper.',
     ],
     bodyText:
-      'You waited until the candles. Mostly. The kitchen parcel is open now. I knew what was inside, of course. Take the carbonator. The corridor box is still where you woke, unless you have already collected it.',
+      'Open it. I have known what is under that paper for weeks, and keeping the secret nearly finished me, which would have been a twist worthy of the tape. It sparkles, like the water it makes. Happy birthday, from a man who was never as anonymous as he pretended to be.',
   },
 ];
 

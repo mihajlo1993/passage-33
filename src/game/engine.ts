@@ -5,17 +5,17 @@ export const CRITICAL_HEALTH_THRESHOLD = 40;
 
 export const refusalHints = {
   unknownPin:
-    "That invitation isn't one of mine. Nice try, birthday girl, but the house only answers to the arrangements I made.",
+    "That mark is not one of mine. The house only answers to arrangements I made personally, and I would remember making that one.",
   alreadyResolved:
-    "We've already enjoyed this little moment. Do keep up. There are still birthday surprises waiting elsewhere.",
+    "We have already enjoyed that little moment, and it went beautifully. Forward, not back. Another room is waiting on you.",
   outOfAct:
-    "Eager, aren't you? The room isn't ready for you yet. A good guest waits for her cue, especially at her own birthday party.",
+    "Eager. I do like that. But that part of the house has not finished being arranged, and no good party shows the guest its kitchen early.",
   missingItems:
-    "You came all this way with something important still missing. Go back and look properly. I did leave enough party favours for everyone.",
+    "You have arrived without something the arrangement needs. Look again behind you. I never hide a thing without leaving its handle showing.",
   missingPins:
-    "Not yet. One of my earlier arrangements is still waiting for your attention. It would be rude to skip part of your own celebration.",
+    "Not yet. One of my earlier arrangements is still sitting untouched, and I refuse to let you skip a single course of your own celebration.",
   interactionRequired:
-    "That part of the arrangement is already in your hands. Use the mechanism I prepared, birthday girl. A printed square cannot do everything for you.",
+    "The printed square has done its part. What happens next happens with your hands, on the mechanism I prepared. Paper cannot do everything.",
 } as const;
 
 export type PinRefusalReason =
@@ -238,7 +238,7 @@ export function attemptResolvePin(
       state,
       pin,
       "missing-prerequisite-pins",
-      refusalHints.missingPins,
+      pin.refusalHint ?? refusalHints.missingPins,
       missingItems,
       missingPins,
     );
@@ -249,7 +249,7 @@ export function attemptResolvePin(
       state,
       pin,
       "missing-requirements",
-      refusalHints.missingItems,
+      pin.refusalHint ?? refusalHints.missingItems,
       missingItems,
       missingPins,
     );
@@ -275,7 +275,11 @@ export function attemptResolvePin(
   const nextState: GameState = {
     ...state,
     act: nextAct,
-    health: Math.max(0, Math.min(100, state.health - damage)),
+    // The wish holds: winning restores her completely, which also releases
+    // the critical-tier heartbeat before the warm ending.
+    health: pin.kind === "win"
+      ? 100
+      : Math.max(0, Math.min(100, state.health - damage)),
     inventory,
     resolvedPins,
     clearedZones: deriveClearedZones(resolvedPins),

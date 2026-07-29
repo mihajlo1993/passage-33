@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { itemById } from "@/src/items";
 import type { GameState, Item } from "@/src/types";
 
-const DOCUMENT_IDS = new Set(["note01", "tape", "knowLoser", "kallaxGlyph", "knowKitchen"]);
+const DOCUMENT_IDS = new Set(["note01", "tape", "knowLoser", "kallaxGlyph", "knowKitchen", "note02"]);
 
 const HOST_ROUTE_DOCUMENT = {
   id: "survey-route",
