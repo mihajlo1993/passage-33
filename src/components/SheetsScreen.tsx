@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { PrintableSurveyMap } from "../map/PrintableSurveyMap";
 
 interface ImageSheetProps {
@@ -8,8 +7,6 @@ interface ImageSheetProps {
 }
 
 function ImageSheet({ baseName, description, number }: ImageSheetProps) {
-  const [missing, setMissing] = useState(false);
-
   return (
     <section
       className="prop-sheet prop-sheet--image"
@@ -18,26 +15,12 @@ function ImageSheet({ baseName, description, number }: ImageSheetProps) {
       data-asset={baseName}
     >
       <h1 className="prop-sheet__accessible-title">Sheet {number}</h1>
-      {missing ? (
-        <div className="prop-sheet__missing" role="img" aria-label={description}>
-          <strong>SHEET {number} SOURCE MISSING</strong>
-          <span>Place {baseName}.png in the local media output.</span>
-        </div>
-      ) : (
-        <picture className="prop-sheet__picture">
-          <source
-            srcSet={`/media/${baseName}.webp`}
-            type="image/webp"
-          />
-          <img
-            className="prop-sheet__image"
-            src={`/media/${baseName}.png`}
-            alt={description}
-            draggable={false}
-            onError={() => setMissing(true)}
-          />
-        </picture>
-      )}
+      <img
+        className="prop-sheet__image"
+        src={`/media/${baseName}.png`}
+        alt={description}
+        draggable={false}
+      />
     </section>
   );
 }

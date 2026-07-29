@@ -63,6 +63,36 @@ export const TAPE_STILLS: readonly TapeStill[] = [
 
 export const TAPE_FINAL_STILL_INDEX = TAPE_STILLS.length - 1;
 
+/**
+ * Starts of paragraphs 1-7 in the eight-paragraph Host tape script. These
+ * proportions are weighted by paragraph length, with the final two paragraphs
+ * given their directed slower delivery so the padlock remains on screen
+ * noticeably longest. Nudge these by ear after replacing tape.mp3.
+ */
+export const TAPE_IMAGE_CUE_FRACTIONS = [
+  0,
+  0.164,
+  0.299,
+  0.389,
+  0.501,
+  0.568,
+  0.748,
+] as const;
+
+export function tapeStillIndexAtVoicePosition(
+  positionSeconds: number,
+  durationSeconds: number,
+): number | null {
+  if (!Number.isFinite(positionSeconds) || !Number.isFinite(durationSeconds)) return null;
+  if (durationSeconds <= 0) return null;
+
+  const proportion = Math.min(1, Math.max(0, positionSeconds / durationSeconds));
+  for (let index = TAPE_IMAGE_CUE_FRACTIONS.length - 1; index > 0; index -= 1) {
+    if (proportion >= TAPE_IMAGE_CUE_FRACTIONS[index]!) return index;
+  }
+  return 0;
+}
+
 export type TapePlaybackPhase = "playing" | "blackout" | "complete";
 
 export interface TapePlaybackState {
@@ -70,7 +100,12 @@ export interface TapePlaybackState {
   readonly stillIndex: number;
 }
 
-export type TapePlaybackEvent = "timer" | "user-skip" | "operator-skip";
+export type TapePlaybackEvent =
+  | "timer"
+  | "user-skip"
+  | "operator-skip"
+  | { readonly type: "voice-position"; readonly stillIndex: number }
+  | { readonly type: "voice-ended" };
 
 export function createTapePlaybackState(): TapePlaybackState {
   return { phase: "playing", stillIndex: 0 };
@@ -87,6 +122,23 @@ export function transitionTapePlayback(
   event: TapePlaybackEvent,
 ): TapePlaybackState {
   if (state.phase === "complete") return state;
+
+  if (typeof event !== "string") {
+    if (event.type === "voice-ended") {
+      return state.phase === "playing"
+        ? { phase: "blackout", stillIndex: TAPE_FINAL_STILL_INDEX }
+        : state;
+    }
+    if (state.phase !== "playing" || !Number.isFinite(event.stillIndex)) return state;
+
+    const stillIndex = Math.max(
+      state.stillIndex,
+      Math.min(TAPE_FINAL_STILL_INDEX, Math.floor(event.stillIndex)),
+    );
+    return stillIndex === state.stillIndex
+      ? state
+      : { phase: "playing", stillIndex };
+  }
 
   if (event === "user-skip") {
     return canUserSkipTape(state)

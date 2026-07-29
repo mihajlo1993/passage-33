@@ -131,8 +131,7 @@ export function RoomARScreen({
     updateView((current) =>
       current === "fallback" ? "fallback-placed" : "placed"
     );
-    void audio.play("room-monster-arrival");
-  }, [audio, clearPlacementTimer, updateView]);
+  }, [clearPlacementTimer, updateView]);
 
   const enterFallback = useCallback(async (
     reason: string,
@@ -328,11 +327,9 @@ export function RoomARScreen({
 
     shotFiredRef.current = true;
     updateView("firing");
-    void audio.play("pistol-fire");
 
     addTimer(() => {
       updateView("hit");
-      void audio.play("monster-hit");
       if (!resolutionSentRef.current && onResolved()) {
         resolutionSentRef.current = true;
       }
@@ -340,7 +337,6 @@ export function RoomARScreen({
       addTimer(() => {
         updateView("collapsing");
         runtimeRef.current?.collapse();
-        void audio.play("monster-collapse");
 
         addTimer(() => {
           updateView("complete");
@@ -399,7 +395,7 @@ export function RoomARScreen({
               <img
                 className="ar-fallback-sprite ar-fallback-sprite--monster"
                 data-animating="true"
-                src={AR_CREATURE_ASSET.dataUri}
+                src={AR_CREATURE_ASSET.url}
                 alt=""
                 aria-hidden="true"
               />

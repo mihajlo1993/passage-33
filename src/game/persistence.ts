@@ -1,8 +1,7 @@
 import { FINAL_PRESENT_PIN_IDS, TROPHY_PIN_ID } from "../pins";
-import type { GameState } from "../types";
+import type { GameState, HostVoiceId } from "../types";
 import { deriveClearedZones } from "./engine";
 
-export const GAME_STATE_WRITE_DELAY_MS = 300;
 export const GAME_STATE_JOURNAL_KEY = "birthday-horror:latest";
 
 export interface GameStateStorage {
@@ -11,11 +10,20 @@ export interface GameStateStorage {
   removeItem(key: string): void;
 }
 
+export type GameStateWriteScheduler = (write: () => void) => void;
+
 let pendingState: GameState | null = null;
-let writeTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingStorage: GameStateStorage | null = null;
+let writeScheduled = false;
+let scheduleGeneration = 0;
 
 function cloneGameState(state: GameState): GameState {
   const resolvedPins = [...state.resolvedPins];
+  const playedVoiceIds = Array.isArray(state.playedVoiceIds)
+    ? [...new Set(state.playedVoiceIds)].filter(
+        (id): id is HostVoiceId => typeof id === "string",
+      )
+    : [];
   const trophyAt = state.trophyAt
     ?? (resolvedPins.includes(TROPHY_PIN_ID) ? state.finishedAt : null);
   const finalPresentsOpened = FINAL_PRESENT_PIN_IDS.every((pinId) =>
@@ -28,6 +36,7 @@ function cloneGameState(state: GameState): GameState {
     clearedZones: deriveClearedZones(resolvedPins),
     trophyAt,
     finishedAt: finalPresentsOpened ? state.finishedAt : null,
+    playedVoiceIds,
   };
 }
 
@@ -43,11 +52,11 @@ export function flushGameStateSynchronously(
   state: GameState,
   storage: GameStateStorage | null = availableStorage(),
 ): void {
-  pendingState = cloneGameState(state);
+  const snapshot = cloneGameState(state);
   if (!storage) return;
 
   try {
-    storage.setItem(GAME_STATE_JOURNAL_KEY, JSON.stringify(pendingState));
+    storage.setItem(GAME_STATE_JOURNAL_KEY, JSON.stringify(snapshot));
   } catch {
     // A denied or full local store must not interrupt the game.
   }
@@ -71,55 +80,63 @@ export async function loadGameState(): Promise<GameState | undefined> {
   return loadSynchronousGameState();
 }
 
-/**
- * Coalesce rapid game mutations into one localStorage write 300ms after the last
- * change while always retaining the newest complete GameState snapshot.
- */
-export function queueGameStateWrite(state: GameState): void {
-  pendingState = cloneGameState(state);
-
-  if (writeTimer !== null) {
-    clearTimeout(writeTimer);
-  }
-
-  writeTimer = setTimeout(() => {
-    writeTimer = null;
-    void flushGameStateWrite();
-  }, GAME_STATE_WRITE_DELAY_MS);
+function cancelQueuedWrite(): void {
+  scheduleGeneration += 1;
+  writeScheduled = false;
 }
 
+/**
+ * Retain the newest complete snapshot and defer one coalesced localStorage
+ * write until the current synchronous game mutation has left the call stack.
+ */
+export function queueGameStateWrite(
+  state: GameState,
+  storage: GameStateStorage | null = availableStorage(),
+  schedule: GameStateWriteScheduler = queueMicrotask,
+): void {
+  pendingState = cloneGameState(state);
+  pendingStorage = storage;
+  if (writeScheduled) return;
 
-export function persistGameStateImmediately(state: GameState): Promise<void> {
-  if (writeTimer !== null) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-  }
+  writeScheduled = true;
+  const generation = scheduleGeneration;
+  schedule(() => {
+    if (generation !== scheduleGeneration) return;
+    writeScheduled = false;
+    const snapshot = pendingState;
+    const target = pendingStorage;
+    pendingState = null;
+    pendingStorage = null;
+    if (snapshot) flushGameStateSynchronously(snapshot, target);
+  });
+}
 
-  flushGameStateSynchronously(state);
+export function persistGameStateImmediately(
+  state: GameState,
+  storage: GameStateStorage | null = availableStorage(),
+): Promise<void> {
+  cancelQueuedWrite();
   pendingState = null;
+  pendingStorage = null;
+  flushGameStateSynchronously(state, storage);
   return Promise.resolve();
 }
 
-export async function flushGameStateWrite(latestState?: GameState): Promise<void> {
-  if (writeTimer !== null) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-  }
-
+export async function flushGameStateWrite(
+  latestState?: GameState,
+  storage: GameStateStorage | null = pendingStorage ?? availableStorage(),
+): Promise<void> {
   const state = latestState ? cloneGameState(latestState) : pendingState;
+  cancelQueuedWrite();
   pendingState = null;
-  if (state) {
-    flushGameStateSynchronously(state);
-    pendingState = null;
-  }
+  pendingStorage = null;
+  if (state) flushGameStateSynchronously(state, storage);
 }
 
 export async function clearStoredGameState(): Promise<void> {
+  cancelQueuedWrite();
   pendingState = null;
-  if (writeTimer !== null) {
-    clearTimeout(writeTimer);
-    writeTimer = null;
-  }
+  pendingStorage = null;
 
   const storage = availableStorage();
   try {

@@ -40,7 +40,6 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
     setQuiet(false);
     const timer = window.setTimeout(() => {
       audio.ambient(null);
-      audio.silence();
       setQuiet(true);
     }, motion.eventMs.saveTheatre);
     return () => window.clearTimeout(timer);
@@ -87,18 +86,13 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   return (
     <section className="trophy-screen" aria-labelledby="trophy-title">
       <div className="trophy-image">
-        {trophy.available ? (
-          <picture>
-            {trophy.webp && <source srcSet={trophy.webp.url} type="image/webp" />}
-            <img
-              src={trophy.png.url}
-              width={trophy.width}
-              height={trophy.height}
-              alt="A dark birthday cake burning with thirty-three candles in the abandoned kitchen"
-            />
-          </picture>
-        ) : (
-          <img src="/og.png" width="1280" height="720" alt="A dark birthday cake burning with thirty-three candles in the abandoned kitchen" />
+        {trophy.webp && (
+          <img
+            src={trophy.webp.url}
+            width={trophy.width}
+            height={trophy.height}
+            alt="A dark birthday cake burning with thirty-three candles in the abandoned kitchen"
+          />
         )}
       </div>
       <div className="trophy-card">

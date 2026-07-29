@@ -37,6 +37,8 @@ import {
   GAME_STATE_JOURNAL_KEY,
   flushGameStateSynchronously,
   loadSynchronousGameState,
+  persistGameStateImmediately,
+  queueGameStateWrite,
   type GameStateStorage,
 } from "../src/game/persistence";
 import { parsePinPayload, pinPayload } from "../src/scanner/payload";
@@ -261,6 +263,7 @@ test("the trophy fires at 26 and only the final pair starts the quiet closing", 
   assert.match(trophySource, /areFinalPresentsResolved\(state\.resolvedPins\)/);
   assert.match(trophySource, /window\.setTimeout/);
   assert.match(trophySource, /audio\.ambient\(null\)/);
+  assert.doesNotMatch(trophySource, /audio\.silence\(\)/);
   assert.match(trophySource, /trophy-screen--quiet/);
   assert.match(scannerSource, /result\.pin\.id === 26 \|\| result\.gameCompleted/);
   assert.match(scannerSource, /FIND THE OTHER PRESENT/);
@@ -460,6 +463,46 @@ test("zero-delay synchronous flush retains the newest mutation", () => {
   assert.deepEqual(loadSynchronousGameState(storage), newest);
 });
 
+test("queued snapshots coalesce and an explicit save commits in the same turn", async () => {
+  const values = new Map<string, string>();
+  const writes: GameState[] = [];
+  const scheduled: Array<() => void> = [];
+  const storage: GameStateStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => {
+      values.set(key, value);
+      writes.push(JSON.parse(value) as GameState);
+    },
+    removeItem: (key) => {
+      values.delete(key);
+    },
+  };
+  const schedule = (write: () => void) => {
+    scheduled.push(write);
+  };
+
+  const initial = createDefaultGameState(10_000);
+  const newest = resolveSuccessfully(initial, 1);
+  queueGameStateWrite(initial, storage, schedule);
+  queueGameStateWrite(newest, storage, schedule);
+
+  assert.equal(scheduled.length, 1);
+  assert.equal(writes.length, 0);
+  scheduled[0]!();
+  assert.equal(writes.length, 1);
+  assert.deepEqual(loadSynchronousGameState(storage), newest);
+
+  queueGameStateWrite(initial, storage, schedule);
+  const immediate = resolveSuccessfully(newest, 2);
+  const committed = persistGameStateImmediately(immediate, storage);
+  assert.deepEqual(loadSynchronousGameState(storage), immediate);
+  await committed;
+
+  scheduled[1]!();
+  assert.deepEqual(loadSynchronousGameState(storage), immediate);
+  assert.equal(writes.length, 2);
+});
+
 test("local-only save migration recomputes zone clearance without a database", () => {
   const values = new Map<string, string>();
   const storage: GameStateStorage = {
@@ -471,8 +514,10 @@ test("local-only save migration recomputes zone clearance without a database", (
       values.delete(key);
     },
   };
-  const stale: GameState = {
-    ...createDefaultGameState(11_000),
+  const { playedVoiceIds, ...legacyState } = createDefaultGameState(11_000);
+  assert.deepEqual(playedVoiceIds, []);
+  const stale = {
+    ...legacyState,
     act: 5,
     resolvedPins: [26],
     clearedZones: ["kitchen"],
@@ -482,6 +527,7 @@ test("local-only save migration recomputes zone clearance without a database", (
 
   const migrated = loadSynchronousGameState(storage);
   assert.ok(migrated);
+  assert.deepEqual(migrated.playedVoiceIds, []);
   assert.equal(migrated.clearedZones.includes("kitchen"), false);
 
   const persistenceSource = readFileSync(

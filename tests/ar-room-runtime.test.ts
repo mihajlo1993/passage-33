@@ -6,7 +6,7 @@ import {
   RoomXrRuntimeError,
   billboardYawRadians,
   createRoomXrRuntime,
-  isEmbeddedCreatureDataUri,
+  isLocalCreatureWebpUrl,
   isHorizontalFloorHitMatrix,
   roomCollapseProgress,
 } from "../src/ar/roomRuntime";
@@ -48,11 +48,11 @@ test("room collapse duration comes from tokens and clamps in place", () => {
   assert.equal(roomCollapseProgress(duration * 4), 1);
 });
 
-test("only embedded PNG creature assets are accepted", () => {
-  assert.equal(isEmbeddedCreatureDataUri("data:image/png;base64,AAAA"), true);
-  assert.equal(isEmbeddedCreatureDataUri("data:image/png;base64,"), false);
-  assert.equal(isEmbeddedCreatureDataUri("data:image/svg+xml;base64,AAAA"), false);
-  assert.equal(isEmbeddedCreatureDataUri("https://example.invalid/monster.png"), false);
+test("only the bundled local WebP creature URL is accepted", () => {
+  assert.equal(isLocalCreatureWebpUrl("/ar/textures/creature.webp"), true);
+  assert.equal(isLocalCreatureWebpUrl("/ar/textures/other.webp"), false);
+  assert.equal(isLocalCreatureWebpUrl("data:image/webp;base64,AAAA"), false);
+  assert.equal(isLocalCreatureWebpUrl("https://example.invalid/monster.webp"), false);
 });
 
 test("room runtime is offline, shares no camera API, and requests exact XR features", () => {
@@ -62,7 +62,7 @@ test("room runtime is offline, shares no camera API, and requests exact XR featu
     runtime,
     /fetch\s*\(|XMLHttpRequest|WebSocket|EventSource|TextureLoader|getUserMedia|getDisplayMedia|getTracks|MediaStreamTrack|\.stop\s*\(/,
   );
-  assert.match(runtime, /AR_CREATURE_ASSET\.dataUri/);
+  assert.match(runtime, /AR_CREATURE_ASSET\.url/);
   assert.match(runtime, /new Image\(\)/);
   assert.match(runtime, /new THREE\.Texture\(image\)/);
   assert.match(runtime, /requestSession\(\s*WEBXR_SESSION_MODE/);

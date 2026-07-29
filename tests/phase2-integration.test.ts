@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  PHASE2_VOICE_CUES_BY_PIN,
   Phase2IntegrationCoordinator,
   canResolveRoomAr,
   phase2ArRouteForPin,
@@ -17,7 +18,7 @@ import {
 import { itemIds } from "../src/items";
 import { deriveSurveyMap } from "../src/map/model";
 import { pins } from "../src/pins";
-import type { GameState, ZoneId } from "../src/types";
+import type { GameState, HostVoiceId, ZoneId } from "../src/types";
 
 const root = path.resolve(import.meta.dirname, "..");
 const source = (relativePath: string) =>
@@ -32,11 +33,12 @@ const GAMEPLAY_ORDER = [
 test("Phase 2 coordinator walks every pin with state-driven effect spies", () => {
   let activePin: number | null = null;
   const tagged = <T>(value: T) => ({ pin: activePin, value });
+  const playedVoices = new Set<HostVoiceId>();
   const trace = {
     zones: [] as Array<{ pin: number | null; value: ZoneId }>,
-    ambient: [] as Array<{ pin: number | null; value: string | null }>,
+    bedTension: [] as number[],
     audio: [] as Array<{ pin: number | null; value: string }>,
-    voice: [] as Array<{ pin: number | null; value: string }>,
+    voice: [] as Array<{ pin: number | null; value: HostVoiceId }>,
     audioHeartbeat: [] as boolean[],
     intensity: [] as number[],
     timecode: [] as Array<string | null>,
@@ -53,14 +55,22 @@ test("Phase 2 coordinator walks every pin with state-driven effect spies", () =>
   const coordinator = new Phase2IntegrationCoordinator({
     audio: {
       setZone: (zone) => trace.zones.push(tagged(zone)),
-      ambient: (id) => trace.ambient.push(tagged(id)),
+      setBedTension: (value) => trace.bedTension.push(value),
       play: (id) => {
         trace.audio.push(tagged(id));
       },
-      say: (id) => {
+      startVoice: async (id) => {
         trace.voice.push(tagged(id));
+        return null;
       },
       heartbeat: (enabled) => trace.audioHeartbeat.push(enabled),
+    },
+    voices: {
+      claim: (id) => {
+        if (playedVoices.has(id)) return false;
+        playedVoices.add(id);
+        return true;
+      },
     },
     vhs: {
       setIntensity: (intensity) => trace.intensity.push(intensity),
@@ -206,40 +216,28 @@ test("Phase 2 coordinator walks every pin with state-driven effect spies", () =>
     trace.zones.map(({ value }) => value),
     ["corridor", "bathroom", "entry", "living", "balcony", "living", "kitchen", "corridor", "kitchen"],
   );
-  assert.deepEqual(
-    trace.ambient.map(({ value }) => value),
-    trace.zones.map(({ value }) => "ambient-" + value),
-  );
-
-  for (const pinId of GAMEPLAY_ORDER) {
-    assert.ok(
-      trace.audio.some((event) => event.pin === pinId && event.value === "ui-contact"),
-      `pin ${pinId} emits its resolved cue`,
-    );
-    assert.ok(
-      trace.voice.some(
-        (event) =>
-          event.pin === pinId
-          && event.value === "voice-pin-" + String(pinId).padStart(2, "0"),
-      ),
-      `pin ${pinId} emits its Host voice id`,
-    );
-  }
+  assert.deepEqual(trace.voice, [
+    { pin: 1, value: "cold-open" },
+    { pin: 12, value: "tape" },
+    { pin: 23, value: "draught" },
+    { pin: 26, value: "trophy" },
+    { pin: 28, value: "present" },
+  ]);
 
   for (const pin of pins.filter((candidate) => candidate.grants.length > 0)) {
     assert.ok(
-      trace.audio.some((event) => event.pin === pin.id && event.value === "ui-found"),
+      trace.audio.some((event) => event.pin === pin.id && event.value === "found"),
       `pin ${pin.id} emits item-granted audio`,
     );
     assert.ok(trace.found.includes(pin.id), `pin ${pin.id} emits found haptics`);
   }
 
-  assert.ok(trace.audio.some((event) => event.pin === 16 && event.value === "ui-refused"));
-  assert.ok(trace.audio.some((event) => event.pin === 8 && event.value === "ui-refused"));
-  assert.ok(trace.audio.some((event) => event.pin === 8 && event.value === "ui-found"));
-  assert.ok(trace.audio.some((event) => event.pin === 16 && event.value === "ui-found"));
+  assert.ok(trace.audio.some((event) => event.pin === 16 && event.value === "refused"));
+  assert.ok(trace.audio.some((event) => event.pin === 8 && event.value === "refused"));
+  assert.ok(trace.audio.some((event) => event.pin === 8 && event.value === "released"));
+  assert.ok(trace.audio.some((event) => event.pin === 16 && event.value === "released"));
   assert.deepEqual(
-    trace.audio.filter((event) => event.value === "save-deck").map(({ pin }) => pin),
+    trace.audio.filter((event) => event.value === "write").map(({ pin }) => pin),
     [2, 8],
   );
 
@@ -257,6 +255,7 @@ test("Phase 2 coordinator walks every pin with state-driven effect spies", () =>
   assert.equal(phase2ArRouteForPin(2), null);
 
   trace.intensity.length = 0;
+  trace.bedTension.length = 0;
   trace.timecode.length = 0;
   trace.drops.length = 0;
   trace.audioHeartbeat.length = 0;
@@ -267,6 +266,7 @@ test("Phase 2 coordinator walks every pin with state-driven effect spies", () =>
   }
 
   assert.deepEqual(trace.intensity, [0.15, 0.35, 0.6, 0.85, 0.6]);
+  assert.deepEqual(trace.bedTension, [0, 0.5, 0.75, 1, 0.75]);
   assert.deepEqual(trace.timecode, [null, null, "REC --:--:--", "REC --:--:--", "REC --:--:--"]);
   assert.equal(trace.drops.length, 1);
   assert.deepEqual(trace.audioHeartbeat, [true, false]);
@@ -274,6 +274,109 @@ test("Phase 2 coordinator walks every pin with state-driven effect spies", () =>
 
   coordinator.stopSession();
   assert.deepEqual(trace.wake, ["acquire", "release"]);
+});
+
+test("one successful resolution dispatches each audio and voice cue exactly once", async () => {
+  const plays: string[] = [];
+  const voices: HostVoiceId[] = [];
+  const coordinator = new Phase2IntegrationCoordinator({
+    audio: {
+      setZone: () => undefined,
+      play: (id) => {
+        plays.push(id);
+      },
+      startVoice: async (id) => {
+        voices.push(id);
+        return null;
+      },
+      heartbeat: () => undefined,
+    },
+    voices: {
+      claim: () => true,
+    },
+  });
+  let state = createDefaultGameState(1_000);
+  for (const pinId of GAMEPLAY_ORDER.slice(0, 11)) {
+    const pin = pins.find((candidate) => candidate.id === pinId);
+    assert.ok(pin);
+    const step = attemptResolvePin(
+      state,
+      pin,
+      1_000 + pinId,
+      resolutionModeForPin(pin),
+    );
+    assert.equal(step.ok, true);
+    state = step.state;
+  }
+  const result = attemptResolvePin(
+    state,
+    12,
+    1_012,
+    "scan",
+  );
+  assert.equal(result.ok, true);
+
+  coordinator.handleResolution(result);
+  await Promise.resolve();
+
+  assert.deepEqual({ plays, voices }, {
+    plays: ["found"],
+    voices: ["tape"],
+  });
+  assert.equal(plays.length, 1);
+  assert.equal(voices.length, 1);
+});
+
+test("host voices are mapped exactly and claimed once across revisits and reloads", async () => {
+  assert.deepEqual(PHASE2_VOICE_CUES_BY_PIN, {
+    1: "cold-open",
+    12: "tape",
+    23: "draught",
+    26: "trophy",
+    28: "present",
+  });
+
+  const claimed = new Set<HostVoiceId>();
+  const started: HostVoiceId[] = [];
+  const createCoordinator = () => new Phase2IntegrationCoordinator({
+    audio: {
+      setZone: () => undefined,
+      play: () => undefined,
+      startVoice: async (id) => {
+        started.push(id);
+        return null;
+      },
+      heartbeat: () => undefined,
+    },
+    voices: {
+      claim: (id) => {
+        if (claimed.has(id)) return false;
+        claimed.add(id);
+        return true;
+      },
+    },
+  });
+  const voicePins = [
+    [1, "cold-open"],
+    [12, "tape"],
+    [23, "draught"],
+    [26, "trophy"],
+    [28, "present"],
+  ] as const;
+
+  const firstSession = createCoordinator();
+  for (const [pin] of voicePins) {
+    await firstSession.startVoiceForPin(pin);
+    await firstSession.startVoiceForPin(pin);
+  }
+  await firstSession.startVoiceForPin(2);
+  assert.deepEqual(started, voicePins.map(([, id]) => id));
+
+  const reloadedSession = createCoordinator();
+  for (const [pin] of voicePins) {
+    await reloadedSession.startVoiceForPin(pin);
+  }
+  assert.deepEqual(started, voicePins.map(([, id]) => id));
 });
 
 test("health anchors and critical flags preserve the exact Phase 2 contract", () => {
@@ -330,9 +433,13 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   assert.match(app, /window\.setInterval/);
   assert.match(app, /resolution\?\.ok && resolution\.damage > 0/);
 
-  assert.match(director, /Phase2IntegrationCoordinator/);
-  assert.match(director, /coordinator\.syncZoneFromResolvedPins\(resolvedPins\)/);
-  assert.match(director, /coordinator\.syncHealth\(health\)/);
+  assert.match(app, /new Phase2IntegrationCoordinator/);
+  assert.match(app, /coordinator\.syncZoneFromResolvedPins\(store\.resolvedPins\)/);
+  assert.match(app, /coordinator\.syncHealth\(store\.health\)/);
+  assert.match(app, /coordinator\.handleResolution\(resolution\)/);
+  assert.match(app, /startVoice=\{startTapeVoice\}/);
+  assert.doesNotMatch(director, /useGameStore/);
+  assert.doesNotMatch(director, /\.play\(|\.say\(|VOICE_CUES/);
   assert.doesNotMatch(director, /health < 20/);
   assert.match(engine, /crossfadeImpulse\(/);
 

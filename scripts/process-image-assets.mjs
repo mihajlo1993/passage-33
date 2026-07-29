@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { createCanvas, loadImage } from "canvas";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const defaultSourceDirectory = path.join(repoRoot, "assets-incoming");
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const WEBP_RIFF = Buffer.from("RIFF", "ascii");
 const WEBP_SIGNATURE = Buffer.from("WEBP", "ascii");
@@ -228,7 +229,7 @@ function missingRecord(spec, reason = "missing") {
 }
 
 export async function processMediaAssets(options = {}) {
-  const sourceDirectory = path.resolve(options.sourceDirectory ?? path.join(repoRoot, "assets-incoming"));
+  const sourceDirectory = path.resolve(options.sourceDirectory ?? defaultSourceDirectory);
   const publicDirectory = path.resolve(options.publicDirectory ?? path.join(repoRoot, "public"));
   const generatedFile = path.resolve(
     options.generatedFile ?? path.join(repoRoot, "src", "media", "generated", "media.generated.ts"),
@@ -239,10 +240,19 @@ export async function processMediaAssets(options = {}) {
   const checkOnly = options.checkOnly === true;
   const quiet = options.quiet === true;
   const ffmpegCommand = options.ffmpegCommand ?? "ffmpeg";
+  const requireSheet02 = options.requireSheet02 === true
+    || (options.requireSheet02 !== false && sourceDirectory === defaultSourceDirectory);
   const records = {};
   const missing = [];
   const errors = [];
   let stale = false;
+
+  if (requireSheet02) {
+    invariant(
+      existsSync(path.join(sourceDirectory, "sheet02.png")),
+      `Required source is missing: ${path.join(sourceDirectory, "sheet02.png")}`,
+    );
+  }
 
   for (const spec of SOURCE_SPECS) {
     const incomingFile = path.join(sourceDirectory, spec.source);
@@ -324,6 +334,18 @@ export async function processMediaAssets(options = {}) {
     }
   }
 
+  if (requireSheet02) {
+    const sheet02 = records.sheet02;
+    invariant(sheet02?.available === true, "Required source sheet02.png could not be processed");
+    invariant(
+      sheet02.width === 1754
+        && sheet02.height === 2480
+        && sheet02.png !== null
+        && sheet02.webp !== null,
+      "Required Sheet 02 outputs must be a 1754 x 2480 PNG/WebP pair",
+    );
+  }
+
   const payload = {
     schemaVersion: 1,
     assets: records,
@@ -336,7 +358,7 @@ export async function processMediaAssets(options = {}) {
   if (!quiet) {
     const mode = checkOnly ? "Verified" : "Processed";
     console.log(`[media-assets] ${mode} ${Object.values(records).filter((record) => record.available).length}/${SOURCE_SPECS.length} sources.`);
-    if (missing.length > 0) console.warn(`[media-assets] Missing (fallback remains active): ${missing.join(", ")}`);
+    if (missing.length > 0) console.warn(`[media-assets] Missing optional sources: ${missing.join(", ")}`);
     for (const error of errors) console.warn(`[media-assets] ${error.fileName}: ${error.reason}`);
     if (checkOnly && stale) console.error("[media-assets] Generated media output is stale.");
   }

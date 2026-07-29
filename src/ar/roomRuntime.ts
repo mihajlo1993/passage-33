@@ -12,7 +12,7 @@ import {
 } from "./config";
 import type { RoomArPlacement } from "./types";
 
-const EMBEDDED_PNG_PREFIX = "data:image/png;base64,";
+const LOCAL_CREATURE_WEBP_URL = "/ar/textures/creature.webp";
 const FALLEN_ROTATION_RADIANS = THREE.MathUtils.degToRad(
   effects.ar.monsterCollapseDegrees,
 );
@@ -84,9 +84,8 @@ interface PendingImageTexture {
   cancel(): void;
 }
 
-export function isEmbeddedCreatureDataUri(value: string): boolean {
-  return value.startsWith(EMBEDDED_PNG_PREFIX)
-    && value.length > EMBEDDED_PNG_PREFIX.length;
+export function isLocalCreatureWebpUrl(value: string): boolean {
+  return value === LOCAL_CREATURE_WEBP_URL;
 }
 
 /** Yaw for a +Z-facing plane to look at the viewer without pitching. */
@@ -152,11 +151,11 @@ function normalizeRuntimeError(
 }
 
 function createCreatureTexture(): PendingImageTexture {
-  const dataUri = AR_CREATURE_ASSET.dataUri;
-  if (!isEmbeddedCreatureDataUri(dataUri)) {
+  const imageUrl = AR_CREATURE_ASSET.url;
+  if (!isLocalCreatureWebpUrl(imageUrl)) {
     const error = new RoomXrRuntimeError(
       "creature-asset-invalid",
-      "The room creature must be an embedded PNG data URI.",
+      "The room creature must use the bundled local WebP URL.",
     );
     return {
       promise: Promise.reject(error),
@@ -193,10 +192,10 @@ function createCreatureTexture(): PendingImageTexture {
       image = null;
       reject(new RoomXrRuntimeError(
         "creature-asset-failed",
-        "The embedded room creature could not be decoded.",
+        "The bundled room creature could not be decoded.",
       ));
     };
-    image.src = dataUri;
+    image.src = imageUrl;
   });
 
   return {
@@ -211,7 +210,7 @@ function createCreatureTexture(): PendingImageTexture {
       }
       rejectPromise?.(new RoomXrRuntimeError(
         "runtime-failed",
-        "Room AR was disposed before the embedded creature decoded.",
+        "Room AR was disposed before the bundled creature decoded.",
       ));
       rejectPromise = null;
     },

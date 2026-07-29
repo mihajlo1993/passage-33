@@ -46,6 +46,18 @@ const glyphsSource = readFileSync(
   new URL("../src/components/GlyphsScreen.tsx", import.meta.url),
   "utf8",
 );
+const codesRouteSource = readFileSync(
+  new URL("../src/components/print/CodesRoute.tsx", import.meta.url),
+  "utf8",
+);
+const glyphsRouteSource = readFileSync(
+  new URL("../src/components/print/GlyphsRoute.tsx", import.meta.url),
+  "utf8",
+);
+const sheetsRouteSource = readFileSync(
+  new URL("../src/components/print/SheetsRoute.tsx", import.meta.url),
+  "utf8",
+);
 
 const appSource = readFileSync(
   new URL("../src/components/GameApp.tsx", import.meta.url),
@@ -65,10 +77,13 @@ const mainSource = readFileSync(
 );
 
 test("/sheets is a production route with its print tokens and stylesheet wired", () => {
-  assert.match(appSource, /import \{ SheetsScreen \} from "\.\/SheetsScreen"/);
+  assert.match(appSource, /lazy\(\(\) => import\(["']\.\/print\/SheetsRoute["']\)/);
+  assert.doesNotMatch(appSource, /import \{ SheetsScreen \} from ["']\.\/SheetsScreen["']/);
   assert.match(appSource, /"\/sheets"/);
-  assert.match(appSource, /route === "\/sheets"[\s\S]*?<SheetsScreen/);
-  assert.match(globalStylesSource, /@import "\.\/styles\/sheets\.css"/);
+  assert.match(appSource, /route === "\/sheets"[\s\S]*?<LazySheetsScreen/);
+  assert.match(sheetsRouteSource, /import ["']\.\.\/\.\.\/styles\/sheets\.css["']/);
+  assert.doesNotMatch(sheetsSource, /styles\/sheets\.css/);
+  assert.doesNotMatch(globalStylesSource, /styles\/sheets\.css/);
   assert.match(tokenSource, /printBlack:\s*['"]#000000['"]/);
   assert.match(tokenSource, /printWhite:\s*['"]#FFFFFF['"]/);
   assert.match(mainSource, /"--c-print-black":\s*colours\.printBlack/);
@@ -92,15 +107,33 @@ test("/sheets renders exactly three explicit print pages", () => {
   );
 });
 
-test("image sheets use deterministic local WebP and PNG sources with a missing fallback", () => {
+test("image sheets load print-only PNGs only when the lazy route mounts", () => {
   const markup = renderToStaticMarkup(createElement(SheetsScreen));
   for (const id of ["sheet01", "sheet02"]) {
-    assert.ok(markup.includes(`/media/${id}.webp`));
     assert.ok(markup.includes(`/media/${id}.png`));
+    assert.ok(!markup.includes(`/media/${id}.webp`));
   }
-  assert.match(sheetsSource, /onError=\{\(\) => setMissing\(true\)\}/);
-  assert.match(sheetsSource, /SOURCE MISSING/);
+  assert.doesNotMatch(sheetsSource, /setMissing|SOURCE MISSING|<source\b|<picture\b/);
   assert.doesNotMatch(sheetsSource, /fetch\(|https?:\/\//i);
+});
+
+test("all desktop print routes are lazy and own their print CSS", () => {
+  for (const [screen, route] of [
+    ["Codes", "codes"],
+    ["Glyphs", "glyphs"],
+    ["Sheets", "sheets"],
+  ] as const) {
+    assert.match(
+      appSource,
+      new RegExp(`lazy\\(\\(\\) => import\\(["']\\./print/${screen}Route["']\\)`),
+    );
+    assert.match(appSource, new RegExp(`route === ["']/${route}["']`));
+  }
+  assert.match(codesRouteSource, /import ["']\.\.\/\.\.\/styles\/codes\.css["']/);
+  assert.match(glyphsRouteSource, /import ["']\.\.\/\.\.\/styles\/glyphs\.css["']/);
+  assert.doesNotMatch(codesSource, /styles\/codes\.css/);
+  assert.doesNotMatch(glyphsSource, /styles\/glyphs\.css/);
+  assert.doesNotMatch(globalStylesSource, /styles\/(?:codes|glyphs|sheets)\.css/);
 });
 
 test("Sheet 03 consumes every canonical survey-model collection", () => {

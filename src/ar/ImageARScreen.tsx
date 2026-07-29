@@ -135,7 +135,7 @@ export function ImageARScreen({
               className="ar-fallback-sprite"
               data-sheet={scene.sheetId}
               data-animating={String(view === "animating" || view === "complete")}
-              src={asset.spriteDataUri}
+              src={asset.spriteUrl}
               alt=""
               aria-hidden="true"
             />

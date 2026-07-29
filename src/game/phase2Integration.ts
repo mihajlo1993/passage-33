@@ -1,8 +1,9 @@
+import type { VoicePlaybackHandle } from "../audio/types";
 import { getVHSHealthProfile, type VHSHealthProfile } from "../fx";
 import { itemIds } from "../items";
 import { getPinById } from "../pins";
 import { motion } from "../tokens";
-import type { GameState, Pin, ZoneId } from "../types";
+import type { GameState, HostVoiceId, Pin, ZoneId } from "../types";
 import type { PinResolutionResult } from "./engine";
 
 export const PHASE2_SCARE_PIN_IDS = [9, 18, 22] as const;
@@ -13,29 +14,35 @@ export const FIELD_DESK_PIN_ID = 15;
 export type Phase2ArRoute = "image" | "room" | null;
 export type Phase2HapticCue = "contact" | "found" | "stutter";
 
-const PIN_AUDIO_CUES: Readonly<Partial<Record<number, string>>> = {
-  21: "candle-light",
-  23: "candle-out",
-  24: "candle-light",
-  25: "fan-stop",
-};
-
 const SCARE_AUDIO_CUES = {
-  torchKill: "torch-kill",
-  roomMonster: "room-monster-arrival",
-  closeQuarters: "close-quarters",
+  torchKill: "stinger-a",
+  roomMonster: "stinger-b",
+  closeQuarters: "stinger-c",
 } as const;
 
-export const SAVE_WRITTEN_AUDIO_CUE = "save-deck";
-export const DIAL_WRONG_AUDIO_CUE = "ui-refused";
-export const DIAL_CORRECT_AUDIO_CUE = "ui-found";
+export const PHASE2_VOICE_CUES_BY_PIN: Readonly<Partial<Record<number, HostVoiceId>>> = {
+  1: "cold-open",
+  12: "tape",
+  23: "draught",
+  26: "trophy",
+  28: "present",
+};
+
+export const SAVE_WRITTEN_AUDIO_CUE = "write";
+export const DIAL_WRONG_AUDIO_CUE = "refused";
+export const DIAL_CORRECT_AUDIO_CUE = "released";
+export const DELAYED_STINGER_MS = 800;
 
 export interface Phase2AudioPort {
   setZone(zone: ZoneId): void;
-  ambient(id: string | null): void;
+  setBedTension?(value: number): void;
   play(id: string): void | Promise<void>;
-  say?(id: string): void | Promise<void>;
+  startVoice?(id: HostVoiceId): Promise<VoicePlaybackHandle | null>;
   heartbeat(enabled: boolean): void;
+}
+
+export interface Phase2VoicePort {
+  claim(id: HostVoiceId): boolean;
 }
 
 export interface Phase2VHSPort {
@@ -64,6 +71,7 @@ export interface Phase2TorchPort {
 
 export interface Phase2IntegrationPorts {
   readonly audio?: Phase2AudioPort;
+  readonly voices?: Phase2VoicePort;
   readonly vhs?: Phase2VHSPort;
   readonly haptics?: Phase2HapticsPort;
   readonly wakeLock?: Phase2WakeLockPort;
@@ -97,22 +105,19 @@ export function canResolveRoomAr(
 export function phase2AudioCuesForResolution(
   result: PinResolutionResult,
 ): readonly string[] {
-  if (!result.ok) return ["ui-refused"];
+  if (!result.ok) return ["refused"];
 
-  const cues: string[] = ["ui-contact"];
-  if (
-    result.grantedItems.length > 0
-    || result.pin.resolution === "dial"
-  ) {
-    cues.push("ui-found");
-  }
+  const cues: string[] = [];
+  if (result.grantedItems.length > 0) cues.push("found");
+  if (result.pin.resolution === "dial") cues.push("released");
 
-  if (result.pin.scare && result.pin.scare !== "roomMonster") {
-    cues.push(SCARE_AUDIO_CUES[result.pin.scare]);
+  if (result.pin.scare) {
+    cues.push(
+      result.pin.scare === "torchKill"
+        ? SCARE_AUDIO_CUES.torchKill
+        : "drag",
+    );
   }
-  const pinCue = PIN_AUDIO_CUES[result.pin.id];
-  if (pinCue) cues.push(pinCue);
-  if (result.finished) cues.push("trophy-resolve");
   return unique(cues);
 }
 
@@ -138,6 +143,11 @@ export function phase2HealthProfile(health: number): VHSHealthProfile {
   return getVHSHealthProfile(health);
 }
 
+export function healthToBedTension(health: number): number {
+  if (!Number.isFinite(health)) return 0;
+  return Math.min(1, Math.max(0, (100 - health) / 80));
+}
+
 function latestResolvedZone(resolvedPins: readonly number[]): ZoneId {
   const pinId = resolvedPins.at(-1);
   return pinId === undefined ? "corridor" : (getPinById(pinId)?.zone ?? "corridor");
@@ -146,6 +156,7 @@ function latestResolvedZone(resolvedPins: readonly number[]): ZoneId {
 export class Phase2IntegrationCoordinator {
   private currentZone: ZoneId | null = null;
   private heartbeatEnabled: boolean | null = null;
+  private readonly delayedStingerTimers = new Set<ReturnType<typeof setTimeout>>();
 
   public constructor(private readonly ports: Phase2IntegrationPorts) {}
 
@@ -157,6 +168,10 @@ export class Phase2IntegrationCoordinator {
 
   public stopSession(): void {
     this.setHeartbeat(false);
+    for (const timer of this.delayedStingerTimers) {
+      clearTimeout(timer);
+    }
+    this.delayedStingerTimers.clear();
     if (this.ports.wakeLock) {
       runEffect(() => this.ports.wakeLock!.release());
     }
@@ -170,7 +185,6 @@ export class Phase2IntegrationCoordinator {
     if (zone === this.currentZone) return zone;
     this.currentZone = zone;
     this.ports.audio?.setZone(zone);
-    this.ports.audio?.ambient("ambient-" + zone);
     return zone;
   }
 
@@ -180,11 +194,30 @@ export class Phase2IntegrationCoordinator {
     this.ports.vhs?.setTimecode(
       profile.unstableTimecode ? "REC --:--:--" : null,
     );
+    this.ports.audio?.setBedTension?.(healthToBedTension(health));
     if (profile.periodicDropFrames) {
       this.ports.vhs?.dropFrames(motion.eventMs.vhsCriticalDrop);
     }
     this.setHeartbeat(health < 40);
     return profile;
+  }
+
+  public async startVoiceForPin(pinId: number): Promise<VoicePlaybackHandle | null> {
+    const voiceId = PHASE2_VOICE_CUES_BY_PIN[pinId];
+    const startVoice = this.ports.audio?.startVoice;
+    if (
+      voiceId === undefined
+      || startVoice === undefined
+      || this.ports.voices?.claim(voiceId) !== true
+    ) {
+      return null;
+    }
+
+    try {
+      return await startVoice(voiceId);
+    } catch {
+      return null;
+    }
   }
 
   public handleResolution(result: PinResolutionResult): void {
@@ -195,11 +228,12 @@ export class Phase2IntegrationCoordinator {
         runEffect(() => this.ports.audio!.play(cue));
       }
     }
-    if (result.ok && this.ports.audio?.say) {
-      const voiceId = "voice-pin-" + String(result.pin.id).padStart(2, "0");
-      runEffect(() => this.ports.audio!.say!(voiceId));
+    if (result.ok) {
+      void this.startVoiceForPin(result.pin.id);
+      if (result.pin.scare && result.pin.scare !== "torchKill") {
+        this.scheduleDelayedStinger(SCARE_AUDIO_CUES[result.pin.scare]);
+      }
     }
-
     for (const cue of phase2HapticCuesForResolution(result)) {
       this.ports.haptics?.[cue]();
     }
@@ -227,6 +261,17 @@ export class Phase2IntegrationCoordinator {
 
   public leaveFieldDesk(): void {
     if (this.ports.torch) runEffect(() => this.ports.torch!.off());
+  }
+
+  private scheduleDelayedStinger(id: string): void {
+    if (!this.ports.audio) return;
+    const timer = setTimeout(() => {
+      this.delayedStingerTimers.delete(timer);
+      if (this.ports.audio) {
+        runEffect(() => this.ports.audio!.play(id));
+      }
+    }, DELAYED_STINGER_MS);
+    this.delayedStingerTimers.add(timer);
   }
 
   private setHeartbeat(enabled: boolean): void {

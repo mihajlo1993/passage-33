@@ -1,7 +1,7 @@
 import type { ZoneId } from "../types";
 
-export type AudioCategory = "ambient" | "oneshot" | "voice";
-export type AmbientId = string;
+export type AudioCategory = "oneshot" | "voice";
+export type AmbientId = `ambient-${ZoneId}` | "dead";
 export type OneShotId = string;
 export type VoiceId = string;
 
@@ -9,27 +9,46 @@ export interface AudioManifestEntry {
   readonly id: string;
   readonly category: AudioCategory;
   readonly loop: boolean;
-  readonly base64: string;
-  readonly mimeType: "audio/wav";
-  readonly zone?: ZoneId;
-  readonly pinId?: number;
+  /** Root-relative path served by the app shell and available to the PWA cache. */
+  readonly publicPath: string;
+  readonly mimeType: "audio/wav" | "audio/mpeg";
   readonly fileName?: string;
-  readonly durationSeconds?: number;
+  readonly pinId?: number;
+  readonly durationSeconds: number;
   readonly purpose?: string;
 }
 
 export interface ImpulseManifestEntry {
   readonly id: string;
   readonly zone: ZoneId;
-  readonly base64: string;
+  /** Root-relative path served by the app shell and available to the PWA cache. */
+  readonly publicPath: string;
   readonly mimeType: "audio/wav";
   /** Linear wet gain. Values outside 0..1 are clamped by the engine. */
   readonly wet?: number;
+  readonly fileName?: string;
+  readonly durationSeconds?: number;
 }
 
+export interface VoicePlaybackHandle {
+  readonly id: VoiceId;
+  readonly durationSeconds: number;
+  positionSeconds(): number;
+  readonly finished: Promise<void>;
+  stop(): void;
+}
+
+export interface AudioFetchResponseLike {
+  readonly ok: boolean;
+  readonly status?: number;
+  arrayBuffer(): Promise<ArrayBuffer>;
+}
+
+export type AudioFetcher = (publicPath: string) => Promise<AudioFetchResponseLike>;
+
 /**
- * Deliberately small Web Audio interfaces keep the engine injectable in Node
- * tests without hiding any runtime network or media-element fallback.
+ * Deliberately small Web Audio interfaces keep the runtime injectable in Node
+ * tests while production assets are loaded from app-local public paths.
  */
 export interface AudioParamLike {
   value: number;
@@ -40,7 +59,7 @@ export interface AudioParamLike {
 }
 
 export interface AudioNodeLike {
-  connect(destination: AudioNodeLike): unknown;
+  connect(destination: AudioNodeLike | AudioParamLike): unknown;
   disconnect(): void;
 }
 
@@ -48,7 +67,11 @@ export interface GainNodeLike extends AudioNodeLike {
   readonly gain: AudioParamLike;
 }
 
-export type AudioBufferLike = object;
+export interface AudioBufferLike {
+  readonly duration?: number;
+  readonly numberOfChannels?: number;
+  getChannelData?(channel: number): Float32Array;
+}
 
 export interface ConvolverNodeLike extends AudioNodeLike {
   buffer: AudioBufferLike | null;
@@ -69,13 +92,33 @@ export interface AudioBufferSourceNodeLike extends AudioNodeLike {
   removeEventListener?(type: "error", listener: () => void): void;
 }
 
+export interface OscillatorNodeLike extends AudioNodeLike {
+  type: OscillatorType;
+  readonly frequency: AudioParamLike;
+  readonly detune: AudioParamLike;
+  onended: (() => void) | null;
+  start(when?: number): void;
+  stop(when?: number): void;
+}
+
+export interface BiquadFilterNodeLike extends AudioNodeLike {
+  type: BiquadFilterType;
+  readonly frequency: AudioParamLike;
+  readonly Q: AudioParamLike;
+  readonly gain: AudioParamLike;
+}
+
 export interface AudioContextLike {
   readonly currentTime: number;
   readonly destination: AudioNodeLike;
   readonly state: AudioContextState;
+  readonly sampleRate?: number;
   createGain(): GainNodeLike;
   createConvolver(): ConvolverNodeLike;
   createBufferSource(): AudioBufferSourceNodeLike;
+  createOscillator(): OscillatorNodeLike;
+  createBiquadFilter(): BiquadFilterNodeLike;
+  createBuffer(channels: number, frameCount: number, sampleRate: number): AudioBufferLike;
   decodeAudioData(audioData: ArrayBuffer): Promise<AudioBufferLike>;
   resume(): Promise<void>;
   close?(): Promise<void>;
@@ -90,6 +133,7 @@ export type AudioMasterState =
 
 export interface AudioEngineOptions {
   readonly contextFactory?: () => AudioContextLike;
+  readonly fetcher?: AudioFetcher;
   readonly warn?: (message: string) => void;
   /** Optional overrides are intended for deterministic tests and tooling. */
   readonly audioManifest?: readonly AudioManifestEntry[];

@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 
+import type { VoicePlaybackHandle } from "../audio/types";
 import { useAudio } from "../audio/useAudio";
 import { getVHSHealthProfile, useVHS } from "../fx";
 import {
@@ -15,6 +16,7 @@ import {
   canUserSkipTape,
   createTapePlaybackState,
   formatTapeTimecode,
+  tapeStillIndexAtVoicePosition,
   tapeStateDurationMs,
   transitionTapePlayback,
 } from "../media";
@@ -27,20 +29,26 @@ export interface TapePlaybackScreenProps {
   readonly onComplete: () => boolean | void | Promise<boolean | void>;
   /** Called only after onComplete succeeds; the shell should navigate to /map. */
   readonly onExit: () => void;
+  /** Claims pin 12's persisted one-shot voice and starts it when available. */
+  readonly startVoice: () => Promise<VoicePlaybackHandle | null>;
   /** Optional monotonically increasing operator signal; it jumps to still 07. */
   readonly operatorSkipToken?: number;
 }
+
+type TapeTimingMode = "pending" | "voice" | "fallback";
 
 export function TapePlaybackScreen({
   health,
   onComplete,
   onExit,
+  startVoice,
   operatorSkipToken = 0,
 }: TapePlaybackScreenProps) {
   const [state, dispatch] = useReducer(transitionTapePlayback, undefined, createTapePlaybackState);
   const [failedImages, setFailedImages] = useState<ReadonlySet<string>>(() => new Set());
   const [headSwitching, setHeadSwitching] = useState(false);
   const [completionFailed, setCompletionFailed] = useState(false);
+  const [timingMode, setTimingMode] = useState<TapeTimingMode>("pending");
   const vhs = useVHS();
   const audio = useAudio();
   const startedAtRef = useRef<number>(0);
@@ -51,17 +59,30 @@ export function TapePlaybackScreen({
   const completionRequestedRef = useRef(false);
   const mountedRef = useRef(true);
   const priorOperatorSkipToken = useRef(operatorSkipToken);
+  const voicePlaybackRef = useRef<VoicePlaybackHandle | null>(null);
+  const voiceStartTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
     startedAtRef.current = performance.now();
     vhs.setIntensity(effects.tape.forcedVhsIntensity);
     vhs.setTimecode("PLAY " + formatTapeTimecode(0));
-    void audio.play("save-deck").catch(() => undefined);
+    void audio.play("write").catch(() => undefined);
 
     const timecodeTimer = window.setInterval(() => {
+      const playback = voicePlaybackRef.current;
+      const elapsedMs = playback
+        ? playback.positionSeconds() * 1_000
+        : performance.now() - startedAtRef.current;
+      if (playback) {
+        const stillIndex = tapeStillIndexAtVoicePosition(
+          playback.positionSeconds(),
+          playback.durationSeconds,
+        );
+        if (stillIndex !== null) dispatch({ type: "voice-position", stillIndex });
+      }
       vhs.setTimecode(
-        "PLAY " + formatTapeTimecode(performance.now() - startedAtRef.current),
+        "PLAY " + formatTapeTimecode(elapsedMs),
       );
     }, motion.tape.timecodeTickMs);
 
@@ -78,11 +99,56 @@ export function TapePlaybackScreen({
   }, [audio, vhs]);
 
   useEffect(() => {
+    let active = true;
+    voiceStartTimerRef.current = window.setTimeout(() => {
+      voiceStartTimerRef.current = null;
+      void startVoice()
+        .then((playback) => {
+          if (!active) {
+            playback?.stop();
+            return;
+          }
+          if (playback === null) {
+            startedAtRef.current = performance.now();
+            setTimingMode("fallback");
+            return;
+          }
+
+          voicePlaybackRef.current = playback;
+          startedAtRef.current = performance.now()
+            - playback.positionSeconds() * 1_000;
+          setTimingMode("voice");
+          void playback.finished.then(() => {
+            if (!active || voicePlaybackRef.current !== playback) return;
+            voicePlaybackRef.current = null;
+            dispatch({ type: "voice-ended" });
+          });
+        })
+        .catch(() => {
+          if (!active) return;
+          startedAtRef.current = performance.now();
+          setTimingMode("fallback");
+        });
+    }, 0);
+
+    return () => {
+      active = false;
+      if (voiceStartTimerRef.current !== null) {
+        window.clearTimeout(voiceStartTimerRef.current);
+        voiceStartTimerRef.current = null;
+      }
+      voicePlaybackRef.current?.stop();
+      voicePlaybackRef.current = null;
+    };
+  }, [startVoice]);
+
+  useEffect(() => {
+    if (state.phase === "playing" && timingMode !== "fallback") return;
     const duration = tapeStateDurationMs(state);
     if (duration === null) return;
     const timer = window.setTimeout(() => dispatch("timer"), duration);
     return () => window.clearTimeout(timer);
-  }, [state]);
+  }, [state, timingMode]);
 
   useEffect(() => {
     const frameKey = `${state.phase}:${state.stillIndex}`;
@@ -93,7 +159,7 @@ export function TapePlaybackScreen({
     if (priorFrameRef.current === frameKey) return;
     priorFrameRef.current = frameKey;
     vhs.dropFrames(motion.tape.headSwitchMs);
-    void audio.play("ui-contact").catch(() => undefined);
+    void audio.play("dial-tick").catch(() => undefined);
     setHeadSwitching(true);
     if (headSwitchTimerRef.current !== null) {
       window.clearTimeout(headSwitchTimerRef.current);
@@ -132,6 +198,7 @@ export function TapePlaybackScreen({
   const showImage = state.phase === "playing"
     && still
     && asset?.available === true
+    && asset.webp !== null
     && !failedImages.has(still.assetId);
 
   const markImageFailed = (assetId: string) => {
@@ -152,16 +219,15 @@ export function TapePlaybackScreen({
       {state.phase === "playing" && still && (
         <article className="tape-playback__frame" aria-live="off">
           {showImage && asset?.available ? (
-            <picture className="tape-playback__picture">
-              {asset.webp && <source srcSet={asset.webp.url} type="image/webp" />}
+            <div className="tape-playback__picture">
               <img
-                src={asset.png.url}
+                src={asset.webp!.url}
                 width={asset.width}
                 height={asset.height}
                 alt={still.alt}
                 onError={() => markImageFailed(still.assetId)}
               />
-            </picture>
+            </div>
           ) : (
             <div className="tape-playback__missing" role="img" aria-label={still.alt}>
               <span>TRACK {String(still.id).padStart(2, "0")} // IMAGE LOST</span>

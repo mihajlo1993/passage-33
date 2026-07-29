@@ -21,13 +21,18 @@ export function HomeScreen({ state, coldOpen, onBegin, onRelight, navigate }: Ho
   if (coldOpen) {
     const resumed = state.resolvedPins.length > 0;
     const cover = MEDIA_ASSETS.coldOpen;
+    const coverUrl = cover.webp?.url;
     return (
-      <section className="cold-open" data-has-cover={String(cover.available)} aria-labelledby="cold-title">
-        {cover.available && (
-          <picture className="cold-open__media" aria-hidden="true">
-            {cover.webp && <source srcSet={cover.webp.url} type="image/webp" />}
-            <img src={cover.png.url} width={cover.width} height={cover.height} alt="" />
-          </picture>
+      <section className="cold-open" data-has-cover={String(Boolean(coverUrl))} aria-labelledby="cold-title">
+        {coverUrl && (
+          <img
+            className="cold-open__media"
+            src={coverUrl}
+            width={cover.width}
+            height={cover.height}
+            alt=""
+            aria-hidden="true"
+          />
         )}
         <div className="cold-open__rule" />
         <p className="eyebrow">PRIVATE EVENT // THIRTY-THREE</p>

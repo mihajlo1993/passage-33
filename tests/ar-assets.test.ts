@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import test from "node:test";
 
-import { createCanvas, loadImage } from "canvas";
+import { createCanvas } from "canvas";
 
 import {
   AR_CREATURE_ASSET,
@@ -29,18 +29,21 @@ interface PixelImage {
 interface GeneratedPayload {
   sheetOrder: string[];
   sheets: Record<"sheet01" | "sheet02", {
-    spriteDataUri: string;
+    spriteUrl: string;
     width: number;
     height: number;
+    byteLength: number;
     placeholder: boolean;
     sourceMode: string;
   }>;
   creature: {
-    dataUri: string;
+    url: string;
     width: number;
     height: number;
+    byteLength: number;
     placeholder: boolean;
     blackKeyed: boolean;
+    sourcePngSha256: string;
   };
   sourceMode: Record<string, string>;
 }
@@ -55,10 +58,14 @@ async function generator(): Promise<{
     sourceDirectory: string;
     incomingDirectory?: string | false;
     outputDirectory: string;
+    publicDirectory?: string;
     checkOnly?: boolean;
     quiet?: boolean;
   }): Promise<{
     outputFile: string;
+    moduleBytes: number;
+    publicBytes: number;
+    publicFiles: readonly string[];
     stale: boolean;
     sourceMode: Record<string, string>;
     sheetOrder: readonly string[];
@@ -79,22 +86,38 @@ function parseGeneratedModule(file: string): GeneratedPayload {
   ) as GeneratedPayload;
 }
 
-async function decodePng(dataUri: string): Promise<PixelImage> {
-  assert.match(dataUri, /^data:image\/png;base64,/);
-  const encoded = dataUri.slice(dataUri.indexOf(",") + 1);
-  const bytes = Buffer.from(encoded, "base64");
-  assert.deepEqual(
-    [...bytes.subarray(0, 8)],
-    [137, 80, 78, 71, 13, 10, 26, 10],
+function publicAssetPath(url: string, publicDirectory = path.join(root, "public")): string {
+  assert.match(url, /^\/ar\/(?:sprites|textures)\/[a-z0-9-]+\.webp$/);
+  return path.join(publicDirectory, ...url.slice(1).split("/"));
+}
+
+function decodeWebp(file: string, width: number, height: number): PixelImage {
+  const bytes = readFileSync(file);
+  assert.equal(bytes.subarray(0, 4).toString("ascii"), "RIFF");
+  assert.equal(bytes.subarray(8, 12).toString("ascii"), "WEBP");
+  const decoded = spawnSync(
+    "ffmpeg",
+    [
+      "-v", "error",
+      "-i", file,
+      "-frames:v", "1",
+      "-f", "rawvideo",
+      "-pix_fmt", "rgba",
+      "pipe:1",
+    ],
+    {
+      encoding: null,
+      maxBuffer: width * height * 4 + 1024,
+      windowsHide: true,
+    },
   );
-  const image = await loadImage(bytes);
-  const canvas = createCanvas(image.width, image.height);
-  const context = canvas.getContext("2d");
-  context.drawImage(image, 0, 0);
+  assert.equal(decoded.status, 0, String(decoded.stderr ?? ""));
+  assert.ok(Buffer.isBuffer(decoded.stdout));
+  assert.equal(decoded.stdout.length, width * height * 4);
   return {
-    width: image.width,
-    height: image.height,
-    pixels: context.getImageData(0, 0, image.width, image.height).data,
+    width,
+    height,
+    pixels: new Uint8ClampedArray(decoded.stdout),
   };
 }
 
@@ -140,8 +163,14 @@ test("public AR assets contain only ordered 2D sprites and the room creature", a
   for (const id of AR_SHEET_ORDER) {
     const asset = AR_SHEET_ASSETS[id];
     assert.deepEqual([asset.width, asset.height], [512, 724]);
-    const sprite = await decodePng(asset.spriteDataUri);
+    assert.equal(asset.spriteUrl, `/ar/sprites/${id}.webp`);
+    const sprite = decodeWebp(
+      publicAssetPath(asset.spriteUrl),
+      asset.width,
+      asset.height,
+    );
     assert.deepEqual([sprite.width, sprite.height], [512, 724]);
+    assert.equal(readFileSync(publicAssetPath(asset.spriteUrl)).length, asset.byteLength);
     assert.equal(typeof asset.placeholder, "boolean");
     assert.ok(
       sprite.pixels.some((value, offset) => offset % 4 === 3 && value > 0),
@@ -150,34 +179,43 @@ test("public AR assets contain only ordered 2D sprites and the room creature", a
   }
 });
 
-test("creature remains embedded at 1024x2048 after exact black-to-alpha keying", async () => {
+test("creature uses one local WebP while retaining the exact keyed PNG hash", () => {
   assert.deepEqual(
     {
       width: AR_CREATURE_ASSET.width,
       height: AR_CREATURE_ASSET.height,
       placeholder: AR_CREATURE_ASSET.placeholder,
       blackKeyed: AR_CREATURE_ASSET.blackKeyed,
+      sourcePngSha256: AR_CREATURE_ASSET.sourcePngSha256,
     },
-    { width: 1024, height: 2048, placeholder: false, blackKeyed: true },
+    {
+      width: 1024,
+      height: 2048,
+      placeholder: false,
+      blackKeyed: true,
+      sourcePngSha256:
+        "c0e4a81439ebd2cb6a916abe96ea49389a058a387df790be8e39fa17c47fa546",
+    },
   );
-  const creature = await decodePng(AR_CREATURE_ASSET.dataUri);
+  assert.equal(AR_CREATURE_ASSET.url, "/ar/textures/creature.webp");
+  const creature = decodeWebp(
+    publicAssetPath(AR_CREATURE_ASSET.url),
+    AR_CREATURE_ASSET.width,
+    AR_CREATURE_ASSET.height,
+  );
   let transparent = 0;
   let visible = 0;
-  let opaqueBlack = 0;
   for (let offset = 0; offset < creature.pixels.length; offset += 4) {
-    const red = creature.pixels[offset];
-    const green = creature.pixels[offset + 1];
-    const blue = creature.pixels[offset + 2];
     const alpha = creature.pixels[offset + 3];
     if (alpha === 0) transparent += 1;
-    else {
-      visible += 1;
-      if (red === 0 && green === 0 && blue === 0) opaqueBlack += 1;
-    }
+    else visible += 1;
   }
   assert.ok(transparent > creature.width * creature.height * 0.25);
   assert.ok(visible > 100);
-  assert.equal(opaqueBlack, 0);
+  assert.equal(
+    readFileSync(publicAssetPath(AR_CREATURE_ASSET.url)).length,
+    AR_CREATURE_ASSET.byteLength,
+  );
 });
 
 test("generator output is deterministic and --check/--quiet is clean", async (context) => {
@@ -189,8 +227,18 @@ test("generator output is deterministic and --check/--quiet is clean", async (co
   const { generateArAssets } = await generator();
   const first = await generateArAssets({ sourceDirectory, outputDirectory, quiet: true });
   const firstSource = readFileSync(first.outputFile, "utf8");
+  const firstPublicAssets = first.publicFiles.map((file) => readFileSync(file));
   const second = await generateArAssets({ sourceDirectory, outputDirectory, quiet: true });
   assert.equal(readFileSync(second.outputFile, "utf8"), firstSource);
+  assert.deepEqual(
+    second.publicFiles.map((file) => readFileSync(file)),
+    firstPublicAssets,
+  );
+  assert.ok(first.moduleBytes < 16_384);
+  assert.equal(
+    first.publicBytes,
+    firstPublicAssets.reduce((total, bytes) => total + bytes.length, 0),
+  );
   const checked = await generateArAssets({
     sourceDirectory,
     outputDirectory,
@@ -232,7 +280,14 @@ test("paired source masks isolate sprites without any tracking database", async 
   assert.equal(generated.sheets.sheet02.placeholder, false);
   assert.equal(generated.creature.placeholder, false);
   assert.equal(generated.creature.blackKeyed, true);
-  const sheet = await decodePng(generated.sheets.sheet01.spriteDataUri);
+  const sheet = decodeWebp(
+    publicAssetPath(
+      generated.sheets.sheet01.spriteUrl,
+      path.join(temporaryRoot, "public"),
+    ),
+    generated.sheets.sheet01.width,
+    generated.sheets.sheet01.height,
+  );
   const alphaAtCorner = sheet.pixels[3];
   const subjectOffset = (300 * sheet.width + 200) * 4;
   assert.equal(alphaAtCorner, 0);
@@ -274,6 +329,15 @@ test("incoming print art becomes a full-page 2D sprite at arbitrary portrait siz
   assert.deepEqual(
     [generated.sheets.sheet01.width, generated.sheets.sheet01.height],
     [512, 724],
+  );
+  assert.equal(
+    readFileSync(
+      publicAssetPath(
+        generated.sheets.sheet01.spriteUrl,
+        path.join(temporaryRoot, "public"),
+      ),
+    ).length,
+    generated.sheets.sheet01.byteLength,
   );
 });
 

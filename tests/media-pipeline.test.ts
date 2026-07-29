@@ -42,6 +42,43 @@ async function imageDimensions(file: string): Promise<readonly [number, number]>
   return [image.width, image.height];
 }
 
+function webpDimensions(file: string): readonly [number, number] {
+  const bytes = readFileSync(file);
+  assert.equal(bytes.subarray(0, 4).toString("ascii"), "RIFF");
+  assert.equal(bytes.subarray(8, 12).toString("ascii"), "WEBP");
+
+  let offset = 12;
+  while (offset + 8 <= bytes.length) {
+    const fourCc = bytes.subarray(offset, offset + 4).toString("ascii");
+    const chunkSize = bytes.readUInt32LE(offset + 4);
+    const payload = offset + 8;
+    if (fourCc === "VP8 ") {
+      assert.deepEqual([...bytes.subarray(payload + 3, payload + 6)], [0x9d, 0x01, 0x2a]);
+      return [
+        bytes.readUInt16LE(payload + 6) & 0x3fff,
+        bytes.readUInt16LE(payload + 8) & 0x3fff,
+      ];
+    }
+    if (fourCc === "VP8L") {
+      assert.equal(bytes[payload], 0x2f);
+      const packed = bytes.readUInt32LE(payload + 1);
+      return [
+        (packed & 0x3fff) + 1,
+        ((packed >>> 14) & 0x3fff) + 1,
+      ];
+    }
+    if (fourCc === "VP8X") {
+      return [
+        bytes.readUIntLE(payload + 4, 3) + 1,
+        bytes.readUIntLE(payload + 7, 3) + 1,
+      ];
+    }
+    offset = payload + chunkSize + (chunkSize % 2);
+  }
+
+  assert.fail(`${file} contains no WebP image chunk`);
+}
+
 test("media pipeline is deterministic, non-fatal for missing sources, and emits WebP plus PNG", async () => {
   const { processMediaAssets } = await mediaProcessor();
   const root = mkdtempSync(path.join(tmpdir(), "bh7-media-"));
@@ -137,6 +174,52 @@ test("media pipeline is deterministic, non-fatal for missing sources, and emits 
     });
     assert.equal(checked.stale, false);
     assert.equal(readFileSync(generatedFile, "utf8"), firstModule);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("media pipeline requires Sheet 02 in strict production mode", async () => {
+  const { processMediaAssets } = await mediaProcessor();
+  const root = mkdtempSync(path.join(tmpdir(), "bh7-media-required-sheet-"));
+  const incoming = path.join(root, "incoming");
+  const publicDirectory = path.join(root, "public");
+  const generatedFile = path.join(root, "generated", "media.generated.ts");
+  mkdirSync(incoming, { recursive: true });
+
+  try {
+    await assert.rejects(
+      processMediaAssets({
+        sourceDirectory: incoming,
+        publicDirectory,
+        generatedFile,
+        legacyTrophyFile: false,
+        requireSheet02: true,
+        quiet: true,
+      }),
+      /Required source is missing:.*sheet02\.png/,
+    );
+    assert.equal(existsSync(generatedFile), false, "the strict gate runs before generated output changes");
+
+    writeFileSync(path.join(incoming, "sheet02.png"), sourcePng(20, 20));
+    const result = await processMediaAssets({
+      sourceDirectory: incoming,
+      publicDirectory,
+      generatedFile,
+      legacyTrophyFile: false,
+      requireSheet02: true,
+      quiet: true,
+    });
+
+    assert.equal(result.records.sheet02?.available, true);
+    assert.deepEqual(
+      await imageDimensions(path.join(publicDirectory, "media", "sheet02.png")),
+      [1754, 2480],
+    );
+    assert.deepEqual(
+      webpDimensions(path.join(publicDirectory, "media", "sheet02.webp")),
+      [1754, 2480],
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

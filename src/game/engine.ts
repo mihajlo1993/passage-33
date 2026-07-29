@@ -117,6 +117,7 @@ export function createDefaultGameState(startedAt = Date.now()): GameState {
     startedAt,
     trophyAt: null,
     finishedAt: null,
+    playedVoiceIds: [],
   };
 }
 

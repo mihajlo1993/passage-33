@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-import type { GameState, PinResolutionMethod } from "../types";
+import type { GameState, HostVoiceId, PinResolutionMethod } from "../types";
 import {
   attemptResolvePin,
   attemptUseFirstAid,
@@ -25,6 +25,7 @@ export interface GameStore extends GameState {
   hydrate: () => Promise<GameState>;
   resolvePin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
   previewPin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
+  claimVoice: (id: HostVoiceId) => boolean;
   useFirstAid: () => FirstAidUseResult;
   resetGame: (startedAt?: number) => GameState;
   replaceStateFromOperator: (state: GameState) => GameState;
@@ -42,6 +43,7 @@ export function selectGameState(state: GameState): GameState {
     startedAt: state.startedAt,
     trophyAt: state.trophyAt,
     finishedAt: state.finishedAt,
+    playedVoiceIds: [...state.playedVoiceIds],
   };
 }
 
@@ -55,7 +57,8 @@ function gameStateChanged(current: GameStore, previous: GameStore): boolean {
     current.lastSavePin !== previous.lastSavePin ||
     current.startedAt !== previous.startedAt ||
     current.trophyAt !== previous.trophyAt ||
-    current.finishedAt !== previous.finishedAt
+    current.finishedAt !== previous.finishedAt ||
+    current.playedVoiceIds !== previous.playedVoiceIds
   );
 }
 
@@ -146,6 +149,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       method,
     ),
 
+  claimVoice: (id) => {
+    const current = get();
+    if (current.playedVoiceIds.includes(id)) return false;
+
+    set({
+      playedVoiceIds: [...current.playedVoiceIds, id],
+    });
+    return true;
+  },
+
   useFirstAid: () => {
     const result = attemptUseFirstAid(selectGameState(get()));
     if (result.ok) {
@@ -181,7 +194,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       hydrating: false,
       lastResolution: null,
     });
-    // Recovery changes are rare and must not wait in the health-write queue.
+    // Recovery changes are rare and deliberately bypass the deferred queue.
     void persistGameStateImmediately(gameState).catch(() => undefined);
     return gameState;
   },
@@ -194,17 +207,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 useGameStore.subscribe((current, previous) => {
   if (gameStateChanged(current, previous)) {
     const snapshot = selectGameState(current);
-    const needsImmediateWrite =
-      current.act !== previous.act ||
-      current.inventory !== previous.inventory ||
-      current.resolvedPins !== previous.resolvedPins ||
-      current.lastSavePin !== previous.lastSavePin ||
-      current.trophyAt !== previous.trophyAt ||
-      current.finishedAt !== previous.finishedAt;
-
-    if (needsImmediateWrite) {
-      void persistGameStateImmediately(snapshot).catch(() => undefined);
-    }
-    else queueGameStateWrite(snapshot);
+    queueGameStateWrite(snapshot);
   }
 });

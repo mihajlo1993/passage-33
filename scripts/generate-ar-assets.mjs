@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -17,13 +18,16 @@ const RUNTIME_SHEET_WIDTH = 512;
 const RUNTIME_SHEET_HEIGHT = 724;
 const CREATURE_WIDTH = 1024;
 const CREATURE_HEIGHT = 2048;
-const MAX_GENERATED_MODULE_BYTES = 16 * 1024 * 1024;
+const MAX_GENERATED_MODULE_BYTES = 16 * 1024;
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+const WEBP_RIFF = Buffer.from("RIFF", "ascii");
+const WEBP_SIGNATURE = Buffer.from("WEBP", "ascii");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultSourceDirectory = path.join(repoRoot, "src", "ar", "assets", "source");
 const defaultIncomingDirectory = path.join(repoRoot, "assets-incoming");
 const defaultOutputDirectory = path.join(repoRoot, "src", "ar", "generated");
+const defaultPublicDirectory = path.join(repoRoot, "public");
 
 function invariant(condition, message) {
   if (!condition) throw new Error(`[ar-assets] ${message}`);
@@ -35,6 +39,54 @@ function sha256(bytes) {
 
 function pngBytes(canvas) {
   return canvas.toBuffer("image/png", { compressionLevel: 9 });
+}
+
+function webpBytes(canvas, label, ffmpegCommand = "ffmpeg") {
+  const encoded = spawnSync(
+    ffmpegCommand,
+    [
+      "-v", "error",
+      "-fflags", "+bitexact",
+      "-f", "image2pipe",
+      "-vcodec", "png",
+      "-i", "pipe:0",
+      "-map_metadata", "-1",
+      "-frames:v", "1",
+      "-c:v", "libwebp",
+      "-quality", "82",
+      "-compression_level", "6",
+      "-preset", "picture",
+      "-f", "webp",
+      "pipe:1",
+    ],
+    {
+      input: pngBytes(canvas),
+      encoding: null,
+      maxBuffer: 32 * 1024 * 1024,
+      windowsHide: true,
+    },
+  );
+  invariant(
+    encoded.error === undefined,
+    `${label} WebP encoder is unavailable: ${encoded.error?.message ?? "unknown error"}`,
+  );
+  invariant(
+    encoded.status === 0,
+    `${label} WebP encode failed: ${String(encoded.stderr ?? "").trim()}`,
+  );
+  const bytes = encoded.stdout;
+  invariant(
+    Buffer.isBuffer(bytes)
+      && bytes.length >= 12
+      && bytes.subarray(0, 4).equals(WEBP_RIFF)
+      && bytes.subarray(8, 12).equals(WEBP_SIGNATURE),
+    `${label} encoder returned an invalid WebP payload`,
+  );
+  return bytes;
+}
+
+function publicUrl(relativeFile) {
+  return `/${relativeFile.split(path.sep).join("/")}`;
 }
 
 function assertPng(bytes, label) {
@@ -194,7 +246,12 @@ function isolateFromMask(paper, mask, label) {
   return output;
 }
 
-async function buildSheetAsset(sourceDirectory, incomingDirectory, sheetId) {
+async function buildSheetAsset(
+  sourceDirectory,
+  incomingDirectory,
+  sheetId,
+  ffmpegCommand,
+) {
   const sourceName = `${sheetId}.png`;
   const maskName = `${sheetId}-mask.png`;
   const sourceFile = path.join(sourceDirectory, sourceName);
@@ -236,16 +293,22 @@ async function buildSheetAsset(sourceDirectory, incomingDirectory, sheetId) {
     sourceMode = "placeholder";
   }
 
-  const spriteBuffer = pngBytes(sprite);
+  const relativeFile = path.join("ar", "sprites", `${sheetId}.webp`);
+  const bytes = webpBytes(sprite, `${sheetId} runtime sprite`, ffmpegCommand);
   return {
-    spriteDataUri: `data:image/png;base64,${spriteBuffer.toString("base64")}`,
-    width: RUNTIME_SHEET_WIDTH,
-    height: RUNTIME_SHEET_HEIGHT,
-    placeholder,
-    spriteSha256: sha256(spriteBuffer),
-    sourceFileName,
-    maskFileName,
-    sourceMode,
+    relativeFile,
+    bytes,
+    metadata: {
+      spriteUrl: publicUrl(relativeFile),
+      width: RUNTIME_SHEET_WIDTH,
+      height: RUNTIME_SHEET_HEIGHT,
+      byteLength: bytes.length,
+      placeholder,
+      spriteSha256: sha256(bytes),
+      sourceFileName,
+      maskFileName,
+      sourceMode,
+    },
   };
 }
 
@@ -307,7 +370,11 @@ function keyBlackToAlpha(source, label) {
   return keyed;
 }
 
-async function buildCreatureAsset(sourceDirectory, incomingDirectory) {
+async function buildCreatureAsset(
+  sourceDirectory,
+  incomingDirectory,
+  ffmpegCommand,
+) {
   const incomingName = "creature.png";
   const incomingFile = incomingDirectory
     ? path.join(incomingDirectory, incomingName)
@@ -339,15 +406,23 @@ async function buildCreatureAsset(sourceDirectory, incomingDirectory) {
   }
 
   const keyed = keyBlackToAlpha(source, sourceFileName);
-  const bytes = pngBytes(keyed);
+  const sourcePngBytes = pngBytes(keyed);
+  const bytes = webpBytes(keyed, "room creature", ffmpegCommand);
+  const relativeFile = path.join("ar", "textures", "creature.webp");
   return {
-    dataUri: `data:image/png;base64,${bytes.toString("base64")}`,
-    width: CREATURE_WIDTH,
-    height: CREATURE_HEIGHT,
-    placeholder,
-    blackKeyed: true,
-    sha256: sha256(bytes),
-    sourceFileName,
+    relativeFile,
+    bytes,
+    metadata: {
+      url: publicUrl(relativeFile),
+      width: CREATURE_WIDTH,
+      height: CREATURE_HEIGHT,
+      byteLength: bytes.length,
+      placeholder,
+      blackKeyed: true,
+      sha256: sha256(bytes),
+      sourcePngSha256: sha256(sourcePngBytes),
+      sourceFileName,
+    },
   };
 }
 
@@ -362,17 +437,37 @@ export async function generateArAssets(options = {}) {
     ? null
     : path.resolve(options.incomingDirectory ?? defaultIncomingDirectory);
   const outputDirectory = path.resolve(options.outputDirectory ?? defaultOutputDirectory);
+  const publicDirectory = path.resolve(
+    options.publicDirectory
+      ?? (options.outputDirectory === undefined
+        ? defaultPublicDirectory
+        : path.join(path.dirname(outputDirectory), "public")),
+  );
+  const ffmpegCommand = options.ffmpegCommand ?? "ffmpeg";
   const checkOnly = options.checkOnly === true;
   const quiet = options.quiet === true;
 
-  const sheetEntries = await Promise.all(
+  const builtSheetEntries = await Promise.all(
     SHEET_ORDER.map(async (sheetId) => [
       sheetId,
-      await buildSheetAsset(sourceDirectory, incomingDirectory, sheetId),
+      await buildSheetAsset(
+        sourceDirectory,
+        incomingDirectory,
+        sheetId,
+        ffmpegCommand,
+      ),
     ]),
   );
-  const sheets = Object.fromEntries(sheetEntries);
-  const creature = await buildCreatureAsset(sourceDirectory, incomingDirectory);
+  const builtSheets = Object.fromEntries(builtSheetEntries);
+  const builtCreature = await buildCreatureAsset(
+    sourceDirectory,
+    incomingDirectory,
+    ffmpegCommand,
+  );
+  const sheets = Object.fromEntries(
+    SHEET_ORDER.map((sheetId) => [sheetId, builtSheets[sheetId].metadata]),
+  );
+  const creature = builtCreature.metadata;
   const sourceMode = {
     sheet01: sheets.sheet01.sourceMode,
     sheet02: sheets.sheet02.sourceMode,
@@ -392,10 +487,40 @@ export async function generateArAssets(options = {}) {
   );
 
   const outputFile = path.join(outputDirectory, "ar-assets.generated.ts");
+  const publicOutputs = [
+    ...SHEET_ORDER.map((sheetId) => builtSheets[sheetId]),
+    builtCreature,
+  ];
+  const publicBytes = publicOutputs.reduce(
+    (total, output) => total + output.bytes.length,
+    0,
+  );
   let stale = false;
+
+  for (const output of publicOutputs) {
+    const file = path.join(publicDirectory, output.relativeFile);
+    const matches = existsSync(file)
+      && readFileSync(file).equals(output.bytes);
+    if (checkOnly) {
+      if (!matches) {
+        stale = true;
+        if (!quiet) {
+          console.error(
+            `[ar-assets] Stale generated file: ${path.relative(repoRoot, file)}`,
+          );
+        }
+      }
+    } else {
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, output.bytes);
+    }
+  }
+
   if (checkOnly) {
-    stale = !existsSync(outputFile) || readFileSync(outputFile, "utf8") !== source;
-    if (stale && !quiet) {
+    const moduleStale = !existsSync(outputFile)
+      || readFileSync(outputFile, "utf8") !== source;
+    stale = stale || moduleStale;
+    if (moduleStale && !quiet) {
       console.error(`[ar-assets] Stale generated file: ${path.relative(repoRoot, outputFile)}`);
     }
   } else {
@@ -406,13 +531,17 @@ export async function generateArAssets(options = {}) {
   if (!quiet && !stale) {
     const verb = checkOnly ? "Verified" : "Wrote";
     console.log(
-      `[ar-assets] ${verb} ${path.relative(repoRoot, outputFile)} (${moduleBytes} bytes; ${Object.values(sourceMode).join(", ")}).`,
+      `[ar-assets] ${verb} ${path.relative(repoRoot, outputFile)} (${moduleBytes} metadata bytes; ${publicBytes} WebP bytes; ${Object.values(sourceMode).join(", ")}).`,
     );
   }
 
   return {
     outputFile,
     moduleBytes,
+    publicBytes,
+    publicFiles: Object.freeze(
+      publicOutputs.map((output) => path.join(publicDirectory, output.relativeFile)),
+    ),
     stale,
     sourceMode: Object.freeze({ ...sourceMode }),
     sheetOrder: Object.freeze([...SHEET_ORDER]),
@@ -429,12 +558,14 @@ function parseCliArgs(args) {
       argument === "--source-dir"
       || argument === "--incoming-dir"
       || argument === "--output-dir"
+      || argument === "--public-dir"
     ) {
       const value = args[index + 1];
       invariant(value && !value.startsWith("--"), `${argument} needs a path`);
       if (argument === "--source-dir") options.sourceDirectory = value;
       else if (argument === "--incoming-dir") options.incomingDirectory = value;
-      else options.outputDirectory = value;
+      else if (argument === "--output-dir") options.outputDirectory = value;
+      else options.publicDirectory = value;
       index += 1;
     } else if (argument.startsWith("--source-dir=")) {
       options.sourceDirectory = argument.slice("--source-dir=".length);
@@ -442,6 +573,8 @@ function parseCliArgs(args) {
       options.incomingDirectory = argument.slice("--incoming-dir=".length);
     } else if (argument.startsWith("--output-dir=")) {
       options.outputDirectory = argument.slice("--output-dir=".length);
+    } else if (argument.startsWith("--public-dir=")) {
+      options.publicDirectory = argument.slice("--public-dir=".length);
     } else {
       throw new Error(`[ar-assets] Unknown argument: ${argument}`);
     }

@@ -3,7 +3,7 @@
 import {
   Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState,
 } from "react";
-import { useGameStore } from "@/src/game";
+import { Phase2IntegrationCoordinator, useGameStore } from "@/src/game";
 import { useHaptics, useWakeLock } from "@/src/device";
 import { getVHSHealthProfile, useVHS } from "@/src/fx";
 import { motion } from "@/src/tokens";
@@ -16,15 +16,24 @@ import { NotesScreen } from "./NotesScreen";
 import { SaveScreen } from "./SaveScreen";
 import { TrophyScreen } from "./TrophyScreen";
 import { DevScreen } from "./DevScreen";
-import { CodesScreen } from "./CodesScreen";
-import { GlyphsScreen } from "./GlyphsScreen";
 import { TapePlaybackScreen } from "./TapePlaybackScreen";
-import { SheetsScreen } from "./SheetsScreen";
 import { useOperatorRuntime } from "../operator";
 
 const LazyARScreen = lazy(() => import("../ar/ARScreen").then((module) => ({
   default: module.ARScreen,
 })));
+const LazyCodesScreen = lazy(() => import("./print/CodesRoute"));
+const LazyGlyphsScreen = lazy(() => import("./print/GlyphsRoute"));
+const LazySheetsScreen = lazy(() => import("./print/SheetsRoute"));
+
+function PrintRouteLoading() {
+  return (
+    <main className="restore-screen" role="status">
+      <p className="eyebrow">PRINT LEDGER</p>
+      <h1>PREPARING THE PAPER.</h1>
+    </main>
+  );
+}
 
 const PLAY_ROUTES = new Set([
   "/",
@@ -108,6 +117,7 @@ export function GameApp() {
       startedAt: store.startedAt,
       trophyAt: store.trophyAt,
       finishedAt: store.finishedAt,
+      playedVoiceIds: store.playedVoiceIds,
     }),
     [
       store.act,
@@ -119,15 +129,25 @@ export function GameApp() {
       store.startedAt,
       store.trophyAt,
       store.finishedAt,
+      store.playedVoiceIds,
     ],
   );
   const vhs = useVHS();
   const audio = useAudio();
   const operatorRuntime = useOperatorRuntime();
   const lastDamageResolution = useRef<unknown>(null);
+  const lastAudioResolution = useRef<unknown>(null);
+  const haptics = useHaptics();
+  const coordinator = useMemo(
+    () => new Phase2IntegrationCoordinator({
+      audio,
+      haptics,
+      voices: { claim: store.claimVoice },
+    }),
+    [audio, haptics, store.claimVoice],
+  );
 
   useWakeLock();
-  useHaptics(store.critical);
   useEffect(() => {
     const profile = getVHSHealthProfile(store.health);
     vhs.setIntensity(profile.intensity);
@@ -168,6 +188,23 @@ export function GameApp() {
   }, [store.lastResolution, vhs]);
 
   useEffect(() => {
+    coordinator.syncZoneFromResolvedPins(store.resolvedPins);
+  }, [coordinator, store.resolvedPins]);
+
+  useEffect(() => {
+    coordinator.syncHealth(store.health);
+  }, [coordinator, store.health]);
+
+  useEffect(() => {
+    const resolution = store.lastResolution;
+    if (resolution === lastAudioResolution.current) return;
+    lastAudioResolution.current = resolution;
+    if (resolution !== null) coordinator.handleResolution(resolution);
+  }, [coordinator, store.lastResolution]);
+
+  useEffect(() => () => coordinator.stopSession(), [coordinator]);
+
+  useEffect(() => {
     void store.hydrate();
   }, [store.hydrate]);
 
@@ -187,16 +224,15 @@ export function GameApp() {
     };
   }, [store.flushPersistence]);
 
+  const startTapeVoice = useCallback(
+    () => coordinator.startVoiceForPin(12),
+    [coordinator],
+  );
+
   const begin = () => {
     const unlock = audio.master.unlock();
-    const voice = sessionStorage.getItem("bh7-intro-seen") === "1"
-      ? "voice-host-resume"
-      : "voice-host-intro";
-    sessionStorage.setItem("bh7-intro-seen", "1");
     setColdOpen(false);
-    void unlock
-      .then(() => audio.say(voice))
-      .catch(() => undefined);
+    void unlock.catch(() => undefined);
   };
 
   if (!store.hydrated) {
@@ -209,9 +245,27 @@ export function GameApp() {
     );
   }
 
-  if (route === "/codes") return <CodesScreen />;
-  if (route === "/glyphs") return <GlyphsScreen />;
-  if (route === "/sheets") return <SheetsScreen />;
+  if (route === "/codes") {
+    return (
+      <Suspense fallback={<PrintRouteLoading />}>
+        <LazyCodesScreen />
+      </Suspense>
+    );
+  }
+  if (route === "/glyphs") {
+    return (
+      <Suspense fallback={<PrintRouteLoading />}>
+        <LazyGlyphsScreen />
+      </Suspense>
+    );
+  }
+  if (route === "/sheets") {
+    return (
+      <Suspense fallback={<PrintRouteLoading />}>
+        <LazySheetsScreen />
+      </Suspense>
+    );
+  }
 
   if (route === "/save") {
     const ticket = typeof window === "undefined" ? null : Number(sessionStorage.getItem("bh7-save-ticket"));
@@ -300,6 +354,7 @@ export function GameApp() {
           <TapePlaybackScreen
             health={store.health}
             operatorSkipToken={operatorRuntime.skipScareRevision}
+            startVoice={startTapeVoice}
             onComplete={() => store.resolvePin(12, "scan").ok}
             onExit={() => navigate("/map")}
           />

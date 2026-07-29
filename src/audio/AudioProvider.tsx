@@ -15,17 +15,13 @@ export interface AudioProviderProps {
 
 function bindControls(engine: AudioEngine): AudioControls {
   return {
-    setZone: (zone) => {
-      void engine.setZone(zone);
-    },
-    ambient: (id) => {
-      void engine.ambient(id);
-    },
+    setZone: (zone) => engine.setZone(zone),
+    ambient: (id) => engine.ambient(id),
+    setBedTension: (value) => engine.setBedTension(value),
     play: (id) => engine.play(id),
+    startVoice: (id) => engine.startVoice(id),
     say: (id) => engine.say(id),
-    heartbeat: (enabled) => {
-      void engine.heartbeat(enabled);
-    },
+    heartbeat: (enabled) => engine.heartbeat(enabled),
     silence: () => engine.silence(),
     master: {
       unlock: () => engine.unlock(),
@@ -54,10 +50,7 @@ export function AudioProvider({ children }: AudioProviderProps) {
       window.clearTimeout(disposeTimerRef.current);
       disposeTimerRef.current = null;
     }
-
-    const handleVisibility = () => {
-      engine.handleVisibility(document.visibilityState);
-    };
+    const handleVisibility = () => engine.handleVisibility(document.visibilityState);
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {

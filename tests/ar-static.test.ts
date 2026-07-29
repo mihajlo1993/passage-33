@@ -150,7 +150,7 @@ test("only room WebXR retains the twelve-second acquisition fallback", () => {
   assert.doesNotMatch(imageScreen, /ACQUISITION|acquisition|tracking|onFound|onLost/);
 });
 
-test("2D sprites and room creature are embedded; pixel work remains build-time", () => {
+test("2D sprites and room creature use local WebP URLs; pixel work remains build-time", () => {
   const assetsSource = source("src/ar/assets.ts");
   const generatedSource = source("src/ar/generated/ar-assets.generated.ts");
   const generatorSource = source("scripts/generate-ar-assets.mjs");
@@ -161,8 +161,12 @@ test("2D sprites and room creature are embedded; pixel work remains build-time",
   assert.match(assetsSource, /from ["']\.\/generated\/ar-assets\.generated["']/);
   assert.match(assetsSource, /AR_SHEET_ASSETS/);
   assert.match(assetsSource, /AR_CREATURE_ASSET/);
-  assert.match(assetsSource, /spriteDataUri/);
-  assert.ok((generatedSource.match(/data:image\/png;base64,/g) ?? []).length >= 3);
+  assert.match(assetsSource, /spriteUrl/);
+  assert.match(generatedSource, /\/ar\/sprites\/sheet01\.webp/);
+  assert.match(generatedSource, /\/ar\/sprites\/sheet02\.webp/);
+  assert.match(generatedSource, /\/ar\/textures\/creature\.webp/);
+  assert.doesNotMatch(generatedSource, /data:|base64/i);
+  assert.ok(Buffer.byteLength(generatedSource) < 16_384);
   assert.doesNotMatch(generatedSource, /targetDatabase|targetOrder/);
   assert.doesNotMatch(generatedSource, /https?:\/\//i);
 
@@ -218,15 +222,18 @@ test("scanner hands eligible AR pins to /ar without resolving them as scans", ()
   assert.match(arComponentCode, /resolvePin\s*\([^,]+,\s*["']ar["']\s*\)/);
 });
 
-test("room-monster arrival audio is not auto-fired by the global audio director", () => {
+test("room AR leaves every resolution cue to the phase-two coordinator", () => {
   const directorSource = compact(source("src/audio/AudioDirector.tsx"));
   const integrationSource = compact(source("src/game/phase2Integration.ts"));
-  assert.doesNotMatch(directorSource, /audio\.play\(\s*["']room-monster-arrival["']\s*\)/);
-  const computedScarePlay = integrationSource.match(
-    /if \(result\.pin\.scare && result\.pin\.scare !== ["']roomMonster["']\) \{([^}]*)\}/,
+  const roomScreen = source("src/ar/RoomARScreen.tsx");
+  assert.doesNotMatch(directorSource, /useGameStore|\.play\(|startVoice/);
+  assert.doesNotMatch(roomScreen, /\.play\(/);
+  assert.doesNotMatch(
+    roomScreen,
+    /room-monster-arrival|pistol-fire|monster-hit|monster-collapse/,
   );
-  assert.ok(computedScarePlay);
-  assert.match(computedScarePlay[1], /cues\.push\(SCARE_AUDIO_CUES\[result\.pin\.scare\]\)/);
+  assert.match(integrationSource, /roomMonster:\s*["']stinger-b["']/);
+  assert.match(integrationSource, /scheduleDelayedStinger\(SCARE_AUDIO_CUES\[result\.pin\.scare\]\)/);
 });
 
 test("/ar is a real app route and cannot render the normal game chrome", () => {
@@ -234,7 +241,7 @@ test("/ar is a real app route and cannot render the normal game chrome", () => {
   const normalized = compact(appSource);
   assert.match(normalized, /PLAY_ROUTES[^;]*["']\/ar["']/);
   assert.match(normalized, /(?:case ["']\/ar["']|route === ["']\/ar["'])/);
-  assert.match(normalized, /ARScreen/);
+  assert.match(normalized, /lazy\(\(\) => import\(["']\.\.\/ar\/ARScreen["']\)/);
 
   const earlyArReturn = /if \(route === ["']\/ar["']\) (?:\{ )?return [\s\S]{0,700}<ARScreen/.test(normalized);
   const hideChromeDeclaration = normalized.match(/const hideChrome = [^;]+;/)?.[0] ?? "";
@@ -249,7 +256,7 @@ test("pins 3 and 17 are immediate QR-selected 2D tap placements", () => {
   assert.match(imageScreen, /useSharedCameraVideo\(true\)/);
   assert.match(imageScreen, /onPointerDown=\{placeSprite\}/);
   assert.match(imageScreen, /AR_SHEET_ASSETS\[scene\.sheetId\]/);
-  assert.match(imageScreen, /src=\{asset\.spriteDataUri\}/);
+  assert.match(imageScreen, /src=\{asset\.spriteUrl\}/);
   assert.match(imageScreen, /window\.setTimeout\(finish, duration\)/);
   assert.match(imageScreen, /if \(!onResolved\(\)\) return/);
   assert.doesNotMatch(

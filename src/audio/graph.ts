@@ -47,6 +47,8 @@ export function createAudioGraph(context: AudioContextLike): AudioGraph {
   ambientBus.connect(secondConvolver);
   oneshotBus.connect(firstConvolver);
   oneshotBus.connect(secondConvolver);
+  voiceBus.connect(firstConvolver);
+  voiceBus.connect(secondConvolver);
   firstConvolver.connect(firstWetGain);
   secondConvolver.connect(secondWetGain);
   firstWetGain.connect(master);
