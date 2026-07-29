@@ -5,19 +5,29 @@ import { useEffect, useRef } from "react";
 import { useGameStore } from "../game";
 import { getPinById } from "../pins";
 import { useAudio } from "./useAudio";
+import {
+  readPlayedVoiceIds,
+  VOICE_CUES_BY_PIN,
+  writePlayedVoiceIds,
+} from "./voiceCues";
 
-const PIN_CUES: Readonly<Partial<Record<number, string>>> = {
-  21: "candle-light",
-  23: "candle-out",
-  24: "candle-light",
-  25: "fan-stop",
+const DEAD_BED_PINS = new Set([12, 26]);
+const SCARE_CUES = {
+  torchKill: "stinger-a",
+  roomMonster: "stinger-b",
+  closeQuarters: "stinger-c",
+} as const;
+
+const STINGERS: Readonly<Partial<Record<number, "stinger-a" | "stinger-b" | "stinger-c">>> = {
+  9: "stinger-a",
+  18: "stinger-b",
+  22: "stinger-c",
 };
 
-const SCARE_CUES = {
-  torchKill: "torch-kill",
-  roomMonster: "room-monster-arrival",
-  closeQuarters: "close-quarters",
-} as const;
+export function healthToBedTension(health: number): number {
+  if (!Number.isFinite(health)) return 0;
+  return Math.min(1, Math.max(0, (100 - health) / 80));
+}
 
 export function AudioDirector() {
   const audio = useAudio();
@@ -25,6 +35,8 @@ export function AudioDirector() {
   const resolvedPins = useGameStore((state) => state.resolvedPins);
   const lastResolution = useGameStore((state) => state.lastResolution);
   const handledResolution = useRef<unknown>(null);
+  const playedVoices = useRef<Set<string> | null>(null);
+  const delayedStingers = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     const pinId = resolvedPins.at(-1);
@@ -32,36 +44,63 @@ export function AudioDirector() {
       ? "corridor"
       : (getPinById(pinId)?.zone ?? "corridor");
     audio.setZone(zone);
-    audio.ambient("ambient-" + zone);
+    if (pinId !== undefined && DEAD_BED_PINS.has(pinId)) audio.ambient("dead");
   }, [audio, resolvedPins]);
 
   useEffect(() => {
-    audio.heartbeat(health < 20);
+    audio.setBedTension(healthToBedTension(health));
+    audio.heartbeat(health < 40);
     return () => audio.heartbeat(false);
   }, [audio, health]);
+
+  useEffect(() => () => {
+    for (const timer of delayedStingers.current) window.clearTimeout(timer);
+    delayedStingers.current.clear();
+  }, []);
 
   useEffect(() => {
     if (lastResolution === handledResolution.current) return;
     handledResolution.current = lastResolution;
     if (lastResolution === null) return;
 
-    void audio.play("ui-contact");
     if (!lastResolution.ok) {
-      void audio.play("ui-refused");
+      void audio.play("refused");
       return;
     }
 
     const { pin } = lastResolution;
-    void audio.play("ui-found");
-    void audio.say("voice-pin-" + String(pin.id).padStart(2, "0"));
+    if (lastResolution.grantedItems.length > 0) void audio.play("found");
+    if (pin.resolution === "dial") void audio.play("released");
+    if (lastResolution.saveTriggered) void audio.play("write");
 
     if (pin.scare && pin.scare !== "roomMonster") {
-      void audio.play(SCARE_CUES[pin.scare]);
+      if (STINGERS[pin.id] === undefined) void audio.play(SCARE_CUES[pin.scare]);
     }
-    const pinCue = PIN_CUES[pin.id];
-    if (pinCue) void audio.play(pinCue);
-    if (lastResolution.saveTriggered) void audio.play("save-deck");
-    if (lastResolution.finished) void audio.play("trophy-resolve");
+
+    const voiceId = VOICE_CUES_BY_PIN[pin.id];
+    if (voiceId !== undefined) {
+      playedVoices.current ??= readPlayedVoiceIds(window.localStorage);
+      if (!playedVoices.current.has(voiceId)) {
+        playedVoices.current.add(voiceId);
+        writePlayedVoiceIds(window.localStorage, playedVoices.current);
+        void audio.say(voiceId);
+      }
+    }
+
+    const stinger = STINGERS[pin.id];
+    if (stinger === undefined) return;
+    if (stinger === "stinger-a") {
+      void audio.play(stinger);
+      return;
+    }
+
+    // The friction begins first; the impact is deliberately 800 ms later.
+    void audio.play("drag");
+    const timer = window.setTimeout(() => {
+      delayedStingers.current.delete(timer);
+      void audio.play(stinger);
+    }, 800);
+    delayedStingers.current.add(timer);
   }, [audio, lastResolution]);
 
   return null;

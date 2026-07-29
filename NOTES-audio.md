@@ -1,0 +1,12 @@
+# Audio integration notes
+
+These items require files or state signals outside the audio ownership boundary and were not patched here.
+
+1. `vite.config.ts` currently gives Workbox `globPatterns: ["**/*.{js,css,html,png,svg,webmanifest,woff,woff2}"]`. Add `wav,mp3` to that brace list (or add an equivalent `additionalManifestEntries` generated from `audioPrecachePaths`) so the physical `public/audio` copies appear as individual Workbox entries. Runtime playback is still offline because identical bytes are compiled into the JavaScript bundle; the public-file precache assertion cannot honestly be claimed until this config change is made.
+2. `src/components/GameApp.tsx` still requests legacy `voice-host-intro` and `voice-host-resume` IDs. Those IDs are intentionally absent from the collapsed 15-entry manifest, so the engine warns and resolves without throwing. Remove or remap that legacy intro after deciding whether pin 1's `cold-open` should replace it.
+3. The two combination-dial components keep digit changes and rejected submissions in component-local state. `AudioDirector` can detect a successful dial resolution and plays `released`, but it cannot see each position change for `dial-tick` or a wrong submission for `refused`. Expose those two events to the audio controls when the component owner integrates this branch.
+4. The tape screen should import `TAPE_IMAGE_CUE_SECONDS` and share the exact `say("tape")` start time. The values are provisional until the real MP3 waveform exists. `AudioDirector` currently fires the voice on pin 12, so coordinate ownership to avoid restarting it.
+5. The current state has no route signal. `AudioDirector` selects `dead` when pin 12 or pin 26 is the latest resolved pin, but it cannot guarantee the tape/trophy route keeps that bed after a later pin resolves. The route owner should expose tape/trophy activity or call `ambient("dead")` on entry and restore the zone on exit.
+6. This branch's baseline has no pin 28. The `28 -> present` voice mapping is ready and will activate when that pin appears after integration.
+7. For stingers B and C, audio starts `drag` and delays the impact by 800 ms. Starting the drag 800 ms before a visual whose only signal is the completed resolution would require a pre-resolution event from the owning scare component.
+8. The required `npm install` reported the inherited lockfile as damaged/invalid and modified `package-lock.json`. It remains unstaged and will not be restored, regenerated, deleted, or committed by this branch.

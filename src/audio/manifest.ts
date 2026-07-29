@@ -13,7 +13,6 @@ interface AudioMetadata {
   readonly fileName: string;
   readonly durationMs: number;
   readonly loop: boolean;
-  readonly zone?: ZoneId;
   readonly pinId?: number;
   readonly purpose: string;
 }
@@ -31,8 +30,9 @@ interface ImpulseMetadata {
   readonly purpose: string;
 }
 
-export interface AudioAssetRecord extends AudioManifestEntry, EmbeddedAudio {
+export interface AudioAssetRecord extends Omit<AudioManifestEntry, "hex">, EmbeddedAudio {
   readonly fileName: string;
+  readonly publicPath: string;
   readonly durationMs: number;
   readonly durationSeconds: number;
   readonly purpose: string;
@@ -40,9 +40,9 @@ export interface AudioAssetRecord extends AudioManifestEntry, EmbeddedAudio {
 
 export interface ImpulseAssetRecord extends ImpulseManifestEntry, EmbeddedImpulse {
   readonly fileName: string;
+  readonly publicPath: string;
   readonly durationMs: number;
   readonly durationSeconds: number;
-  /** Leading digital silence already baked into the impulse WAV. */
   readonly preDelayMs: number;
   readonly seed: number;
   readonly filterCoefficient: number;
@@ -64,8 +64,9 @@ export const audioManifest: readonly AudioAssetRecord[] = metadata.audio.map(
   (entry) => ({
     ...entry,
     ...required(embeddedAudio[entry.id], entry.id),
-    durationSeconds: entry.durationMs / 1000,
-    mimeType: "audio/wav" as const,
+    durationSeconds: entry.durationMs / 1_000,
+    mimeType: entry.category === "voice" ? "audio/mpeg" as const : "audio/wav" as const,
+    publicPath: `/audio/${entry.fileName}`,
   }),
 );
 
@@ -73,11 +74,17 @@ export const impulseManifest: readonly ImpulseAssetRecord[] = metadata.impulses.
   (entry) => ({
     ...entry,
     ...required(embeddedImpulses[entry.id], entry.id),
-    durationSeconds: entry.durationMs / 1000,
+    durationSeconds: entry.durationMs / 1_000,
     mimeType: "audio/wav" as const,
+    publicPath: `/audio/${entry.fileName}`,
   }),
 );
 
-/** Detailed aliases for build tooling and curator checks. */
+/** Complete public audio inventory for Workbox/config integration. */
+export const audioPrecachePaths = [
+  ...audioManifest.map(({ publicPath }) => publicPath),
+  ...impulseManifest.map(({ publicPath }) => publicPath),
+] as const;
+
 export const audioAssets = audioManifest;
 export const impulseAssets = impulseManifest;

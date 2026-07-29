@@ -1,6 +1,11 @@
 import type { ZoneId } from "../types";
 import { decodeEmbeddedAudio } from "./assetCodec";
 import {
+  BED_CROSSFADE_SECONDS,
+  createBed,
+  type BedHandle,
+} from "./beds";
+import {
   createAudioGraph,
   crossfadeImpulse,
   disconnectAudioGraph,
@@ -19,22 +24,21 @@ import type {
   AudioGraph,
   AudioManifestEntry,
   AudioMasterState,
-  GainNodeLike,
   ImpulseManifestEntry,
   OneShotId,
   VoiceId,
 } from "./types";
 
-export const AMBIENT_CROSSFADE_SECONDS = 1.2;
-export const AUDIO_CONTEXT_SAMPLE_RATE = 24_000;
+export const AMBIENT_CROSSFADE_SECONDS = BED_CROSSFADE_SECONDS;
+export const VISIBILITY_FADE_SECONDS = 1.2;
+export const AUDIO_CONTEXT_SAMPLE_RATE = 44_100;
 export const VOICE_DUCK_GAIN = 0.3;
 export const DEFAULT_ZONE_WET_GAIN = 0.28;
 
 interface AmbientPlayback {
   readonly id: AmbientId;
-  readonly source: AudioBufferSourceNodeLike;
-  readonly gain: GainNodeLike;
-  finished: boolean;
+  readonly bed: BedHandle;
+  disposed: boolean;
 }
 
 interface PromisePlayback {
@@ -55,7 +59,7 @@ function defaultContextFactory(): AudioContextLike {
   }) as unknown as AudioContextLike;
 }
 
-function clampGain(value: number): number {
+function clamp01(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.min(1, Math.max(0, value));
 }
@@ -64,15 +68,15 @@ function safeDisconnect(node: { disconnect(): void }): void {
   try {
     node.disconnect();
   } catch {
-    // Disconnect is intentionally idempotent during cancellation and teardown.
+    // Cancellation and teardown are deliberately idempotent.
   }
 }
 
-function safeStop(source: AudioBufferSourceNodeLike, when?: number): void {
+function safeStop(source: AudioBufferSourceNodeLike): void {
   try {
-    source.stop(when);
+    source.stop();
   } catch {
-    // InvalidStateError means this one-shot source was already stopped.
+    // InvalidStateError means this scheduled source already stopped.
   }
 }
 
@@ -87,8 +91,9 @@ export class AudioEngine {
   private readonly impulseBuffers = new Map<ZoneId, AudioBufferLike>();
   private readonly failedAssets = new Set<string>();
   private readonly failedImpulses = new Set<ZoneId>();
-  private readonly ambientSources = new Set<AmbientPlayback>();
+  private readonly ambientBeds = new Set<AmbientPlayback>();
   private readonly oneShots = new Set<PromisePlayback>();
+  private readonly bedDisposeTimers = new Set<ReturnType<typeof globalThis.setTimeout>>();
 
   private context: AudioContextLike | null = null;
   private graph: AudioGraph | null = null;
@@ -102,9 +107,11 @@ export class AudioEngine {
   private appliedZone: ZoneId | null = null;
   private requestedAmbient: AmbientId | null = null;
   private activeAmbient: AmbientPlayback | null = null;
+  private bedTension = 0;
   private heartbeatRequested = false;
   private heartbeatSource: AudioBufferSourceNodeLike | null = null;
   private activeVoice: PromisePlayback | null = null;
+  private voiceRequest = 0;
 
   public constructor(options: AudioEngineOptions = {}) {
     this.contextFactory = options.contextFactory ?? defaultContextFactory;
@@ -113,29 +120,21 @@ export class AudioEngine {
     this.impulses = options.impulseManifest ?? defaultImpulseManifest;
 
     for (const entry of this.assets) this.entriesById.set(entry.id, entry);
-    for (const impulse of this.impulses) {
-      this.impulsesByZone.set(impulse.zone, impulse);
-    }
+    for (const impulse of this.impulses) this.impulsesByZone.set(impulse.zone, impulse);
   }
 
-  /**
-   * Must be called from a user gesture. Construction and resume() both happen
-   * before this method returns its first Promise to the caller.
-   */
+  /** Construct and resume only in the first user-gesture call. */
   public unlock(): Promise<void> {
     if (this.disposed) {
       this.report("Cannot unlock a disposed audio engine.");
       return Promise.resolve();
     }
-
     if (this.context !== null) {
-      const resumePromise = this.resumeContext(this.context);
+      const resumed = this.resumeContext(this.context);
       if (this.unlockPromise !== null) {
-        return Promise.all([this.unlockPromise, resumePromise]).then(() => undefined);
+        return Promise.all([this.unlockPromise, resumed]).then(() => undefined);
       }
-      return resumePromise.then(() => {
-        this.refreshReadyState();
-      });
+      return resumed.then(() => this.refreshReadyState());
     }
 
     this.phase = "loading";
@@ -149,8 +148,7 @@ export class AudioEngine {
       return Promise.resolve();
     }
 
-    const resumePromise = this.resumeContext(this.context);
-    const pending = this.completeInitialUnlock(resumePromise);
+    const pending = this.completeInitialUnlock(this.resumeContext(this.context));
     this.unlockPromise = pending;
     return pending;
   }
@@ -158,11 +156,11 @@ export class AudioEngine {
   public setZone(zone: ZoneId): void {
     if (this.disposed) return;
     this.requestedZone = zone;
-    const zoneBed = `ambient-${zone}`;
-    this.requestedAmbient = zoneBed;
+    this.requestedAmbient = `ambient-${zone}`;
     if (this.preloadComplete) {
+      // Both switches read the same currentTime and therefore start together.
       this.applyZone(zone);
-      this.applyAmbient(zoneBed);
+      this.applyAmbient(this.requestedAmbient);
     }
   }
 
@@ -172,12 +170,16 @@ export class AudioEngine {
     if (this.preloadComplete) this.applyAmbient(id);
   }
 
+  public setBedTension(value: number): void {
+    this.bedTension = clamp01(value);
+    this.activeAmbient?.bed.setTension(this.bedTension);
+  }
+
   public play(id: OneShotId): Promise<void> {
     const ready = this.resolveBuffer(id, "oneshot");
     if (ready === null || this.context === null || this.graph === null) {
       return Promise.resolve();
     }
-
     let source: AudioBufferSourceNodeLike;
     try {
       source = this.context.createBufferSource();
@@ -188,70 +190,55 @@ export class AudioEngine {
       this.reportError(`Could not prepare one-shot "${id}"`, error);
       return Promise.resolve();
     }
-
-    return new Promise<void>((resolve) => {
-      const playback: PromisePlayback = {
-        id,
-        source,
-        resolve,
-        onError: () => {
-          this.report(`One-shot "${id}" failed during playback.`);
-          this.finishOneShot(playback);
-        },
-        finished: false,
-      };
-      source.onended = () => this.finishOneShot(playback);
-      source.addEventListener?.("error", playback.onError, { once: true });
-      this.oneShots.add(playback);
-      try {
-        source.start(this.context!.currentTime);
-      } catch (error) {
-        this.reportError(`Could not start one-shot "${id}"`, error);
-        this.finishOneShot(playback);
-      }
-    });
+    return this.startPromisePlayback(id, source, false);
   }
 
-  public say(id: VoiceId): Promise<void> {
-    const ready = this.resolveBuffer(id, "voice");
-    if (ready === null || this.context === null || this.graph === null) {
-      return Promise.resolve();
+  public async say(id: VoiceId): Promise<void> {
+    if (this.disposed) {
+      this.report(`Audio voice "${id}" was requested after cleanup.`);
+      return;
+    }
+    if (!this.preloadComplete || this.context === null || this.graph === null) {
+      this.report(`Audio voice "${id}" was requested before audio was ready.`);
+      return;
+    }
+    const entry = this.entriesById.get(id);
+    if (entry === undefined || entry.category !== "voice") {
+      this.report(`Audio voice "${id}" is missing.`);
+      return;
+    }
+    if (entry.hex === null) {
+      this.report(`Audio voice "${id}" has no compiled bytes.`);
+      return;
+    }
+    if (entry.placeholder) {
+      this.report(`Voice "${id}" is a silent placeholder; replace its public MP3 and regenerate.`);
     }
 
+    const context = this.context;
+    const request = ++this.voiceRequest;
     this.cancelActiveVoice();
+    let ready: AudioBufferLike;
+    try {
+      ready = await decodeEmbeddedAudio(context, entry.hex);
+    } catch (error) {
+      this.failedAssets.add(id);
+      this.reportError(`Could not decode audio asset "${id}"`, error);
+      return;
+    }
+    if (this.disposed || request !== this.voiceRequest || this.graph === null) return;
+
     let source: AudioBufferSourceNodeLike;
     try {
-      source = this.context.createBufferSource();
+      source = context.createBufferSource();
       source.buffer = ready;
       source.loop = false;
       source.connect(this.graph.voiceBus);
     } catch (error) {
       this.reportError(`Could not prepare voice "${id}"`, error);
-      return Promise.resolve();
+      return;
     }
-
-    return new Promise<void>((resolve) => {
-      const playback: PromisePlayback = {
-        id,
-        source,
-        resolve,
-        onError: () => {
-          this.report(`Voice "${id}" failed during playback.`);
-          this.finishVoice(playback);
-        },
-        finished: false,
-      };
-      source.onended = () => this.finishVoice(playback);
-      source.addEventListener?.("error", playback.onError, { once: true });
-      this.activeVoice = playback;
-      this.setAmbientDuck(true);
-      try {
-        source.start(this.context!.currentTime);
-      } catch (error) {
-        this.reportError(`Could not start voice "${id}"`, error);
-        this.finishVoice(playback);
-      }
-    });
+    await this.startPromisePlayback(id, source, true);
   }
 
   public heartbeat(enabled: boolean): void {
@@ -263,7 +250,7 @@ export class AudioEngine {
   }
 
   public setMaster(level: number): void {
-    this.masterLevel = clampGain(level);
+    this.masterLevel = clamp01(level);
     this.applyMasterGain();
   }
 
@@ -287,20 +274,17 @@ export class AudioEngine {
       this.disposed ||
       this.context === null ||
       this.graph === null
-    ) {
-      return;
-    }
+    ) return;
 
     if (this.context.state !== "running" && this.context.state !== "closed") {
       void this.resumeContext(this.context).then(() => this.refreshReadyState());
     }
-
     if (this.activeAmbient !== null) {
       rampAudioParam(
-        this.activeAmbient.gain.gain,
+        this.activeAmbient.bed.output.gain,
         1,
         this.context.currentTime,
-        AMBIENT_CROSSFADE_SECONDS,
+        VISIBILITY_FADE_SECONDS,
         0,
       );
     }
@@ -310,12 +294,12 @@ export class AudioEngine {
     if (this.disposed) return;
     this.disposed = true;
     this.phase = "error";
-
+    this.voiceRequest += 1;
     this.cancelActiveVoice();
     for (const playback of [...this.oneShots]) this.finishOneShot(playback, true);
-    for (const playback of [...this.ambientSources]) {
-      this.finishAmbient(playback, true);
-    }
+    for (const playback of [...this.ambientBeds]) this.finishAmbient(playback);
+    for (const timer of this.bedDisposeTimers) globalThis.clearTimeout(timer);
+    this.bedDisposeTimers.clear();
     this.stopHeartbeat();
 
     if (this.graph !== null) disconnectAudioGraph(this.graph);
@@ -329,7 +313,6 @@ export class AudioEngine {
         this.reportError("Could not close the Web Audio context", error);
       }
     }
-
     this.graph = null;
     this.activeAmbient = null;
     this.heartbeatSource = null;
@@ -343,7 +326,6 @@ export class AudioEngine {
     this.preloadComplete = true;
     this.unlockPromise = null;
     if (this.disposed) return;
-
     this.refreshReadyState();
     if (this.requestedZone !== null) this.applyZone(this.requestedZone);
     this.applyAmbient(this.requestedAmbient);
@@ -351,22 +333,25 @@ export class AudioEngine {
   }
 
   private async preloadAll(): Promise<void> {
-    const audioJobs = this.assets.map(async (entry) => {
-      try {
-        const context = this.context;
-        if (context === null) return;
-        const decoded = await decodeEmbeddedAudio(context, entry.base64);
-        if (!this.disposed) this.buffers.set(entry.id, decoded);
-      } catch (error) {
-        this.failedAssets.add(entry.id);
-        this.reportError(`Could not decode audio asset "${entry.id}"`, error);
-      }
-    });
+    const audioJobs = this.assets
+      .filter((entry) => entry.category === "oneshot")
+      .map(async (entry) => {
+        if (entry.hex === null) return;
+        try {
+          const context = this.context;
+          if (context === null) return;
+          const decoded = await decodeEmbeddedAudio(context, entry.hex);
+          if (!this.disposed) this.buffers.set(entry.id, decoded);
+        } catch (error) {
+          this.failedAssets.add(entry.id);
+          this.reportError(`Could not decode audio asset "${entry.id}"`, error);
+        }
+      });
     const impulseJobs = this.impulses.map(async (entry) => {
       try {
         const context = this.context;
         if (context === null) return;
-        const decoded = await decodeEmbeddedAudio(context, entry.base64);
+        const decoded = await decodeEmbeddedAudio(context, entry.hex);
         if (!this.disposed) this.impulseBuffers.set(entry.zone, decoded);
       } catch (error) {
         this.failedImpulses.add(entry.zone);
@@ -383,17 +368,14 @@ export class AudioEngine {
       this.report("Cannot resume a closed Web Audio context.");
       return Promise.resolve();
     }
-
-    let resumeResult: Promise<void>;
     try {
-      resumeResult = context.resume();
+      return context.resume().catch((error: unknown) => {
+        this.reportError("Could not resume the Web Audio context", error);
+      });
     } catch (error) {
       this.reportError("Could not resume the Web Audio context", error);
       return Promise.resolve();
     }
-    return resumeResult.catch((error: unknown) => {
-      this.reportError("Could not resume the Web Audio context", error);
-    });
   }
 
   private refreshReadyState(): void {
@@ -402,9 +384,7 @@ export class AudioEngine {
   }
 
   private applyZone(zone: ZoneId): void {
-    if (this.context === null || this.graph === null || this.appliedZone === zone) {
-      return;
-    }
+    if (this.context === null || this.graph === null || this.appliedZone === zone) return;
     const entry = this.impulsesByZone.get(zone);
     const buffer = this.impulseBuffers.get(zone);
     if (entry === undefined) {
@@ -416,99 +396,113 @@ export class AudioEngine {
       this.report(`Impulse "${entry.id}" ${reason}.`);
       return;
     }
-
     crossfadeImpulse(
       this.graph,
       buffer,
-      clampGain(entry.wet ?? DEFAULT_ZONE_WET_GAIN),
+      clamp01(entry.wet ?? DEFAULT_ZONE_WET_GAIN),
       this.context.currentTime,
     );
     this.appliedZone = zone;
   }
 
   private applyAmbient(id: AmbientId | null): void {
-    if (this.context === null || this.graph === null) return;
-    if (id === this.activeAmbient?.id) return;
-
+    if (this.context === null || this.graph === null || id === this.activeAmbient?.id) return;
+    const previous = this.activeAmbient;
+    this.activeAmbient = null;
     if (id === null) {
-      const previous = this.activeAmbient;
-      this.activeAmbient = null;
       if (previous !== null) this.fadeOutAmbient(previous);
       return;
     }
 
-    const buffer = this.resolveBuffer(id, "ambient");
-    if (buffer === null) return;
-
-    let source: AudioBufferSourceNodeLike;
-    let gain: GainNodeLike;
+    let bed: BedHandle;
     try {
-      source = this.context.createBufferSource();
-      gain = this.context.createGain();
-      source.buffer = buffer;
-      source.loop = true;
-      source.connect(gain);
-      gain.connect(this.graph.ambientBus);
+      bed = createBed(this.context, id, this.graph.ambientBus);
+      bed.output.gain.value = 0;
+      bed.setTension(this.bedTension);
     } catch (error) {
-      this.reportError(`Could not prepare ambient bed "${id}"`, error);
+      this.reportError(`Could not construct ambient bed "${id}"`, error);
       return;
     }
-
-    const playback: AmbientPlayback = { id, source, gain, finished: false };
-    source.onended = () => this.finishAmbient(playback);
-    try {
-      source.start(this.context.currentTime);
-    } catch (error) {
-      this.reportError(`Could not start ambient bed "${id}"`, error);
-      this.finishAmbient(playback);
-      return;
-    }
-
-    this.ambientSources.add(playback);
+    const playback: AmbientPlayback = { id, bed, disposed: false };
+    this.ambientBeds.add(playback);
+    this.activeAmbient = playback;
     rampAudioParam(
-      gain.gain,
+      bed.output.gain,
       1,
       this.context.currentTime,
       AMBIENT_CROSSFADE_SECONDS,
       0,
     );
-    const previous = this.activeAmbient;
-    this.activeAmbient = playback;
     if (previous !== null) this.fadeOutAmbient(previous);
   }
 
   private fadeOutAmbient(playback: AmbientPlayback): void {
-    if (this.context === null || playback.finished) return;
+    if (this.context === null || playback.disposed) return;
     rampAudioParam(
-      playback.gain.gain,
+      playback.bed.output.gain,
       0,
       this.context.currentTime,
       AMBIENT_CROSSFADE_SECONDS,
     );
-    safeStop(playback.source, this.context.currentTime + AMBIENT_CROSSFADE_SECONDS);
+    const timer = globalThis.setTimeout(() => {
+      this.bedDisposeTimers.delete(timer);
+      this.finishAmbient(playback);
+    }, AMBIENT_CROSSFADE_SECONDS * 1_000 + 20);
+    this.bedDisposeTimers.add(timer);
   }
 
-  private finishAmbient(playback: AmbientPlayback, stopNow = false): void {
-    if (playback.finished) return;
-    playback.finished = true;
-    playback.source.onended = null;
-    if (stopNow) safeStop(playback.source);
-    safeDisconnect(playback.source);
-    safeDisconnect(playback.gain);
-    this.ambientSources.delete(playback);
+  private finishAmbient(playback: AmbientPlayback): void {
+    if (playback.disposed) return;
+    playback.disposed = true;
+    playback.bed.dispose();
+    this.ambientBeds.delete(playback);
     if (this.activeAmbient === playback) this.activeAmbient = null;
   }
 
+  private startPromisePlayback(
+    id: string,
+    source: AudioBufferSourceNodeLike,
+    voice: boolean,
+  ): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const playback: PromisePlayback = {
+        id,
+        source,
+        resolve,
+        onError: () => {
+          this.report(`${voice ? "Voice" : "One-shot"} "${id}" failed during playback.`);
+          if (voice) this.finishVoice(playback);
+          else this.finishOneShot(playback);
+        },
+        finished: false,
+      };
+      source.onended = () => {
+        if (voice) this.finishVoice(playback);
+        else this.finishOneShot(playback);
+      };
+      source.addEventListener?.("error", playback.onError, { once: true });
+      if (voice) {
+        this.activeVoice = playback;
+        this.setAmbientDuck(true);
+      } else {
+        this.oneShots.add(playback);
+      }
+      try {
+        source.start(this.context!.currentTime);
+      } catch (error) {
+        this.reportError(`Could not start ${voice ? "voice" : "one-shot"} "${id}"`, error);
+        if (voice) this.finishVoice(playback);
+        else this.finishOneShot(playback);
+      }
+    });
+  }
+
   private startHeartbeat(): void {
-    if (this.heartbeatSource !== null || this.context === null || this.graph === null) {
-      return;
-    }
+    if (this.heartbeatSource !== null || this.context === null || this.graph === null) return;
     const buffer = this.resolveBuffer("heartbeat", "oneshot");
     if (buffer === null) return;
-
-    let source: AudioBufferSourceNodeLike;
     try {
-      source = this.context.createBufferSource();
+      const source = this.context.createBufferSource();
       source.buffer = buffer;
       source.loop = true;
       source.connect(this.graph.oneshotBus);
@@ -519,11 +513,8 @@ export class AudioEngine {
       this.heartbeatSource = source;
       source.start(this.context.currentTime);
     } catch (error) {
-      if (this.heartbeatSource !== null) {
-        const failedSource = this.heartbeatSource;
-        this.heartbeatSource = null;
-        safeDisconnect(failedSource);
-      }
+      if (this.heartbeatSource !== null) safeDisconnect(this.heartbeatSource);
+      this.heartbeatSource = null;
       this.reportError("Could not start heartbeat", error);
     }
   }
@@ -556,7 +547,11 @@ export class AudioEngine {
     }
     const buffer = this.buffers.get(id);
     if (buffer === undefined) {
-      const reason = this.failedAssets.has(id) ? "could not be decoded" : "is unavailable";
+      const reason = entry.hex === null
+        ? "has no compiled bytes"
+        : this.failedAssets.has(id)
+          ? "could not be decoded"
+          : "is unavailable";
       this.report(`Audio ${category} "${id}" ${reason}.`);
       return null;
     }

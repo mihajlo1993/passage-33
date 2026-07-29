@@ -1,7 +1,7 @@
 import type { ZoneId } from "../types";
 
-export type AudioCategory = "ambient" | "oneshot" | "voice";
-export type AmbientId = string;
+export type AudioCategory = "oneshot" | "voice";
+export type AmbientId = `ambient-${ZoneId}` | "dead";
 export type OneShotId = string;
 export type VoiceId = string;
 
@@ -9,11 +9,13 @@ export interface AudioManifestEntry {
   readonly id: string;
   readonly category: AudioCategory;
   readonly loop: boolean;
-  readonly base64: string;
-  readonly mimeType: "audio/wav";
-  readonly zone?: ZoneId;
-  readonly pinId?: number;
+  /** Compiled bytes keep playback independent of URLs and the network. */
+  readonly hex: string | null;
+  readonly mimeType: "audio/wav" | "audio/mpeg";
+  readonly placeholder: boolean;
   readonly fileName?: string;
+  readonly publicPath?: string;
+  readonly pinId?: number;
   readonly durationSeconds?: number;
   readonly purpose?: string;
 }
@@ -21,15 +23,17 @@ export interface AudioManifestEntry {
 export interface ImpulseManifestEntry {
   readonly id: string;
   readonly zone: ZoneId;
-  readonly base64: string;
+  readonly hex: string;
   readonly mimeType: "audio/wav";
   /** Linear wet gain. Values outside 0..1 are clamped by the engine. */
   readonly wet?: number;
+  readonly fileName?: string;
+  readonly publicPath?: string;
 }
 
 /**
- * Deliberately small Web Audio interfaces keep the engine injectable in Node
- * tests without hiding any runtime network or media-element fallback.
+ * Deliberately small Web Audio interfaces keep the runtime injectable in Node
+ * tests without introducing a URL-backed or media-element fallback.
  */
 export interface AudioParamLike {
   value: number;
@@ -40,7 +44,7 @@ export interface AudioParamLike {
 }
 
 export interface AudioNodeLike {
-  connect(destination: AudioNodeLike): unknown;
+  connect(destination: AudioNodeLike | AudioParamLike): unknown;
   disconnect(): void;
 }
 
@@ -48,7 +52,9 @@ export interface GainNodeLike extends AudioNodeLike {
   readonly gain: AudioParamLike;
 }
 
-export type AudioBufferLike = object;
+export interface AudioBufferLike {
+  getChannelData?(channel: number): Float32Array;
+}
 
 export interface ConvolverNodeLike extends AudioNodeLike {
   buffer: AudioBufferLike | null;
@@ -69,13 +75,33 @@ export interface AudioBufferSourceNodeLike extends AudioNodeLike {
   removeEventListener?(type: "error", listener: () => void): void;
 }
 
+export interface OscillatorNodeLike extends AudioNodeLike {
+  type: OscillatorType;
+  readonly frequency: AudioParamLike;
+  readonly detune: AudioParamLike;
+  onended: (() => void) | null;
+  start(when?: number): void;
+  stop(when?: number): void;
+}
+
+export interface BiquadFilterNodeLike extends AudioNodeLike {
+  type: BiquadFilterType;
+  readonly frequency: AudioParamLike;
+  readonly Q: AudioParamLike;
+  readonly gain: AudioParamLike;
+}
+
 export interface AudioContextLike {
   readonly currentTime: number;
   readonly destination: AudioNodeLike;
   readonly state: AudioContextState;
+  readonly sampleRate?: number;
   createGain(): GainNodeLike;
   createConvolver(): ConvolverNodeLike;
   createBufferSource(): AudioBufferSourceNodeLike;
+  createOscillator(): OscillatorNodeLike;
+  createBiquadFilter(): BiquadFilterNodeLike;
+  createBuffer(channels: number, frameCount: number, sampleRate: number): AudioBufferLike;
   decodeAudioData(audioData: ArrayBuffer): Promise<AudioBufferLike>;
   resume(): Promise<void>;
   close?(): Promise<void>;

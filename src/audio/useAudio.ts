@@ -3,6 +3,7 @@
 import { createContext, useContext } from "react";
 
 import type { ZoneId } from "../types";
+import type { AmbientId, OneShotId, VoiceId } from "./types";
 
 export type AudioMasterState =
   | "locked"
@@ -20,9 +21,10 @@ export interface AudioMasterControls {
 
 export interface AudioControls {
   setZone: (zone: ZoneId) => void;
-  ambient: (id: string | null) => void;
-  play: (id: string) => Promise<void>;
-  say: (id: string) => Promise<void>;
+  ambient: (id: AmbientId | null) => void;
+  setBedTension: (value: number) => void;
+  play: (id: OneShotId) => Promise<void>;
+  say: (id: VoiceId) => Promise<void>;
   heartbeat: (enabled: boolean) => void;
   master: AudioMasterControls;
 }
@@ -30,6 +32,7 @@ export interface AudioControls {
 const noopAudio: AudioControls = {
   setZone: () => undefined,
   ambient: () => undefined,
+  setBedTension: () => undefined,
   play: async () => undefined,
   say: async () => undefined,
   heartbeat: () => undefined,

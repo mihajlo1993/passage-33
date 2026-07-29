@@ -1,19 +1,18 @@
 import type { AudioBufferLike, AudioContextLike } from "./types";
 
-const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const HEX_PATTERN = /^(?:[0-9a-fA-F]{2})+$/;
 
-/** Decodes an embedded base64 payload without a network or media-element path. */
-export function base64ToArrayBuffer(encoded: string): ArrayBuffer {
+/** Converts compiled hexadecimal bytes without creating a URL or fetching. */
+export function hexToArrayBuffer(encoded: string): ArrayBuffer {
   const compact = encoded.replace(/\s/g, "");
-  if (compact.length === 0 || !BASE64_PATTERN.test(compact)) {
-    throw new Error("Invalid base64 audio payload");
+  if (!HEX_PATTERN.test(compact)) {
+    throw new Error("Invalid hexadecimal audio payload");
   }
 
-  const binary = globalThis.atob(compact);
-  const output = new ArrayBuffer(binary.length);
+  const output = new ArrayBuffer(compact.length / 2);
   const bytes = new Uint8Array(output);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = Number.parseInt(compact.slice(index * 2, index * 2 + 2), 16);
   }
   return output;
 }
@@ -22,5 +21,5 @@ export function decodeEmbeddedAudio(
   context: AudioContextLike,
   encoded: string,
 ): Promise<AudioBufferLike> {
-  return context.decodeAudioData(base64ToArrayBuffer(encoded));
+  return context.decodeAudioData(hexToArrayBuffer(encoded));
 }
