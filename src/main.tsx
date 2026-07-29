@@ -6,9 +6,11 @@ import "@fontsource/archivo-narrow/700.css";
 import "@fontsource/courier-prime/400.css";
 import "@fontsource/courier-prime/700.css";
 import "@fontsource/special-elite/400.css";
+import { AudioDirector } from "./audio/AudioDirector";
+import { AudioProvider } from "./audio/AudioProvider";
 import { GameApp } from "./components/GameApp";
-import { colours, layout, motion, typography } from "./tokens";
 import { VHSLayer } from "./fx";
+import { colours, layout, motion, typography } from "./tokens";
 import "./styles.css";
 
 const root = document.documentElement;
@@ -72,8 +74,11 @@ root.style.colorScheme = "dark";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <VHSLayer disabled={false}>
-      <GameApp />
-    </VHSLayer>
+    <AudioProvider>
+      <VHSLayer disabled={false}>
+        <AudioDirector />
+        <GameApp />
+      </VHSLayer>
+    </AudioProvider>
   </React.StrictMode>,
 );

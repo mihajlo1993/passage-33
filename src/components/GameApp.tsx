@@ -5,6 +5,7 @@ import { useGameStore } from "@/src/game";
 import { useHaptics, useWakeLock } from "@/src/device";
 import { getVHSHealthProfile, useVHS } from "@/src/fx";
 import { motion } from "@/src/tokens";
+import { useAudio } from "@/src/audio/useAudio";
 import { HomeScreen } from "./HomeScreen";
 import { MapScreen } from "./MapScreen";
 import { InventoryScreen } from "./InventoryScreen";
@@ -107,6 +108,7 @@ export function GameApp() {
     ],
   );
   const vhs = useVHS();
+  const audio = useAudio();
   const lastDamageResolution = useRef<unknown>(null);
 
   useWakeLock();
@@ -170,13 +172,16 @@ export function GameApp() {
     };
   }, [store.flushPersistence]);
 
-  useEffect(() => {
-    setColdOpen(sessionStorage.getItem("bh7-intro-seen") !== "1");
-  }, []);
-
   const begin = () => {
+    const unlock = audio.master.unlock();
+    const voice = sessionStorage.getItem("bh7-intro-seen") === "1"
+      ? "voice-host-resume"
+      : "voice-host-intro";
     sessionStorage.setItem("bh7-intro-seen", "1");
     setColdOpen(false);
+    void unlock
+      .then(() => audio.say(voice))
+      .catch(() => undefined);
   };
 
   if (!store.hydrated) {

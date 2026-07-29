@@ -1,0 +1,523 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "src/audio/source",
+  "placeholderFormat": {
+    "sampleRate": 8000,
+    "channels": 1,
+    "bitsPerSample": 8
+  },
+  "impulseFormat": {
+    "sampleRate": 12000,
+    "channels": 1,
+    "bitsPerSample": 16
+  },
+  "audio": [
+    {
+      "id": "ambient-corridor",
+      "category": "ambient",
+      "fileName": "ambient/corridor-bed.wav",
+      "durationMs": 30000,
+      "loop": true,
+      "zone": "corridor",
+      "purpose": "Narrow hallway air with restrained wood and pipe movement."
+    },
+    {
+      "id": "ambient-bathroom",
+      "category": "ambient",
+      "fileName": "ambient/bathroom-bed.wav",
+      "durationMs": 24000,
+      "loop": true,
+      "zone": "bathroom",
+      "purpose": "Tiled bathroom room tone with sparse, irregular drips."
+    },
+    {
+      "id": "ambient-entry",
+      "category": "ambient",
+      "fileName": "ambient/entry-bed.wav",
+      "durationMs": 26000,
+      "loop": true,
+      "zone": "entry",
+      "purpose": "Door settling with faint outside wind beyond the sealed exit."
+    },
+    {
+      "id": "ambient-living",
+      "category": "ambient",
+      "fileName": "ambient/living-bed.wav",
+      "durationMs": 32000,
+      "loop": true,
+      "zone": "living",
+      "purpose": "Soft room tone with tired tape and mechanical movement."
+    },
+    {
+      "id": "ambient-balcony",
+      "category": "ambient",
+      "fileName": "ambient/balcony-bed.wav",
+      "durationMs": 28000,
+      "loop": true,
+      "zone": "balcony",
+      "purpose": "Open air with a very distant city and no prominent traffic event."
+    },
+    {
+      "id": "ambient-kitchen",
+      "category": "ambient",
+      "fileName": "ambient/kitchen-bed.wav",
+      "durationMs": 30000,
+      "loop": true,
+      "zone": "kitchen",
+      "purpose": "Refrigerator, pipes, and occasional metal settling in a hard room."
+    },
+    {
+      "id": "voice-host-intro",
+      "category": "voice",
+      "fileName": "voice/host-intro.wav",
+      "durationMs": 12000,
+      "loop": false,
+      "purpose": "Opening Host greeting before a new birthday run begins."
+    },
+    {
+      "id": "voice-host-resume",
+      "category": "voice",
+      "fileName": "voice/host-resume.wav",
+      "durationMs": 6000,
+      "loop": false,
+      "purpose": "Brief Host welcome when a saved birthday run is resumed."
+    },
+    {
+      "id": "voice-pin-01",
+      "category": "voice",
+      "fileName": "voice/host-pin-01.wav",
+      "durationMs": 9000,
+      "loop": false,
+      "pinId": 1,
+      "purpose": "Spoken Host line after resolving pin 1."
+    },
+    {
+      "id": "voice-pin-02",
+      "category": "voice",
+      "fileName": "voice/host-pin-02.wav",
+      "durationMs": 11000,
+      "loop": false,
+      "pinId": 2,
+      "purpose": "Spoken Host line after resolving pin 2."
+    },
+    {
+      "id": "voice-pin-03",
+      "category": "voice",
+      "fileName": "voice/host-pin-03.wav",
+      "durationMs": 10000,
+      "loop": false,
+      "pinId": 3,
+      "purpose": "Spoken Host line after resolving pin 3."
+    },
+    {
+      "id": "voice-pin-04",
+      "category": "voice",
+      "fileName": "voice/host-pin-04.wav",
+      "durationMs": 12000,
+      "loop": false,
+      "pinId": 4,
+      "purpose": "Spoken Host line after resolving pin 4."
+    },
+    {
+      "id": "voice-pin-05",
+      "category": "voice",
+      "fileName": "voice/host-pin-05.wav",
+      "durationMs": 10000,
+      "loop": false,
+      "pinId": 5,
+      "purpose": "Spoken Host line after resolving pin 5."
+    },
+    {
+      "id": "voice-pin-06",
+      "category": "voice",
+      "fileName": "voice/host-pin-06.wav",
+      "durationMs": 11000,
+      "loop": false,
+      "pinId": 6,
+      "purpose": "Spoken Host line after resolving pin 6."
+    },
+    {
+      "id": "voice-pin-07",
+      "category": "voice",
+      "fileName": "voice/host-pin-07.wav",
+      "durationMs": 9000,
+      "loop": false,
+      "pinId": 7,
+      "purpose": "Spoken Host line after resolving pin 7."
+    },
+    {
+      "id": "voice-pin-08",
+      "category": "voice",
+      "fileName": "voice/host-pin-08.wav",
+      "durationMs": 12000,
+      "loop": false,
+      "pinId": 8,
+      "purpose": "Spoken Host line after resolving pin 8."
+    },
+    {
+      "id": "voice-pin-09",
+      "category": "voice",
+      "fileName": "voice/host-pin-09.wav",
+      "durationMs": 9000,
+      "loop": false,
+      "pinId": 9,
+      "purpose": "Spoken Host line after resolving pin 9."
+    },
+    {
+      "id": "voice-pin-10",
+      "category": "voice",
+      "fileName": "voice/host-pin-10.wav",
+      "durationMs": 12000,
+      "loop": false,
+      "pinId": 10,
+      "purpose": "Spoken Host line after resolving pin 10."
+    },
+    {
+      "id": "voice-pin-11",
+      "category": "voice",
+      "fileName": "voice/host-pin-11.wav",
+      "durationMs": 10000,
+      "loop": false,
+      "pinId": 11,
+      "purpose": "Spoken Host line after resolving pin 11."
+    },
+    {
+      "id": "voice-pin-12",
+      "category": "voice",
+      "fileName": "voice/host-pin-12.wav",
+      "durationMs": 11000,
+      "loop": false,
+      "pinId": 12,
+      "purpose": "Spoken Host line after resolving pin 12."
+    },
+    {
+      "id": "voice-pin-13",
+      "category": "voice",
+      "fileName": "voice/host-pin-13.wav",
+      "durationMs": 10000,
+      "loop": false,
+      "pinId": 13,
+      "purpose": "Spoken Host line after resolving pin 13."
+    },
+    {
+      "id": "voice-pin-14",
+      "category": "voice",
+      "fileName": "voice/host-pin-14.wav",
+      "durationMs": 12000,
+      "loop": false,
+      "pinId": 14,
+      "purpose": "Spoken Host line after resolving pin 14."
+    },
+    {
+      "id": "voice-pin-15",
+      "category": "voice",
+      "fileName": "voice/host-pin-15.wav",
+      "durationMs": 9000,
+      "loop": false,
+      "pinId": 15,
+      "purpose": "Spoken Host line after resolving pin 15."
+    },
+    {
+      "id": "voice-pin-16",
+      "category": "voice",
+      "fileName": "voice/host-pin-16.wav",
+      "durationMs": 11000,
+      "loop": false,
+      "pinId": 16,
+      "purpose": "Spoken Host line after resolving pin 16."
+    },
+    {
+      "id": "voice-pin-17",
+      "category": "voice",
+      "fileName": "voice/host-pin-17.wav",
+      "durationMs": 10000,
+      "loop": false,
+      "pinId": 17,
+      "purpose": "Spoken Host line after resolving pin 17."
+    },
+    {
+      "id": "voice-pin-18",
+      "category": "voice",
+      "fileName": "voice/host-pin-18.wav",
+      "durationMs": 8000,
+      "loop": false,
+      "pinId": 18,
+      "purpose": "Spoken Host line after resolving pin 18."
+    },
+    {
+      "id": "voice-pin-19",
+      "category": "voice",
+      "fileName": "voice/host-pin-19.wav",
+      "durationMs": 9000,
+      "loop": false,
+      "pinId": 19,
+      "purpose": "Spoken Host line after resolving pin 19."
+    },
+    {
+      "id": "voice-pin-20",
+      "category": "voice",
+      "fileName": "voice/host-pin-20.wav",
+      "durationMs": 10000,
+      "loop": false,
+      "pinId": 20,
+      "purpose": "Spoken Host line after resolving pin 20."
+    },
+    {
+      "id": "voice-pin-21",
+      "category": "voice",
+      "fileName": "voice/host-pin-21.wav",
+      "durationMs": 9000,
+      "loop": false,
+      "pinId": 21,
+      "purpose": "Spoken Host line after resolving pin 21."
+    },
+    {
+      "id": "voice-pin-22",
+      "category": "voice",
+      "fileName": "voice/host-pin-22.wav",
+      "durationMs": 12000,
+      "loop": false,
+      "pinId": 22,
+      "purpose": "Spoken Host line after resolving pin 22."
+    },
+    {
+      "id": "voice-pin-23",
+      "category": "voice",
+      "fileName": "voice/host-pin-23.wav",
+      "durationMs": 9000,
+      "loop": false,
+      "pinId": 23,
+      "purpose": "Spoken Host line after resolving pin 23."
+    },
+    {
+      "id": "voice-pin-24",
+      "category": "voice",
+      "fileName": "voice/host-pin-24.wav",
+      "durationMs": 8000,
+      "loop": false,
+      "pinId": 24,
+      "purpose": "Spoken Host line after resolving pin 24."
+    },
+    {
+      "id": "voice-pin-25",
+      "category": "voice",
+      "fileName": "voice/host-pin-25.wav",
+      "durationMs": 10000,
+      "loop": false,
+      "pinId": 25,
+      "purpose": "Spoken Host line after resolving pin 25."
+    },
+    {
+      "id": "voice-pin-26",
+      "category": "voice",
+      "fileName": "voice/host-pin-26.wav",
+      "durationMs": 11000,
+      "loop": false,
+      "pinId": 26,
+      "purpose": "Spoken Host line after resolving pin 26."
+    },
+    {
+      "id": "voice-pin-27",
+      "category": "voice",
+      "fileName": "voice/host-pin-27.wav",
+      "durationMs": 12000,
+      "loop": false,
+      "pinId": 27,
+      "purpose": "Spoken Host line after resolving pin 27."
+    },
+    {
+      "id": "ui-contact",
+      "category": "oneshot",
+      "fileName": "oneshot/ui-contact.wav",
+      "durationMs": 180,
+      "loop": false,
+      "purpose": "Dry mechanical scanner contact."
+    },
+    {
+      "id": "ui-found",
+      "category": "oneshot",
+      "fileName": "oneshot/ui-found.wav",
+      "durationMs": 650,
+      "loop": false,
+      "purpose": "Accepted find confirmation without a bright game-like reward."
+    },
+    {
+      "id": "ui-refused",
+      "category": "oneshot",
+      "fileName": "oneshot/ui-refused.wav",
+      "durationMs": 900,
+      "loop": false,
+      "purpose": "Heavy mechanical refusal cue."
+    },
+    {
+      "id": "torch-kill",
+      "category": "oneshot",
+      "fileName": "oneshot/torch-kill.wav",
+      "durationMs": 1800,
+      "loop": false,
+      "purpose": "Electrical torch outage and immediate dark-room threat."
+    },
+    {
+      "id": "room-monster-arrival",
+      "category": "oneshot",
+      "fileName": "oneshot/room-monster-arrival.wav",
+      "durationMs": 3500,
+      "loop": false,
+      "purpose": "Room-scale monster arrival with weight and distance."
+    },
+    {
+      "id": "close-quarters",
+      "category": "oneshot",
+      "fileName": "oneshot/close-quarters.wav",
+      "durationMs": 1500,
+      "loop": false,
+      "purpose": "Close-quarters scare impact with almost no warning."
+    },
+    {
+      "id": "candle-light",
+      "category": "oneshot",
+      "fileName": "oneshot/candle-light.wav",
+      "durationMs": 700,
+      "loop": false,
+      "purpose": "Match strike and small candle ignition."
+    },
+    {
+      "id": "candle-out",
+      "category": "oneshot",
+      "fileName": "oneshot/candle-out.wav",
+      "durationMs": 500,
+      "loop": false,
+      "purpose": "Short breath and candle extinguish."
+    },
+    {
+      "id": "fan-stop",
+      "category": "oneshot",
+      "fileName": "oneshot/fan-stop.wav",
+      "durationMs": 2200,
+      "loop": false,
+      "purpose": "A tired metal fan winding fully down."
+    },
+    {
+      "id": "pistol-fire",
+      "category": "oneshot",
+      "fileName": "oneshot/pistol-fire.wav",
+      "durationMs": 450,
+      "loop": false,
+      "purpose": "Single enclosed-room pistol report."
+    },
+    {
+      "id": "monster-hit",
+      "category": "oneshot",
+      "fileName": "oneshot/monster-hit.wav",
+      "durationMs": 800,
+      "loop": false,
+      "purpose": "Dense creature impact after the shot."
+    },
+    {
+      "id": "monster-collapse",
+      "category": "oneshot",
+      "fileName": "oneshot/monster-collapse.wav",
+      "durationMs": 2400,
+      "loop": false,
+      "purpose": "Heavy body collapse and short room tail."
+    },
+    {
+      "id": "save-deck",
+      "category": "oneshot",
+      "fileName": "oneshot/save-deck.wav",
+      "durationMs": 2000,
+      "loop": false,
+      "purpose": "Cassette deck transport, head contact, and save confirmation."
+    },
+    {
+      "id": "trophy-resolve",
+      "category": "oneshot",
+      "fileName": "oneshot/trophy-resolve.wav",
+      "durationMs": 3500,
+      "loop": false,
+      "purpose": "Ending award cue: ceremonial, physical, and uneasy."
+    },
+    {
+      "id": "heartbeat",
+      "category": "oneshot",
+      "fileName": "oneshot/heartbeat-loop.wav",
+      "durationMs": 1200,
+      "loop": true,
+      "purpose": "Looping critical-health heartbeat with a seamless boundary."
+    }
+  ],
+  "impulses": [
+    {
+      "id": "ir-corridor",
+      "zone": "corridor",
+      "fileName": "ir/corridor.wav",
+      "durationMs": 1800,
+      "preDelayMs": 18,
+      "wet": 0.34,
+      "seed": 731001,
+      "filterCoefficient": 0.18,
+      "decayPower": 3,
+      "purpose": "Narrow, long hallway response with a dark tail."
+    },
+    {
+      "id": "ir-bathroom",
+      "zone": "bathroom",
+      "fileName": "ir/bathroom.wav",
+      "durationMs": 1150,
+      "preDelayMs": 6,
+      "wet": 0.52,
+      "seed": 731002,
+      "filterCoefficient": 0.58,
+      "decayPower": 4,
+      "purpose": "Tiled, bright bathroom response."
+    },
+    {
+      "id": "ir-entry",
+      "zone": "entry",
+      "fileName": "ir/entry.wav",
+      "durationMs": 900,
+      "preDelayMs": 10,
+      "wet": 0.28,
+      "seed": 731003,
+      "filterCoefficient": 0.34,
+      "decayPower": 4,
+      "purpose": "Small hard entry response."
+    },
+    {
+      "id": "ir-living",
+      "zone": "living",
+      "fileName": "ir/living.wav",
+      "durationMs": 1350,
+      "preDelayMs": 14,
+      "wet": 0.3,
+      "seed": 731004,
+      "filterCoefficient": 0.15,
+      "decayPower": 3,
+      "purpose": "Soft mid-frequency living-room tail."
+    },
+    {
+      "id": "ir-balcony",
+      "zone": "balcony",
+      "fileName": "ir/balcony.wav",
+      "durationMs": 2600,
+      "preDelayMs": 110,
+      "wet": 0.1,
+      "seed": 731005,
+      "filterCoefficient": 0.11,
+      "decayPower": 3,
+      "purpose": "Nearly dry balcony response with one distant return."
+    },
+    {
+      "id": "ir-kitchen",
+      "zone": "kitchen",
+      "fileName": "ir/kitchen.wav",
+      "durationMs": 1050,
+      "preDelayMs": 8,
+      "wet": 0.38,
+      "seed": 731006,
+      "filterCoefficient": 0.45,
+      "decayPower": 4,
+      "purpose": "Hard reflective kitchen response with a metallic edge."
+    }
+  ]
+}

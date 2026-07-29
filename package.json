@@ -8,9 +8,12 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "generate:audio": "node scripts/generate-audio-assets.mjs",
+    "prebuild": "npm run generate:audio",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --import tsx --test tests/game-flow.test.ts tests/fx.test.ts"
+    "pretest": "npm run generate:audio -- --quiet",
+    "test": "node --import tsx --test tests/game-flow.test.ts tests/fx.test.ts tests/audio-assets.test.ts tests/audio-engine.test.ts tests/audio-static.test.ts"
   },
   "dependencies": {
     "@fontsource/archivo-narrow": "5.3.0",
