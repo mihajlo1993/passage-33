@@ -1,102 +1,94 @@
-# Placement map: staging the flat
+# Staging: THE HOUSE KEEPS THE COUNT
 
-Work through this list in order, after Melissa is out of the flat. Everything
-prints from the app's desktop routes: /codes (3 QR marks), /glyphs (16 glyph
-cards plus your key page), /sheets (prop sheets). Play order follows the app;
-this list is grouped by room so you only stage each room once.
+Stage after Melissa is out of the flat. Everything printable comes from two
+files in this folder: QR-MARKS.html (the four marks) and PRINT-PACK.html
+(tiles, census, coin card, crest, tags, shadow kit). Print both at 100%
+scale, never fit-to-page: the crest card must measure exactly 60mm.
 
-## Print first (desktop, any printer)
+## Print first
 
-- [ ] /codes: 3 QR marks. Mark 01 START, mark 27 THE BOX, mark 28 THE PRESENT.
-- [ ] /glyphs: 16 glyph cards + the setup key page (the key page is for YOU,
-      do not leave it out).
-- [ ] /sheets: prop sheets 01 and 02 (corridor wall drawing and planter
-      drawing; your crayon versions can replace these, same placement).
-- [ ] The Last Letter: optional but recommended, hand-write or print the
-      letter text (it also appears in the app under Notes after the corridor
-      box). Put it inside the corridor box. If you hand-write it, use the text
-      from the app or your own words; sign it M.
+- [ ] QR-MARKS.html: 4 marks (THE DOOR, THE DRAWER, THE PLANTER, THE PROPERTY).
+- [ ] PRINT-PACK.html: all 7 sections. Glue tile fronts to their backs so
+      each of the 4 tiles is double-sided (same room front and back).
 
-## Corridor (start and epilogue)
+## Setup constants: VERIFY TONIGHT, tell me if any differ
 
-- [ ] Tape QR mark 01 (START) at the far end of the corridor, roughly where
-      she wakes / enters. Eye height.
-- [ ] The corridor box: any lidded box. Inside: the kitchen knife prop (a
-      butter knife is fine, it is never used), a printed note if you like,
-      and later the letter. Tape QR mark 27 (THE BOX) on the lid.
-- [ ] Prop sheet 01 (or your crayon drawing of the creature) taped to the
-      corridor wall at chest height, flat, well lit enough for the camera.
+The terminal is built around these values. Check each in the real flat; if
+one is wrong, message me the correct number and I push a fix in minutes.
 
-## Bathroom
+- Census answers (in card order): 7, 12, 14, 21, 19
+  1. balcony rail slats = 7
+  2. kitchen fan blades x drawers beneath = 12
+  3. shower shortest-wall tiles in one row = 14
+  4. 16 Kallax cells + front door number = 21 (door number 5)
+  5. coin card year digits: 1+9+9+0 = 19 (the card prints 1990; matches).
+- Ring date: 310726 (tonight, DDMMYY). Pocket tag hides the first digit (3).
+- Mat cell: Kallax cell 6 counted from the left.
+- Mouse box: third shoebox from the left at the shoe rack.
 
-- [ ] Nothing needed for the mirror (the app fogs itself). She just needs to
-      stand at the real mirror.
-- [ ] Cistern: one glyph card (the one your /glyphs key page marks as the
-      KEY CARD, glyph 11) inside a small zip-lock bag, taped inside the
-      cistern lid or floating in the tank. Waterproof it.
-- [ ] Shower: the "heavy present" prop behind the curtain. A water pistol or
-      any toy gun wrapped in a dark cloth works; it is never fired in the
-      real world.
-- [ ] Cabinet: nothing physical needed (the dial lives on screen). Optional:
-      a small bottle labelled CHEM FLUID for flavour.
+## Entry (Chapter 1)
 
-## Entry
+- [ ] Mark THE DOOR on the front door, eye height.
+- [ ] Nothing else: the clearance card is 3D, in the app.
 
-- [ ] A coat that is not hers on the hooks. In the pocket: a VHS tape if you
-      can find one, otherwise anything tape-shaped with LOSER written on a
-      label. The app plays the actual footage; the prop just needs to exist.
+## Living room (Chapter 2, the mat)
 
-## Living room
+- [ ] Tile CORRIDOR: leave in the corridor, visible on the floor or a shelf.
+- [ ] Tile BATHROOM: in the bathroom. Tile KITCHEN: in the kitchen.
+      Tile BALCONY: on the balcony. Stage BATHROOM and BALCONY hex-side-up
+      (the puzzle needs exactly two tiles lying face down).
+- [ ] The MAT: rolled, tied with string, slid into Kallax cell 6 from the left.
+- [ ] Optional: a small note card under the desk lip reading "the surveyor
+      sets his stone with the hall at heaven" (the app also says it).
 
-- [ ] Sofa, the seat she always takes: under the cushion, the MOUSE MAT with
-      the RED Euromillions slip on top of it. Flat, invisible from above.
-- [ ] Kallax: tape one printed glyph card to each of 16 cells (any order,
-      EXCEPT the key card position must match your /glyphs key page). Inside
-      the key cell, toward the back: the PC MOUSE, boxed or wrapped, with the
-      BLUE Euromillions slip taped to it.
-- [ ] Field desk (any desk or table): a sheet of paper with something faintly
-      pressed into it (write on a sheet above it so only the impression
-      remains). The app handles the shadow puzzle; the paper sells the beat.
-- [ ] The stag/relic: optional physical counterpart; the puzzle is on screen.
+## Kitchen (Chapter 3, the mouse)
 
-## Balcony
+- [ ] Mark THE DRAWER taped inside the top kitchen drawer.
+- [ ] Shadow kit in the corridor: three folded arms standing on the CASTER
+      mark, phone-torch CRADLE mark against the skirting, letter circles
+      taped on the wall so the arm shadows touch R, A, T (shortest arm on R).
+      CALIBRATE THIS YOURSELF ONCE, lights off. Scatter E N O S H around them.
+- [ ] The MOUSE: boxed, third shoebox from the left at the shoe rack, with
+      the BLUE EuroMillions slip taped to it.
 
-- [ ] The padlock is on screen; no physical lock needed. If the balcony door
-      locks, leave it unlocked (the app is the lock).
-- [ ] Planter: a potted herb (supermarket basil is perfect) with prop sheet 02
-      (or your crayon fan drawing) tucked behind it, plus any small tap or
-      valve-looking object if you have one.
+## Balcony (Chapter 4, the slips)
 
-## Kitchen
+- [ ] Mark THE PLANTER in a zip-lock sleeve pushed into the planter soil,
+      together with the CENSUS CARD and the CREST CARD.
+- [ ] Coin card in a zip-lock inside the cistern lid (see the census note!).
+- [ ] The RED EuroMillions slip + envelope: behind/inside the Kallax cell the
+      terminal names at the end of the Six Lines (it prints the cell number
+      on screen; with current constants that is cell 13 from the left).
+      Put BOTH slips' blank play grids in the envelope so she can transcribe
+      all six generated lines.
 
-- [ ] Candle on the table, matches in the drawer she would naturally try.
-      Test the candle and matches beforehand.
-- [ ] The fan: your real fan, plugged in, running LOW, positioned so the
-      candle would genuinely flicker on the walk. The valve is on screen; when
-      the app says the fan dies, YOU switch it off (or smart-plug it). This is
-      your one live-operator moment; the operator panel (hold top-left corner
-      3 s, then two taps top-right) can skip anything that goes wrong.
-- [ ] The sealed present: the Aarke carbonator, wrapped. Tape QR mark 28
-      (THE PRESENT) on the wrapping. Keep it visible from Act 4 so the early
-      refusal lines get their chance to be funny.
-- [ ] The cake with 33 candles: hidden until the trophy moment, your call
-      when to bring it out (after the wish is the natural beat).
+## Finale (Chapter 5)
 
-## Her phone (do this the day before)
+- [ ] Her own coat on the sofa with the three printed tags pinned: ARM
+      (glyph), POCKET (mirrored date), HEM (film frame E33).
+- [ ] The CARBONATOR: wrapped, lying in the bath behind the drawn shower
+      curtain, with a bottle of still water beside it and mark THE PROPERTY
+      on the wrapping.
+- [ ] The cake with 33 candles: your call, after the trophy screen.
+
+## Her phone, the day before
 
 - [ ] Open the Vercel URL in Chrome, install to home screen, open once fully.
-- [ ] Verify Google Play Services for AR is installed (open the AR beat from
-      /dev once; if Chrome offers an ARCore install, accept it).
-- [ ] Airplane mode test: cold start from the home screen icon, walk the
-      first three pins via /dev, then reset the game from /dev.
-- [ ] Screen timeout to 10 minutes, brightness up, Do Not Disturb on,
-      battery full. Lock rotation to portrait.
-- [ ] Reset the game state from /dev as the LAST step before handing over.
+- [ ] Airplane-mode cold start test; walk 2-3 pins via /dev, then reset from /dev.
+- [ ] Screen timeout 10 min, brightness up, Do Not Disturb, portrait lock,
+      full battery. Reset the game from /dev as the very last step.
 
 ## Emergency kit
 
-- [ ] Operator panel: hold top-left corner 3 seconds, then tap top-right
-      twice. From there you can resolve or skip any pin, set health, or
-      restore a broken run. Practice opening it once.
-- [ ] If the whole phone fails: any Android Chrome phone with the Vercel URL
-      can take over; use /dev to fast-forward to where she was.
+- [ ] Operator panel: hold top-left corner 3 s, then two taps top-right.
+      Resolve/skip any pin, set health, restore a run. Practice once.
+- [ ] Any Android Chrome phone with the URL can take over via /dev.
+- [ ] Hints are built in: every puzzle helps after 2 misses. Nothing can
+      hard-stall her.
+
+## Your one full rehearsal
+
+Walk the whole game yourself before staging the gifts for real. You know
+the answers, so it takes 15 minutes. You are checking: the census counts,
+the shadow letters, that every mark scans in your hallway light, and that
+the ending lands the way you want it to land.
