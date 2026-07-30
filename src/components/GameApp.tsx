@@ -287,7 +287,7 @@ export function GameApp() {
     );
   }
 
-  if (route === "/map") return <MapScreen state={state} />;
+  if (route === "/map") return <MapScreen state={state} onClose={() => navigate("/")} />;
 
   if (route === "/codes") {
     return (

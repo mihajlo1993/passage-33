@@ -84,25 +84,25 @@ test("the voice map covers the five slots on real pins", () => {
 test("health anchors and critical flags preserve the exact Phase 2 contract", () => {
   assert.deepEqual(phase2HealthProfile(100), {
     health: 100,
-    intensity: 0.15,
+    intensity: 0.05,
     unstableTimecode: false,
     periodicDropFrames: false,
   });
   assert.deepEqual(phase2HealthProfile(60), {
     health: 60,
-    intensity: 0.35,
+    intensity: 0.14,
     unstableTimecode: false,
     periodicDropFrames: false,
   });
   assert.deepEqual(phase2HealthProfile(40), {
     health: 40,
-    intensity: 0.6,
+    intensity: 0.3,
     unstableTimecode: true,
     periodicDropFrames: false,
   });
   assert.deepEqual(phase2HealthProfile(19), {
     health: 19,
-    intensity: 0.85,
+    intensity: 0.5,
     unstableTimecode: true,
     periodicDropFrames: true,
   });

@@ -44,6 +44,7 @@ export function ScenePlate({ route, zone, coldOpen = false }: ScenePlateProps) {
   return (
     <div
       className="screen-plate"
+      data-ambient={url ? undefined : (coldOpen ? "title" : zone)}
       aria-hidden="true"
       style={url ? { backgroundImage: `url(${url})` } : undefined}
     />

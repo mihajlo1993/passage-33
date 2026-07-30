@@ -14,16 +14,17 @@ import {
 } from "../src/fx/model";
 
 test("health anchors and critical flags match the degradation contract", () => {
-  assert.equal(getVHSHealthProfile(100).intensity, 0.15);
-  assert.equal(getVHSHealthProfile(60).intensity, 0.35);
-  assert.equal(getVHSHealthProfile(40).intensity, 0.6);
-  assert.equal(getVHSHealthProfile(20).intensity, 0.85);
-  assert.equal(getVHSHealthProfile(19).intensity, 0.85);
+  assert.equal(getVHSHealthProfile(100).intensity, 0.05);
+  assert.equal(getVHSHealthProfile(60).intensity, 0.14);
+  assert.equal(getVHSHealthProfile(40).intensity, 0.3);
+  assert.equal(getVHSHealthProfile(20).intensity, 0.5);
+  assert.equal(getVHSHealthProfile(19).intensity, 0.5);
 
   assert.equal(getVHSHealthProfile(40).unstableTimecode, true);
   assert.equal(getVHSHealthProfile(20).periodicDropFrames, false);
   assert.equal(getVHSHealthProfile(19).periodicDropFrames, true);
-  assert.equal(getVHSHealthProfile(80).intensity, 0.25);
+  // Midpoint of the 100..60 segment on the filmic curve.
+  assert.equal(getVHSHealthProfile(80).intensity, 0.095);
 });
 
 test("intensity math clamps invalid and out-of-range inputs", () => {

@@ -3,10 +3,15 @@
 import { SurveyMap } from "@/src/map/SurveyMap";
 import type { GameState } from "@/src/types";
 
-export function MapScreen({ state }: { state: GameState }) {
+export interface MapScreenProps {
+  state: GameState;
+  onClose: () => void;
+}
+
+export function MapScreen({ state, onClose }: MapScreenProps) {
   return (
-    <section className="map-screen" aria-label="Flat survey">
-      <SurveyMap state={state} />
-    </section>
+    <div className="map-screen">
+      <SurveyMap state={state} onClose={onClose} />
+    </div>
   );
 }

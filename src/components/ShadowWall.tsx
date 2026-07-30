@@ -120,7 +120,7 @@ export function ShadowWall({ onSolved, onCancel }: ShadowWallProps) {
           disable-tap
           touch-action="none"
           interaction-prompt="none"
-          exposure="0.45"
+          exposure="0.85"
           shadow-intensity="1"
           tone-mapping="aces"
           camera-orbit="0.6rad 1.4rad 110%"

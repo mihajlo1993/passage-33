@@ -42,7 +42,7 @@ test("the map is an inline SVG survey with the requested paper details", () => {
 });
 
 test("/map is a chrome-free full-bleed viewport with no scroll surface", () => {
-  assert.match(appSource, /if \(route === "\/map"\) return <MapScreen state=\{state\} \/>;/);
+  assert.match(appSource, /if \(route === "\/map"\) return <MapScreen state=\{state\} onClose=\{\(\) => navigate\("\/"\)\} \/>;/);
   assert.doesNotMatch(screenSource, /className="screen|screen-heading|<header|<h1|map-gesture-note|map-state-key/);
   assert.equal((screenSource.match(/<SurveyMap\b/g) ?? []).length, 1);
   // `slice` crops any box/viewBox mismatch instead of silently shrinking the
@@ -99,7 +99,7 @@ test("rendered map surfaces carry room state only, never individual-location dat
 test("room-state fills use only the shared rust, slate, and surface tokens", () => {
   assert.match(
     mapCss,
-    /\[data-room-state="unresolved"\][\s\S]*?fill:\s*var\(--c-rust\)/,
+    /\[data-room-state="unresolved"\][\s\S]*?fill:\s*var\(--c-map-red\)/,
   );
   assert.match(
     mapCss,

@@ -7,11 +7,11 @@ import type {
 } from "./types";
 
 export const VHS_HEALTH_ANCHORS = [
-  { health: 100, intensity: 0.15 },
-  { health: 60, intensity: 0.35 },
-  { health: 40, intensity: 0.6 },
-  { health: 20, intensity: 0.85 },
-  { health: 0, intensity: 0.85 },
+  { health: 100, intensity: 0.05 },
+  { health: 60, intensity: 0.14 },
+  { health: 40, intensity: 0.3 },
+  { health: 20, intensity: 0.5 },
+  { health: 0, intensity: 0.5 },
 ] as const;
 
 export const VHS_FRAME_INTERVAL_MS = 1_000 / effects.vhs.maxFps;

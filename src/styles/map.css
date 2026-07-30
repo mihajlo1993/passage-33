@@ -94,7 +94,7 @@ body:has(.map-screen),
 }
 
 .survey-room[data-room-state="unresolved"] .survey-room__fill {
-  fill: var(--c-rust);
+  fill: var(--c-map-red);
 }
 
 .survey-room[data-room-state="cleared"] .survey-room__fill {
@@ -255,3 +255,69 @@ body:has(.map-screen),
   stroke: var(--c-bone);
   stroke-width: 2px;
 }
+
+
+/* ---- Explicit map chrome: controls and the RE2R legend ---- */
+
+.map-controls {
+  position: absolute;
+  z-index: 5;
+  top: calc(var(--space-lg) + env(safe-area-inset-top, 0px));
+  right: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.map-control {
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: var(--hairline) solid var(--line);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.72);
+  color: var(--c-bone);
+  font-family: var(--font-ui);
+  font-size: var(--text-heading);
+  line-height: 1;
+}
+
+.map-control:active {
+  background: linear-gradient(180deg, var(--c-bone-bright), var(--c-bone-muted));
+  color: var(--c-ink);
+}
+
+.map-control--close {
+  margin-top: var(--space-md);
+}
+
+.map-legend {
+  position: absolute;
+  z-index: 5;
+  right: var(--space-lg);
+  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(0, 0, 0, 0.72);
+  border: var(--hairline) solid var(--line-soft);
+  font-family: var(--font-ui);
+  font-size: var(--text-micro);
+  color: var(--c-text);
+  pointer-events: none;
+}
+
+.map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.map-legend__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+}
+
+.map-legend__swatch--searching { background: var(--c-map-red); }
+.map-legend__swatch--done { background: var(--c-slate); }

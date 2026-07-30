@@ -23,7 +23,7 @@
 }
 
 .condition-word[data-critical="true"] strong {
-  color: var(--c-rust);
+  color: var(--c-bone-dim);
 }
 
 .inventory-grid {
@@ -145,7 +145,7 @@
 }
 
 .document-tab span {
-  color: var(--c-rust);
+  color: var(--c-bone-dim);
 }
 
 .document-tab[data-selected="true"] {
@@ -189,8 +189,8 @@
   top: var(--space-lg);
   right: calc(var(--space-xxl) * -1);
   padding: var(--space-xs) var(--space-xxl);
-  border-block: var(--hairline) solid var(--c-rust);
-  color: var(--c-rust);
+  border-block: var(--hairline) solid var(--c-bone-dim);
+  color: var(--c-bone-dim);
   font-family: var(--font-ui);
   font-size: var(--text-small);
   font-weight: 700;
@@ -419,7 +419,7 @@
 }
 
 .dev-result[data-refused="true"] {
-  border-color: var(--c-rust);
+  border-color: var(--c-bone-dim);
 }
 
 .dev-result strong,
@@ -451,7 +451,7 @@
 
 .dev-pin-list li > div > span {
   grid-row: span 2;
-  color: var(--c-rust);
+  color: var(--c-bone-dim);
   font-size: var(--text-small);
 }
 

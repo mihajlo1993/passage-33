@@ -44,6 +44,8 @@ export interface MapViewportController {
   state: MapViewportTransform;
   frameRef: RefObject<HTMLDivElement | null>;
   reset: () => void;
+  /** Multiply the scale, anchored at the viewport centre. Buttons use this. */
+  zoomBy: (factor: number) => void;
 }
 
 interface MeasuredPointer {
@@ -159,6 +161,23 @@ export function useMapViewport(): MapViewportController {
   const reset = useCallback(() => {
     const size = sizeRef.current;
     queueTransform(size ? initialMapViewport(size) : copyInitialTransform());
+  }, [queueTransform]);
+
+  const zoomBy = useCallback((factor: number) => {
+    const frame = frameRef.current;
+    const rect = frame?.getBoundingClientRect();
+    const size = rect && rect.width > 0
+      ? { width: rect.width, height: rect.height }
+      : sizeRef.current;
+    if (!size) return;
+    sizeRef.current = size;
+    const current = desiredTransformRef.current;
+    queueTransform(zoomMapViewportAt(
+      current,
+      current.scale * factor,
+      { x: size.width / 2, y: size.height / 2 },
+      size,
+    ));
   }, [queueTransform]);
 
   useLayoutEffect(() => {
@@ -418,5 +437,5 @@ export function useMapViewport(): MapViewportController {
     transformOrigin: "0 0",
   }), [state]);
 
-  return { handlers, style, state, frameRef, reset };
+  return { handlers, style, state, frameRef, reset, zoomBy };
 }

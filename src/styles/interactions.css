@@ -244,7 +244,7 @@
   width: calc(var(--space-huge) * 3);
   height: calc(var(--space-huge) * 2);
   place-items: center;
-  border: var(--space-xs) solid var(--c-rust);
+  border: var(--space-xs) solid var(--c-bone-dim);
   background: var(--c-raised);
   color: var(--c-bone-dim);
 }
@@ -261,8 +261,8 @@
   right: calc(var(--space-xs) * -1);
   width: var(--space-sm);
   height: 100%;
-  border-left: var(--hairline) solid var(--c-rust-hot);
-  background: var(--c-rust);
+  border-left: var(--hairline) solid var(--c-amber);
+  background: var(--c-bone-dim);
 }
 
 .relight-rig__match {
@@ -287,7 +287,7 @@
   width: var(--space-md);
   height: var(--space-md);
   border-radius: 50%;
-  background: var(--c-rust-hot);
+  background: var(--c-amber);
 }
 
 .relight-rig[data-phase="drawn"] .relight-rig__match,

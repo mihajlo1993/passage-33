@@ -116,7 +116,7 @@ export function SealCube({ onSolved, onCancel }: SealCubeProps) {
           disable-tap
           touch-action="none"
           interaction-prompt="none"
-          exposure="0.55"
+          exposure="0.95"
           shadow-intensity="0.9"
           tone-mapping="aces"
           camera-orbit="0.8rad 1.35rad 110%"

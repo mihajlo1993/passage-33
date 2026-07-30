@@ -414,3 +414,25 @@ body {
   background: #2a2620;
   color: #e6dcd4;
 }
+
+
+/* ---- Ambient fallbacks: one warm practical per zone until plates land ---- */
+
+.screen-plate[data-ambient] {
+  background-color: #030302;
+}
+
+.screen-plate[data-ambient]::before {
+  background:
+    radial-gradient(ellipse 70% 45% at var(--pool-x, 30%) var(--pool-y, 22%),
+      rgba(122, 91, 51, 0.34) 0%, rgba(60, 44, 24, 0.16) 45%, transparent 70%),
+    var(--scene-dim);
+}
+
+.screen-plate[data-ambient="title"] { --pool-x: 68%; --pool-y: 30%; }
+.screen-plate[data-ambient="corridor"] { --pool-x: 50%; --pool-y: 12%; }
+.screen-plate[data-ambient="bathroom"] { --pool-x: 24%; --pool-y: 26%; }
+.screen-plate[data-ambient="entry"] { --pool-x: 78%; --pool-y: 20%; }
+.screen-plate[data-ambient="living"] { --pool-x: 30%; --pool-y: 34%; }
+.screen-plate[data-ambient="balcony"] { --pool-x: 50%; --pool-y: 60%; }
+.screen-plate[data-ambient="kitchen"] { --pool-x: 20%; --pool-y: 16%; }

@@ -33,7 +33,7 @@
 
 .scanner-status[data-status="error"],
 .scanner-status[data-status="denied"] {
-  color: var(--c-rust-hot);
+  color: var(--c-amber);
 }
 
 .scanner-frame {
@@ -136,11 +136,11 @@
 }
 
 .arrival-panel[data-refused="true"] {
-  border-color: var(--c-rust);
+  border-color: var(--c-amber);
 }
 
 .arrival-panel[data-refused="true"] .eyebrow {
-  color: var(--c-rust-hot);
+  color: var(--c-amber);
 }
 
 .arrival-grants {

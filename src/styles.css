@@ -128,8 +128,8 @@ h2 {
   height: var(--space-xxl);
   place-items: center;
   margin-right: var(--space-sm);
-  border: var(--hairline) solid var(--c-rust);
-  color: var(--c-rust);
+  border: var(--hairline) solid var(--c-amber);
+  color: var(--c-amber);
   font-size: var(--text-small);
   font-weight: 700;
   letter-spacing: var(--tracking-ui);
@@ -233,8 +233,8 @@ h2 {
 }
 
 .mechanical-button--primary {
-  border-color: var(--c-rust);
-  background: var(--c-rust);
+  border-color: var(--c-amber);
+  background: var(--c-amber);
   color: var(--c-bone);
 }
 
@@ -256,8 +256,8 @@ h2 {
 }
 
 .text-control[data-danger="true"] {
-  color: var(--c-rust);
-  border-color: var(--c-rust);
+  color: var(--c-amber);
+  border-color: var(--c-amber);
 }
 
 .bottom-nav {
@@ -303,7 +303,7 @@ h2 {
 }
 
 .bottom-nav button[data-active="true"] span {
-  background: var(--c-rust);
+  background: var(--c-amber);
 }
 
 .cold-open,
@@ -330,7 +330,7 @@ h2 {
 .cold-open__rule {
   width: var(--space-huge);
   height: var(--hairline);
-  background: var(--c-rust);
+  background: var(--c-amber);
 }
 
 .cold-open__copy {
@@ -375,7 +375,7 @@ h2 {
   display: block;
   width: 38%;
   height: 100%;
-  background: var(--c-rust);
+  background: var(--c-amber);
   animation: restore-slide var(--motion-slow) var(--ease-heavy) infinite alternate;
 }
 
@@ -395,7 +395,7 @@ h2 {
   left: var(--space-lg);
   width: var(--space-huge);
   height: var(--space-xs);
-  background: var(--c-rust);
+  background: var(--c-amber);
 }
 
 .progress-readout {

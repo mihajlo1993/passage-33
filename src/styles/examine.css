@@ -23,13 +23,21 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-  /* The object floats in the dark; the vignette sells the bench. */
+  /* A visible warm pool and a floor line: the RE2R inspect bench, never a
+     flat void. Explicit colours because the token blacks are too close. */
   background:
     radial-gradient(
-      ellipse 90% 70% at 50% 45%,
-      var(--c-surface) 0%,
-      var(--c-void) 78%
-    );
+      ellipse 85% 60% at 50% 42%,
+      rgba(122, 96, 58, 0.55) 0%,
+      rgba(64, 50, 30, 0.28) 40%,
+      rgba(10, 8, 6, 0) 72%
+    ),
+    radial-gradient(
+      ellipse 60% 14% at 50% 78%,
+      rgba(0, 0, 0, 0.85) 0%,
+      rgba(0, 0, 0, 0) 70%
+    ),
+    linear-gradient(180deg, #0a0806 0%, #060504 55%, #020202 100%);
   --poster-color: transparent;
 }
 

@@ -141,7 +141,7 @@
   transition: transform var(--motion-slow) var(--ease-heavy), opacity var(--motion-slow) var(--ease-heavy);
 }
 
-.keycard-slot[data-colour="red"] .keycard-slot__card { background: var(--c-rust); }
+.keycard-slot[data-colour="red"] .keycard-slot__card { background: var(--c-amber); }
 .keycard-slot[data-colour="blue"] .keycard-slot__card { background: var(--c-slate); }
 
 .keycard-slot[data-holding="true"] .keycard-slot__card {
@@ -226,7 +226,7 @@
 .valve-readout__track i {
   display: block;
   height: 100%;
-  background: var(--c-rust);
+  background: var(--c-amber);
   transition: width var(--motion-base) var(--ease-heavy);
 }
 
@@ -315,7 +315,7 @@
 }
 
 .action-beat--staging[data-beat="behindYou"] .action-beat__staging-line {
-  color: var(--c-rust-hot);
+  color: var(--c-amber);
 }
 
 @keyframes staging-breathe {
@@ -384,7 +384,7 @@
 
 .verdict-tile__face--front {
   background: var(--c-surface);
-  color: var(--c-rust-hot);
+  color: var(--c-amber);
 }
 
 .verdict-tile__face--back {
@@ -414,8 +414,13 @@
   flex: 1;
   min-height: 46dvh;
   background:
-    radial-gradient(circle at 50% 42%, rgba(58, 52, 44, 0.55) 0%, rgba(20, 18, 15, 0.30) 38%, transparent 68%),
-    var(--c-void);
+    radial-gradient(
+      ellipse 85% 60% at 50% 42%,
+      rgba(122, 96, 58, 0.5) 0%,
+      rgba(64, 50, 30, 0.24) 40%,
+      rgba(10, 8, 6, 0) 72%
+    ),
+    linear-gradient(180deg, #0a0806 0%, #060504 55%, #020202 100%);
 }
 
 .seal-cube__viewer {

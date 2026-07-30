@@ -95,7 +95,7 @@ export function ExamineModel({ itemName, model, onClose, onUnavailable }: Examin
         disable-tap
         touch-action="none"
         interaction-prompt="none"
-        exposure="0.65"
+        exposure="1.0"
         shadow-intensity="0.8"
         shadow-softness="0.6"
         tone-mapping="aces"
