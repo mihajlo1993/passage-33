@@ -16,7 +16,16 @@ export type HostVoiceId =
   | 'draught'
   | 'trophy'
   | 'present';
-export type PinResolutionMode = 'scan' | 'dial' | 'action' | 'ar';
+export type PinResolutionMode =
+  | 'scan'
+  | 'dial'
+  | 'action'
+  | 'ar'
+  | 'wipe'
+  | 'glyphs'
+  | 'slot'
+  | 'valve'
+  | 'shadow';
 export type PinResolutionMethod = PinResolutionMode | 'dev';
 
 
@@ -53,6 +62,12 @@ export interface Pin {
   scare?: 'torchKill' | 'roomMonster' | 'closeQuarters';
   damage?: number;
   resolution?: PinResolutionMode;
+  /** The Host's riddle shown BEFORE she hunts; bodyText is the payoff after. */
+  objective: string;
+  /** Button label for action-resolved pins. */
+  actionLabel?: string;
+  /** Choreography for action beats that need staging before they resolve. */
+  beat?: 'blackout' | 'behindYou' | 'carry' | 'mix' | 'hold';
   /** Pin-specific line used when this pin refuses for missing items or pins. */
   refusalHint?: string;
   bodyText: string;

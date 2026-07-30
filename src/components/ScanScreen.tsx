@@ -1,94 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { itemById } from "@/src/items";
 import { motion } from "@/src/tokens";
-import { TAPE_PLAYBACK_PIN_ID, dialConfigByPin, getPinById } from "@/src/pins";
 import type { PinResolutionMethod } from "@/src/types";
-import { useVHS } from "@/src/fx";
-import { DialLockScreen } from "./DialLockScreen";
-import { FieldDeskTorch } from "./FieldDeskTorch";
+import { ArrivalPanel } from "./ArrivalPanel";
 import type { PinResolutionResult } from "@/src/game";
-import { phase2AudioCuesForResolution } from "@/src/game/phase2Integration";
-import { useAudio } from "@/src/audio/useAudio";
 import { useTorch } from "@/src/device";
 import { ScannerView, type ScannerStatus } from "@/src/scanner";
 
 export interface ScanScreenProps {
   resolvePin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
-  previewPin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
-  sufferSetback: () => number;
   flushPersistence: () => Promise<void>;
   navigate: (path: string) => void;
 }
 
-export function ScanScreen({ resolvePin, previewPin, sufferSetback, flushPersistence, navigate }: ScanScreenProps) {
+/**
+ * The scanner serves exactly the three printed marks: the start of the route,
+ * the corridor box, and the sealed present. Every other pin resolves through
+ * the mechanisms on the home screen, and a stray scan earns a Host refusal.
+ */
+export function ScanScreen({ resolvePin, flushPersistence, navigate }: ScanScreenProps) {
   const [result, setResult] = useState<PinResolutionResult | null>(null);
-  const [pendingDial, setPendingDial] = useState<number | null>(null);
   const [status, setStatus] = useState<ScannerStatus>("initializing");
   const [cameraError, setCameraError] = useState(false);
   const torch = useTorch();
-  const audio = useAudio();
-  const vhs = useVHS();
 
-  const presentAttempt = async (
-    attempt: PinResolutionResult,
-    locallyAudible = false,
-  ) => {
-    setResult(attempt);
-    if (locallyAudible) {
-      for (const cue of phase2AudioCuesForResolution(attempt)) {
-        void audio.play(cue);
-      }
-    }
-    if (!attempt.ok) {
-      return;
-    }
-    if (attempt.pin.scare === "torchKill") {
-      await torch.kill(motion.eventMs.torchKill);
-    }
-  };
-
-  const handleScan = async (pinId: number) => {
-    // Dispatch is driven entirely by the pin record; this screen carries no
-    // pin-id literals of its own.
-    const pin = getPinById(pinId);
-    if (pinId === TAPE_PLAYBACK_PIN_ID) {
-      // The recovered tape plays before it can teach anything.
-      const preview = previewPin(pinId, "scan");
-      if (!preview.ok) {
-        await presentAttempt(preview, true);
-        return;
-      }
-      navigate("/tape");
-      return;
-    }
-    if (pin?.resolution === "ar") {
-      const preview = previewPin(pinId, "ar");
-      if (!preview.ok) {
-        await presentAttempt(preview, true);
-        return;
-      }
-      navigate("/ar?pin=" + String(pinId));
-      return;
-    }
-
-    if (pin?.resolution === "dial" && dialConfigByPin[pinId]) {
-      const preview = previewPin(pinId, "dial");
-      if (!preview.ok) {
-        await presentAttempt(preview, true);
-        return;
-      }
-      setPendingDial(pinId);
-      return;
-    }
-
-    await presentAttempt(resolvePin(pinId, "scan"));
-  };
-
-  const completeDial = async (pinId: number) => {
-    setPendingDial(null);
-    await presentAttempt(resolvePin(pinId, "dial"));
+  const handleScan = (pinId: number) => {
+    setResult(resolvePin(pinId, "scan"));
   };
 
   const continueFromResult = async () => {
@@ -101,46 +39,14 @@ export function ScanScreen({ resolvePin, previewPin, sufferSetback, flushPersist
       navigate("/save");
       return;
     }
-    if (result.pin.id === 26 || result.gameCompleted) {
+    if (result.pin.kind === "win" || result.gameCompleted) {
       navigate("/trophy");
       return;
     }
-    if (result.pin.id === 23) {
-      navigate("/");
-      return;
-    }
     setResult(null);
+    navigate("/");
   };
 
-  const dialConfig = pendingDial === null ? undefined : dialConfigByPin[pendingDial];
-  if (pendingDial !== null && dialConfig) {
-    return (
-      <DialLockScreen
-        kind={dialConfig.kind}
-        correctValue={dialConfig.value}
-        title={dialConfig.title}
-        hostText={dialConfig.hostText}
-        wrongText={dialConfig.wrongText}
-        hints={dialConfig.hints}
-        onSubmit={() => completeDial(pendingDial)}
-        onCancel={() => setPendingDial(null)}
-        onWrongAttempt={() => {
-          // A wrong turn stings: the house notices, the tape degrades.
-          sufferSetback();
-          vhs.glitch(motion.eventMs.vhsDamageSpike);
-        }}
-      />
-    );
-  }
-
-  if (result?.ok && result.pin.id === 15) {
-    return (
-      <FieldDeskTorch
-        onSubmit={continueFromResult}
-        onCancel={() => void continueFromResult()}
-      />
-    );
-  }
   return (
     <section className="scan-screen" aria-labelledby="scan-title">
       <header className="scan-heading">
@@ -173,35 +79,7 @@ export function ScanScreen({ resolvePin, previewPin, sufferSetback, flushPersist
           )}
         </div>
       )}
-      {result && (
-        <article className="arrival-panel" data-refused={!result.ok} aria-live="assertive">
-          <p className="eyebrow">
-            {result.ok ? "CONTACT ACCEPTED // PIN " + String(result.pin.id).padStart(2, "0") : "CONTACT REFUSED"}
-          </p>
-          <h2>{result.ok ? result.pin.name : "NOT YET."}</h2>
-          <p className="host-copy">{result.ok ? result.pin.bodyText : result.hint}</p>
-          {result.ok && result.grantedItems.length > 0 && (
-            <div className="arrival-grants">
-              <span>RECOVERED</span>
-              <strong>{result.grantedItems.map((id) => itemById[id]?.name ?? id).join(" // ")}</strong>
-            </div>
-          )}
-          {result.ok && result.damage > 0 && <p className="system-warning">THE HOUSE TOOK SOMETHING OUT OF YOU.</p>}
-          <button className="mechanical-button mechanical-button--primary mechanical-button--full" onClick={() => void continueFromResult()}>
-            {!result.ok
-              ? "STEP BACK"
-              : result.saveTriggered
-                ? "RECORD TO CASSETTE"
-                : result.gameCompleted
-                  ? "LET THE HOUSE GO QUIET"
-                  : result.pin.id === 26
-                    ? "VIEW THE TROPHY"
-                    : result.pin.id === 27 || result.pin.id === 28
-                      ? "FIND THE OTHER PRESENT"
-                      : "KEEP MOVING"}
-          </button>
-        </article>
-      )}
+      {result && <ArrivalPanel result={result} onContinue={() => void continueFromResult()} />}
     </section>
   );
 }

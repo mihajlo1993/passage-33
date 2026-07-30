@@ -74,6 +74,9 @@ export const pins: readonly Pin[] = [
     requires: [],
     grants: [],
     kind: 'flavour',
+    resolution: 'scan',
+    objective:
+      'Find the printed mark at the far end of the corridor, where you woke. The camera knows what to do with it.',
     bodyText:
       'There she is. Awake at last, birthday girl. Thirty-three years old today, and the house has been holding its breath all morning. Everything that happens next, I arranged for you. Walk the corridor slowly. Anticipation is the only gift I get to keep.',
   },
@@ -86,6 +89,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [1],
     grants: [itemIds.knife, itemIds.note01],
     kind: 'save',
+    resolution: 'action',
+    objective:
+      'There is a box in the corridor that was never there before. Open it and take what I packed for you.',
+    actionLabel: 'OPEN THE BOX',
     bodyText:
       'A knife and a note, exactly where I promised myself you would find them. Take both. Every celebration needs something sharp, and every guest deserves instructions. The little deck beside you keeps memories better than people do. Give it this one.',
   },
@@ -100,6 +107,8 @@ export const pins: readonly Pin[] = [
     kind: 'item',
     arTarget: 'sheet01',
     resolution: 'ar',
+    objective:
+      'Now hold the camera to the drawing on the corridor wall. Let it settle.',
     bodyText:
       'Hold the camera to my mark and let the shape settle. The last guest rushed this part. He was in such a hurry to be finished with the evening that he never saw what the wall was offering him. You were never like that. Look properly.',
   },
@@ -112,6 +121,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [3],
     grants: [],
     kind: 'flavour',
+    resolution: 'action',
+    objective:
+      'The bathroom next. Cross the threshold and let the room notice you.',
+    actionLabel: 'CROSS THE THRESHOLD',
     bodyText:
       'The bathroom. Every morning you stand in here half-asleep, certain nothing is watching. Tonight the room would like to correct the record. Everything you need is already inside. None of it is where a polite host would leave it.',
   },
@@ -124,6 +137,9 @@ export const pins: readonly Pin[] = [
     requiresPin: [4],
     grants: [itemIds.code3],
     kind: 'puzzle',
+    resolution: 'wipe',
+    objective:
+      'The mirror keeps three figures for you. Stand in front of the real glass. My screen will do the fogging.',
     bodyText:
       'Closer, Melissa. The mirror has kept every version of you it ever held, and tonight it will part with three of its figures. Do not ask the glass questions. Breathe on it, the way you do on cold mornings, and watch what it chooses to repeat.',
   },
@@ -136,6 +152,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [5],
     grants: [itemIds.kallaxGlyph],
     kind: 'item',
+    resolution: 'action',
+    objective:
+      'Lift the cistern lid. In the dark water there is a card with one mark on it. Fish it out before you think too hard.',
+    actionLabel: 'REACH INTO THE WATER',
     bodyText:
       'Reach into the cistern. Yes. In. There is a card waiting in the dark water with one mark on it, and one square shelf in this flat wears the same mark. The last guest checked every cell except the right one. He did not trust the water. Trust the water.',
   },
@@ -148,6 +168,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [6],
     grants: [itemIds.pistol],
     kind: 'item',
+    resolution: 'action',
+    objective:
+      'Behind the shower curtain, something heavy is waiting. Take it before you leave the tiles.',
+    actionLabel: 'PULL BACK THE CURTAIN',
     bodyText:
       'Behind the curtain. Heavy, oiled, and not remotely festive. I would apologise for the tone of this particular present, but you will want it before the night is done, and I have never once heard you complain about being prepared.',
   },
@@ -163,6 +187,8 @@ export const pins: readonly Pin[] = [
     resolution: 'dial',
     refusalHint:
       'The wheels want the mirror\'s three figures, in the mirror\'s order. If the glass has not introduced them yet, go back and breathe on it.',
+    objective:
+      'The cabinet\'s little lock lives on your screen. The mirror already made the introductions.',
     bodyText:
       'Three wheels, and a mirror that has already made the introductions. Set them in the order the glass remembers and the cabinet gives up its chemistry. Then let the deck take another memory. You are doing better than he did. I keep the comparisons honest.',
   },
@@ -177,6 +203,11 @@ export const pins: readonly Pin[] = [
     kind: 'scare',
     scare: 'torchKill',
     damage: 20,
+    resolution: 'action',
+    objective:
+      'Step out of the bathroom into the entry. Slowly. The dark wants a proper look at you.',
+    actionLabel: 'STEP INTO THE DARK',
+    beat: 'blackout',
     bodyText:
       'Lights out. Forgive me. No. I planned this for weeks and I regret nothing. Stand still if it helps. The dark in this flat is mine, and it has waited all day to meet you. The last guest ran. The corridor still remembers how he sounded.',
   },
@@ -189,6 +220,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [9],
     grants: [],
     kind: 'flavour',
+    resolution: 'action',
+    objective:
+      'Try the front door if you must. It has instructions not to embarrass you.',
+    actionLabel: 'TRY THE FRONT DOOR',
     bodyText:
       'The front door has been told it is furniture tonight. Do not take it personally. Everything worth having is already on this side of it. I made very sure of that before you woke.',
   },
@@ -201,6 +236,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [10],
     grants: [itemIds.tape],
     kind: 'item',
+    resolution: 'action',
+    objective:
+      'There is a coat on the hooks that neither of you owns. Its pocket hangs heavier than it should.',
+    actionLabel: 'CHECK THE POCKET',
     bodyText:
       'Check the coat. Not your coat. The pocket has been carrying a home movie for a long time and has grown tired of the weight. Take it somewhere with a screen. Every household has one tape it never labels honestly.',
   },
@@ -215,6 +254,10 @@ export const pins: readonly Pin[] = [
     kind: 'puzzle',
     refusalHint:
       'You arrived at the screening empty-handed. Check the coat by the front door; its pocket has been keeping something for you.',
+    resolution: 'action',
+    objective:
+      'Take what you found to the sofa and press play when you are sitting comfortably. Comfort will not last.',
+    actionLabel: 'PRESS PLAY',
     bodyText:
       'Press play. The guest before you left his finest hour on this tape. All of it true, none of it flattering. Watch what the padlock decided he was. He left you one useful word, and it cost him everything he came here to win.',
   },
@@ -227,6 +270,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [12],
     grants: [itemIds.keycardRed, itemIds.theAltar],
     kind: 'item',
+    resolution: 'action',
+    objective:
+      'You are already close to the next one. The seat you always take. Lift the cushion properly.',
+    actionLabel: 'LIFT THE CUSHION',
     bodyText:
       'Under the seat you always take. A red card, one half of a paired invitation, and beneath it, flat and patient, the Altar. Lift the cushion properly and take both into your keeping. The ceremony they belong to is closer than you think.',
   },
@@ -241,6 +288,9 @@ export const pins: readonly Pin[] = [
     kind: 'puzzle',
     refusalHint:
       'Bare fingers will not choose the right cell. The card in the cistern knows which square; go and get your hand wet.',
+    resolution: 'glyphs',
+    objective:
+      'The Kallax is holding its breath. Sixteen cells, one wet little mark. Choose on my screen first; then open the real cell.',
     bodyText:
       'Sixteen cells, and one of them wears your wet little mark. Inside, the blue half of the invitation and the Hand. Yes, a hand. It will answer to yours and no one else\'s. The house has strange ideas about gifts. So does your Host.',
   },
@@ -253,6 +303,9 @@ export const pins: readonly Pin[] = [
     requiresPin: [14],
     grants: [itemIds.knowKitchen],
     kind: 'puzzle',
+    resolution: 'shadow',
+    objective:
+      'The field desk in the living room. Lay your torch flat against the paper and rake the light sideways.',
     bodyText:
       'Lay the torch flat against the desk and let the light rake sideways. Pressed writing throws a shadow when the angle is cruel enough. The last guest held his light straight above it, like a man reading a menu. He remained hungry.',
   },
@@ -268,6 +321,8 @@ export const pins: readonly Pin[] = [
     resolution: 'dial',
     refusalHint:
       'The padlock listens for one word, and only the tape can teach it. Watch the screening to its end.',
+    objective:
+      'The balcony padlock takes one word. You watched a man become it.',
     bodyText:
       'The padlock out here has a vocabulary of exactly one word, and the tape has already taught it to you. Spell what he became. Then step out and breathe. You have earned one cold, honest breath before the finale begins.',
   },
@@ -282,6 +337,8 @@ export const pins: readonly Pin[] = [
     kind: 'item',
     arTarget: 'sheet02',
     resolution: 'ar',
+    objective:
+      'Out on the balcony, the planter has been growing something for you. Let the camera see what took root.',
     bodyText:
       'The planter has been growing your insurance since spring. Take the herb. Study the valve. The draught you are about to meet is machinery pretending to be weather, and machinery can be made to stop. I planted everything here except the part that matters.',
   },
@@ -299,6 +356,8 @@ export const pins: readonly Pin[] = [
     damage: 30,
     refusalHint:
       'You walked in on our guest empty-handed. The shower left you something heavy for exactly this introduction. He will wait. He enjoys waiting.',
+    objective:
+      'Come back inside through the balcony door. Bring the heavy present from the shower. The living room has a guest.',
     bodyText:
       'Back inside. Slowly. The living room acquired a guest while you were out breathing my cold air, and nobody told him it is your birthday. You are carrying the shower\'s heavy present. Use it. He hates being ignored far more than he hates being shot.',
   },
@@ -317,6 +376,9 @@ export const pins: readonly Pin[] = [
     kind: 'gate',
     refusalHint:
       'This door wants the red half, the blue half, and the desk\'s route. Arrive with all three, or do not arrive.',
+    resolution: 'slot',
+    objective:
+      'The kitchen door wants both halves of the invitation. Slot them on my screen, red before blue.',
     bodyText:
       'Both halves of the invitation, presented the way the desk taught you. The kitchen has been patient with you. So has your supper. So, frankly, have I, and patience was never the strongest part of my character.',
   },
@@ -331,6 +393,11 @@ export const pins: readonly Pin[] = [
     kind: 'craft',
     refusalHint:
       'The glass wants both halves of the medicine: something grown and something poured. Half a recipe is only a poison, and I want you standing at the end.',
+    resolution: 'action',
+    objective:
+      'A glass, the grown thing, the poured thing. Mix them at the kitchen counter and keep the result within reach.',
+    actionLabel: 'MIX THE GLASS',
+    beat: 'mix',
     bodyText:
       'Herb first, fluid second. Put them in a glass, mix, and drink it down when the edge gets close. It will taste like a garden fire, and it will pull you back. Once. That sound is your own heart. I checked.',
   },
@@ -345,6 +412,11 @@ export const pins: readonly Pin[] = [
     kind: 'scare',
     scare: 'closeQuarters',
     damage: 25,
+    resolution: 'action',
+    objective:
+      'Stand at the kitchen counter, face the window, and do not turn around until I say so.',
+    actionLabel: 'I AM READY',
+    beat: 'behindYou',
     bodyText:
       'Do not finish reading this. Turn around first. There. He stood close enough to count your eyelashes, and all he did was watch, because I asked nicely and I outrank him. That was the last favour I call in tonight. Steady hands now. The candle is next.',
   },
@@ -357,6 +429,10 @@ export const pins: readonly Pin[] = [
     requiresPin: [22],
     grants: [itemIds.candleLit],
     kind: 'item',
+    resolution: 'action',
+    objective:
+      'The candle on the kitchen table. Light it. The matches are in the drawer where matches always live.',
+    actionLabel: 'LIGHT THE CANDLE',
     bodyText:
       'Light the candle. One flame standing in for thirty-two absent friends. Guard it like it owes you money. The kitchen has opinions about open fire, and the loudest of them hangs on a wall, spinning, waiting to be introduced.',
   },
@@ -369,6 +445,11 @@ export const pins: readonly Pin[] = [
     requiresPin: [21],
     grants: [],
     kind: 'scare',
+    resolution: 'action',
+    objective:
+      'Carry the flame across the kitchen. Walk as if the room were not watching.',
+    actionLabel: 'CARRY THE FLAME',
+    beat: 'carry',
     bodyText:
       'Out. Just like that. One breath of moving air, and your little wish is smoke. I am nearly sorry. I needed you to feel it go out once, so that keeping it alive would mean something. Nothing in the dark behind you is new. Go and find another light.',
   },
@@ -382,6 +463,8 @@ export const pins: readonly Pin[] = [
     grants: [itemIds.candleLit],
     kind: 'item',
     resolution: 'action',
+    objective:
+      'The matches again. This time cup your hand around the little life.',
     bodyText:
       'Strike. Cup. Shield. The flat has learned what your hands look like when they are protecting something, and so have I. This time, the flame travels with an escort.',
   },
@@ -396,6 +479,9 @@ export const pins: readonly Pin[] = [
     kind: 'puzzle',
     refusalHint:
       'The fan cannot be argued with bare-handed. The balcony planter holds the piece that knows how it dies.',
+    resolution: 'valve',
+    objective:
+      'The fan. You know the one; it has been moving air at you all evening. Its valve is on my screen.',
     bodyText:
       'The draught has a source. Switch it off. Yes, the real fan, the one moving the air. The planter already told you it could be stopped, and you are carrying the how. Listen. Blades surrendering: the house admitting it cannot take this from you anymore. Nothing between you and the wish now but your own two feet.',
   },
@@ -410,6 +496,11 @@ export const pins: readonly Pin[] = [
     kind: 'win',
     refusalHint:
       'The wish needs a living flame and dead air. You are missing at least one, and the kitchen knows which.',
+    resolution: 'action',
+    objective:
+      'Bring the living flame into the still air and make the wish, Melissa.',
+    actionLabel: 'MAKE THE WISH',
+    beat: 'hold',
     bodyText:
       'Bring the flame into the still air and make the wish. Picture the other thirty-two candles: every year that carried you here, to my house, to my game, to the end of it. You won. He never did. Two last presents are unlocked: the box where you woke, and the paper in the kitchen. The house is finished being cruel.',
   },
@@ -422,6 +513,9 @@ export const pins: readonly Pin[] = [
     requiresPin: [26],
     grants: [itemIds.note02],
     kind: 'flavour',
+    resolution: 'scan',
+    objective:
+      'The corridor box, one more time. It kept something back. The mark on its lid is the second to last I ever printed.',
     bodyText:
       'The corridor box, back where you woke. Inside is the last thing I ever hid from you: a letter. Read it in good light, all the way to the signature. It was not written in the Host\'s hand. It never was.',
   },
@@ -441,13 +535,17 @@ export const pins: readonly Pin[] = [
       'You do make waiting look difficult. The birthday present stays sealed until the wish. I chose it myself.',
       'Again? Wonderful. Your curiosity is the best part of this party. Candles first. Then the paper.',
     ],
+    resolution: 'scan',
+    objective:
+      'The kitchen parcel with the ribbon. The mark on the wrapping paper is the last one. The paper tears from the corner.',
     bodyText:
       'Open it. I have known what is under that paper for weeks, and keeping the secret nearly finished me, which would have been a twist worthy of the tape. It sparkles, like the water it makes. Happy birthday, from a man who was never as anonymous as he pretended to be.',
   },
 ];
 
 export const TOTAL_PIN_COUNT = pins.length;
-export const printablePins = pins.filter((pin) => !NON_PRINTED_PIN_IDS.has(pin.id));
+/** Only scan-resolved pins print a QR mark: the start, the box, the present. */
+export const printablePins = pins.filter((pin) => (pin.resolution ?? 'scan') === 'scan');
 export const scannablePins = printablePins;
 
 export const pinById: Readonly<Partial<Record<number, Pin>>> =

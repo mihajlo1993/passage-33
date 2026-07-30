@@ -197,28 +197,22 @@ test("2D sprites and room creature use local WebP URLs; pixel work remains build
   );
 });
 
-test("scanner hands eligible AR pins to /ar without resolving them as scans", () => {
+test("the home driver hands eligible AR pins to /ar without resolving them first", () => {
   const scanSource = source("src/components/ScanScreen.tsx");
-  const normalized = compact(scanSource);
-  const arGate = indexOfPattern(normalized, /pin\?\.resolution === ["']ar["']/);
-  const preview = indexOfPattern(normalized, /previewPin\(pinId, ["']ar["']\)/, arGate);
+  const homeSource = source("src/components/HomeScreen.tsx");
+  const normalized = compact(homeSource);
+  const preview = indexOfPattern(normalized, /previewPin\(nextPin\.id, mode\)/);
   const navigation = indexOfPattern(
     normalized,
-    /navigate\(["']\/ar\?pin=["'] \+ String\(pinId\)\)/,
+    /navigate\(mode === "ar" \? "\/ar\?pin=" \+ String\(nextPin\.id\) : "\/tape"\)/,
     preview,
   );
-  const ordinaryScan = indexOfPattern(
-    normalized,
-    /resolvePin\(pinId, ["']scan["']\)/,
-    navigation,
-  );
 
-  assert.ok(arGate >= 0);
-  assert.match(normalized.slice(arGate, preview), /pin\?\.resolution === "ar"/);
-  assert.ok(preview > arGate);
+  assert.ok(preview >= 0);
   assert.ok(navigation > preview);
-  assert.ok(ordinaryScan > navigation);
+  // The scanner only ever resolves with the scan method.
   assert.doesNotMatch(scanSource, /resolvePin\s*\(\s*pinId\s*,\s*["']ar["']/);
+  assert.match(compact(scanSource), /resolvePin\(pinId, "scan"\)/);
   assert.match(arComponentCode, /resolvePin\s*\([^,]+,\s*["']ar["']\s*\)/);
 });
 

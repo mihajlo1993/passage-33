@@ -312,7 +312,7 @@ test("one successful resolution dispatches each audio and voice cue exactly once
     state,
     12,
     1_012,
-    "scan",
+    "action",
   );
   assert.equal(result.ok, true);
 
@@ -414,6 +414,7 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   const mapScreen = compact(source("src/components/MapScreen.tsx"));
   const mapModel = compact(source("src/map/model.ts"));
   const scanner = compact(source("src/components/ScanScreen.tsx"));
+  const home = compact(source("src/components/HomeScreen.tsx"));
   const dial = compact(source("src/components/DialLockScreen.tsx"));
   const save = compact(source("src/components/SaveScreen.tsx"));
   const arScreen = compact(source("src/ar/ARScreen.tsx"));
@@ -443,7 +444,7 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   assert.doesNotMatch(director, /health < 20/);
   assert.match(engine, /crossfadeImpulse\(/);
 
-  assert.match(scanner, /presentAttempt\(preview, true\)/);
+  assert.match(home, /previewPin\(nextPin\.id, mode\)/);
   assert.doesNotMatch(scanner, /\bcontact\(\)|\bfound\(\)|\bstutter\(\)/);
   assert.match(dial, /audio\.play\(phase2DialAudioCue\(false\)\)/);
   assert.match(save, /onCommit\(\) \.then\(\(\) => audio\.play\(SAVE_WRITTEN_AUDIO_CUE\)\)/);
@@ -452,8 +453,8 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   assert.match(mapModel, /const cleared = new Set\(state\.clearedZones\)/);
   assert.match(mapModel, /state\.resolvedPins\.includes\(BALCONY_UNLOCK_PIN\)/);
 
-  assert.match(scanner, /pin\?\.resolution === "ar"/);
-  assert.match(scanner, /navigate\("\/ar\?pin=" \+ String\(pinId\)\)/);
+  assert.match(home, /mode === "ar"/);
+  assert.match(home, /navigate\(mode === "ar" \? "\/ar\?pin=" \+ String\(nextPin\.id\) : "\/tape"\)/);
   assert.match(pinSource, /id: 18,[\s\S]*requires: \[itemIds\.pistol\][\s\S]*resolution: 'ar'/);
   assert.match(room, /shotFiredRef\.current = true;[\s\S]*onResolved\(\)/);
 

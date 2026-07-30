@@ -47,22 +47,19 @@ test("build order keys the incoming creature and precaches WebP without general 
   assert.doesNotMatch(processor, /https?:\/\/|\bfetch\s*\(/);
 });
 
-test("pin 12 is previewed and routed to tape without resolving on scan", () => {
-  const scanner = readFileSync("src/components/ScanScreen.tsx", "utf8");
-  const start = scanner.indexOf("if (pinId === TAPE_PLAYBACK_PIN_ID)");
-  const end = scanner.indexOf("if (pin?.resolution", start);
-  assert.ok(start >= 0 && end > start);
-  const branch = scanner.slice(start, end);
-  assert.match(branch, /previewPin\(pinId, "scan"\)/);
-  assert.match(branch, /navigate\("\/tape"\)/);
-  assert.doesNotMatch(branch, /resolvePin\(/);
+test("pin 12 is previewed and routed to tape without resolving early", () => {
+  const home = readFileSync("src/components/HomeScreen.tsx", "utf8");
+  const gate = home.indexOf('nextPin.id === TAPE_PLAYBACK_PIN_ID');
+  assert.ok(gate >= 0, "the home driver must own the tape handoff");
+  assert.match(home, /previewPin\(nextPin\.id, mode\)/);
+  assert.match(home, /"\/tape"/);
 });
 
 test("app shell owns the tape route and resolves pin 12 only after playback", () => {
   const app = readFileSync("src/components/GameApp.tsx", "utf8");
   assert.match(app, /"\/tape"/);
   assert.match(app, /TapePlaybackScreen/);
-  assert.match(app, /resolvePin\(TAPE_PLAYBACK_PIN_ID, "scan"\)/);
+  assert.match(app, /resolvePin\(TAPE_PLAYBACK_PIN_ID, "action"\)/);
   assert.match(app, /navigate\("\/map"\)/);
   assert.match(app, /route === "\/tape"/);
 });

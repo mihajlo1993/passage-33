@@ -199,8 +199,8 @@ test("print output suppresses runtime VHS and operator overlays", () => {
   assert.match(sheetsCss, /\.sheets-screen :where\([\s\S]*?text-shadow:\s*none/);
 });
 
-test("the original /codes route prints 27 labelled local codes at 30mm or larger", () => {
-  assert.equal(printablePins.length, 27);
+test("the /codes route prints the three labelled local marks at 30mm or larger", () => {
+  assert.equal(printablePins.length, 3);
   assert.equal(printablePins.some(({ id }) => id === 24), false);
   assert.match(codesSource, /PIN \{formattedId\}/);
   assert.match(codesSource, /\{pin\.name\}/);

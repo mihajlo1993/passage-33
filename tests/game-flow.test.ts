@@ -260,6 +260,10 @@ test("the trophy fires at 26 and only the final pair starts the quiet closing", 
     new URL("../src/components/ScanScreen.tsx", import.meta.url),
     "utf8",
   );
+  const arrivalSource = readFileSync(
+    new URL("../src/components/ArrivalPanel.tsx", import.meta.url),
+    "utf8",
+  );
 
   assert.match(trophySource, /trophyUnlocked = trophyAt !== null/);
   assert.match(trophySource, /areFinalPresentsResolved\(state\.resolvedPins\)/);
@@ -267,8 +271,8 @@ test("the trophy fires at 26 and only the final pair starts the quiet closing", 
   assert.match(trophySource, /audio\.ambient\(null\)/);
   assert.doesNotMatch(trophySource, /audio\.silence\(\)/);
   assert.match(trophySource, /trophy-screen--quiet/);
-  assert.match(scannerSource, /result\.pin\.id === 26 \|\| result\.gameCompleted/);
-  assert.match(scannerSource, /FIND THE OTHER PRESENT/);
+  assert.match(scannerSource, /result\.pin\.kind === "win" \|\| result\.gameCompleted/);
+  assert.match(arrivalSource, /FIND THE OTHER PRESENT/);
 });
 test("out-of-act and unknown scans refuse without changing GameState", () => {
   const state = createDefaultGameState(2_000);
@@ -413,11 +417,12 @@ test("Part 1 amendments keep data, order, and printable contacts aligned", () =>
   assert.doesNotMatch(getPinById(8)?.bodyText ?? "", /lockbox|physical box/i);
 
   assert.equal(TOTAL_PIN_COUNT, 28);
-  assert.equal(printablePins.length, 27);
+  assert.equal(printablePins.length, 3, "only the start, the box, and the present print a mark");
   assert.equal(printablePins.some((pin) => pin.id === 24), false);
   assert.deepEqual(
-    pins.filter((pin) => !printablePins.includes(pin)).map((pin) => pin.id),
-    [24],
+    printablePins.map((pin) => pin.id),
+    [1, 27, 28],
+    "the start, the corridor box, and the sealed present",
   );
 
   assert.match(CABINET_DIAL_CODE, /^\d{3}$/);

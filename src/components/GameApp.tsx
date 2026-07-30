@@ -4,7 +4,8 @@ import {
   Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState,
 } from "react";
 import { Phase2IntegrationCoordinator, useGameStore } from "@/src/game";
-import { RELIGHT_ACTION_PIN_ID, TAPE_PLAYBACK_PIN_ID, getPinById } from "@/src/pins";
+import { resolutionModeForPin } from "@/src/game/engine";
+import { TAPE_PLAYBACK_PIN_ID, getPinById } from "@/src/pins";
 import { useHaptics, useWakeLock } from "@/src/device";
 import { getVHSHealthProfile, useVHS } from "@/src/fx";
 import { motion } from "@/src/tokens";
@@ -107,6 +108,7 @@ export function GameApp() {
   const store = useGameStore();
   const { route, navigate } = useHouseRouter();
   const [coldOpen, setColdOpen] = useState(true);
+  const [seenArrival, setSeenArrival] = useState<unknown>(null);
   const state = useMemo(
     () => ({
       act: store.act,
@@ -230,6 +232,14 @@ export function GameApp() {
     [coordinator],
   );
 
+  // AR pins resolve on the /ar route; their payoff text waits on the home screen.
+  const pendingArrival =
+    store.lastResolution?.ok
+    && store.lastResolution !== seenArrival
+    && resolutionModeForPin(store.lastResolution.pin) === "ar"
+      ? store.lastResolution
+      : null;
+
   const begin = () => {
     const unlock = audio.master.unlock();
     setColdOpen(false);
@@ -305,10 +315,12 @@ export function GameApp() {
             state={state}
             coldOpen={coldOpen}
             onBegin={begin}
-            onRelight={() => {
-              const result = store.resolvePin(RELIGHT_ACTION_PIN_ID, "action");
-              if (!result.ok) throw new Error(result.reason);
-            }}
+            resolvePin={store.resolvePin}
+            previewPin={store.previewPin}
+            sufferSetback={store.sufferSetback}
+            flushPersistence={store.flushPersistence}
+            pendingArrival={pendingArrival}
+            onAcknowledgeArrival={() => setSeenArrival(store.lastResolution)}
             navigate={navigate}
           />
         );
@@ -318,8 +330,6 @@ export function GameApp() {
         return (
           <ScanScreen
             resolvePin={store.resolvePin}
-            previewPin={store.previewPin}
-            sufferSetback={store.sufferSetback}
             flushPersistence={store.flushPersistence}
             navigate={navigate}
           />
@@ -359,7 +369,7 @@ export function GameApp() {
             health={store.health}
             operatorSkipToken={operatorRuntime.skipScareRevision}
             startVoice={startTapeVoice}
-            onComplete={() => store.resolvePin(TAPE_PLAYBACK_PIN_ID, "scan").ok}
+            onComplete={() => store.resolvePin(TAPE_PLAYBACK_PIN_ID, "action").ok}
             onExit={() => navigate("/map")}
           />
         );
