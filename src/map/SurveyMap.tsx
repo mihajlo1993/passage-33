@@ -78,6 +78,18 @@ function roomAriaLabel(
   return `${name}, ${statusLabel.toLowerCase()}${lockDescription}`;
 }
 
+/**
+ * Where each named gift waits on the sheet. lockPin names it (the letter
+ * quarter reveals the spot), collectPin settles it. Points sit on the
+ * hiding furniture; keep in step with HIDING in src/pins.ts.
+ */
+const GIFT_MARKS = [
+  { id: "gift-mat", lockPin: 1, collectPin: 2, label: "GIFT I", point: { x: 158, y: 296 } },
+  { id: "gift-mouse", lockPin: 3, collectPin: 4, label: "GIFT II", point: { x: 408, y: 262 } },
+  { id: "gift-slips", lockPin: 5, collectPin: 6, label: "GIFT III", point: { x: 186, y: 195 } },
+  { id: "gift-sparkle", lockPin: 8, collectPin: 9, label: "GIFT IV", point: { x: 520, y: 430 } },
+] as const;
+
 /** The pure drawing. Motion, zoom, and chrome live in SurveyScroller. */
 export function SurveyMapArt({ state }: { state: GameState }) {
   const map = deriveSurveyMap(state);
@@ -356,6 +368,46 @@ export function SurveyMapArt({ state }: { state: GameState }) {
             </g>
           );
         })}
+
+        {/* Gifts appear on the sheet as their locks open, and settle once
+            collected. Marker points sit on the furniture that hides them;
+            keep in step with HIDING in src/pins.ts. */}
+        <g aria-label="Named gifts">
+          {GIFT_MARKS.map((mark) => {
+            const named = state.resolvedPins.includes(mark.lockPin);
+            const collected = state.resolvedPins.includes(mark.collectPin);
+            if (!named) return null;
+            return (
+              <g
+                key={mark.id}
+                className={"survey-gift" + (collected ? " survey-gift--collected" : "")}
+                aria-label={
+                  collected
+                    ? `${mark.label}, collected`
+                    : `${mark.label}, waiting where the letter said`
+                }
+              >
+                <rect
+                  x={mark.point.x - 7}
+                  y={mark.point.y - 7}
+                  width="14"
+                  height="14"
+                />
+                <path
+                  d={`M ${mark.point.x - 7} ${mark.point.y} L ${mark.point.x + 7} ${mark.point.y} M ${mark.point.x} ${mark.point.y - 7} L ${mark.point.x} ${mark.point.y + 7}`}
+                />
+                <text
+                  className="survey-annotation survey-gift__label"
+                  x={mark.point.x}
+                  y={mark.point.y - 12}
+                  textAnchor="middle"
+                >
+                  {collected ? mark.label + " ✓" : mark.label}
+                </text>
+              </g>
+            );
+          })}
+        </g>
 
         <g className="survey-north" aria-label="North points toward the top of the sheet">
           <path d="M 660 76 L 660 42 L 652 57 M 660 42 L 668 57" />

@@ -362,3 +362,21 @@ body:has(.map-screen),
   max-height: none;
   aspect-ratio: var(--map-aspect);
 }
+
+/* Named gifts: amber while waiting, settled ink once collected. */
+.survey-gift rect,
+.survey-gift path {
+  fill: none;
+  stroke: var(--c-amber);
+  stroke-width: 2;
+}
+.survey-gift__label {
+  fill: var(--c-amber);
+}
+.survey-gift--collected rect,
+.survey-gift--collected path {
+  stroke: var(--c-bone-dim);
+}
+.survey-gift--collected .survey-gift__label {
+  fill: var(--c-bone-dim);
+}

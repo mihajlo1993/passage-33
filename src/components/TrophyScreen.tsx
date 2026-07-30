@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MEDIA_ASSETS } from "@/src/media";
 import { ENDING_MUSIC_PATH } from "@/src/audio/manifest";
 import { useAudio } from "@/src/audio/useAudio";
 import { areFinalPresentsResolved } from "@/src/game/engine";
-import { FRAGMENTS, TOTAL_PIN_COUNT } from "@/src/pins";
+import { FRAGMENTS, LETTER_CODA, TOTAL_PIN_COUNT } from "@/src/pins";
 import { playKeeper } from "@/src/audio/keeper";
-import { motion } from "@/src/tokens";
 import type { GameState } from "@/src/types";
+
+/** Duration of the recorded reading in keeper-lock4.mp3 (ffprobe, ms). */
+const LETTER_READ_MS = 93_600;
+/** The voice starts this long after the letter screen appears. */
+const LETTER_VOICE_DELAY_MS = 1_000;
 
 const VERDICT_FRONT = ["S", "E", "A", "L", "E", "D"] as const;
 const VERDICT_BACK = ["Y", "O", "U", "R", "S", "."] as const;
@@ -53,6 +57,100 @@ function PadlockVerdict() {
   );
 }
 
+interface LetterParagraph {
+  readonly coda: boolean;
+  readonly words: readonly string[];
+}
+
+/**
+ * The whole letter, read aloud word by word. The four quarters arrive as one
+ * formal block; the coda beneath the signature arrives plainly, because that
+ * is where the mask comes off. Words pace evenly across the recording. The
+ * screen follows the voice unless she takes over the scroll herself, and
+ * nothing ends until she chooses to put the letter down.
+ */
+function LetterReading({ onFinished }: { onFinished: () => void }) {
+  const paragraphs = useMemo<LetterParagraph[]>(
+    () => [
+      { coda: false, words: FRAGMENTS.join(" ").split(" ") },
+      ...LETTER_CODA.map((paragraph) => ({ coda: true, words: paragraph.split(" ") })),
+    ],
+    [],
+  );
+  const totalWords = useMemo(
+    () => paragraphs.reduce((sum, paragraph) => sum + paragraph.words.length, 0),
+    [paragraphs],
+  );
+
+  const reduceMotion =
+    typeof window !== "undefined"
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [revealed, setRevealed] = useState(reduceMotion ? totalWords : 0);
+  const followRef = useRef(true);
+  const finishedRef = useRef(false);
+  const frontierRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      onFinished();
+      return;
+    }
+    const startedAt = performance.now() + LETTER_VOICE_DELAY_MS;
+    const timer = window.setInterval(() => {
+      const elapsed = performance.now() - startedAt;
+      const count = Math.max(0, Math.min(totalWords, Math.ceil((elapsed / LETTER_READ_MS) * totalWords)));
+      setRevealed(count);
+      if (followRef.current) {
+        frontierRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+      if (count >= totalWords && !finishedRef.current) {
+        finishedRef.current = true;
+        window.clearInterval(timer);
+        onFinished();
+      }
+    }, 240);
+    return () => window.clearInterval(timer);
+  }, [onFinished, reduceMotion, totalWords]);
+
+  // Her scroll wins over the voice's scroll, permanently and silently.
+  const takeOver = () => {
+    followRef.current = false;
+  };
+
+  let wordIndex = 0;
+  return (
+    <div
+      className="letter-reading"
+      onWheel={takeOver}
+      onTouchMove={takeOver}
+      aria-label="The Keeper's letter, read aloud"
+    >
+      {paragraphs.map((paragraph, paragraphIndex) => (
+        <p
+          key={paragraphIndex}
+          className={"letter-paragraph" + (paragraph.coda ? " letter-paragraph--coda" : "")}
+        >
+          {paragraph.words.map((word) => {
+            const index = wordIndex;
+            wordIndex += 1;
+            const shown = index < revealed;
+            return (
+              <span
+                key={index}
+                ref={index === Math.min(revealed, totalWords - 1) ? frontierRef : undefined}
+                className={"letter-word" + (shown ? " is-read" : "")}
+                aria-hidden={!shown}
+              >
+                {word}{" "}
+              </span>
+            );
+          })}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function elapsedLabel(startedAt: number, finishedAt: number): string {
   const totalSeconds = Math.max(0, Math.floor((finishedAt - startedAt) / 1000));
   const hours = Math.floor(totalSeconds / 3600);
@@ -73,6 +171,7 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   const kitchenPresentOpened = state.resolvedPins.includes(28);
   const finalPresentsOpened = areFinalPresentsResolved(state.resolvedPins);
   const [quiet, setQuiet] = useState(false);
+  const [letterDone, setLetterDone] = useState(false);
   const trophy = MEDIA_ASSETS.trophy;
   const audio = useAudio();
   const musicRef = useRef<HTMLAudioElement | null>(null);
@@ -99,19 +198,12 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
     };
   }, [trophyUnlocked]);
 
-  useEffect(() => {
-    if (!finalPresentsOpened) {
-      setQuiet(false);
-      return;
-    }
-
-    setQuiet(false);
-    const timer = window.setTimeout(() => {
-      audio.ambient(null);
-      setQuiet(true);
-    }, motion.eventMs.saveTheatre);
-    return () => window.clearTimeout(timer);
-  }, [audio, finalPresentsOpened]);
+  // The house goes quiet only when SHE puts the letter down; an early
+  // timer here once stole the letter two seconds in. Never again.
+  const putTheLetterDown = () => {
+    audio.ambient(null);
+    setQuiet(true);
+  };
 
   if (!trophyUnlocked) {
     return (
@@ -132,17 +224,24 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
 
   if (finalPresentsOpened) {
     return (
-      <section className="screen trophy-locked" aria-labelledby="trophy-title">
+      <section className="screen letter-screen" aria-labelledby="trophy-title">
         <p className="eyebrow">Thirty-three years to the night</p>
         <h1 id="trophy-title">The letter, whole</h1>
-        <blockquote className="letter-whole re-frame">{FRAGMENTS.join(" ")}</blockquote>
-        <div className="candles" aria-label="Thirty-three candles">
-          {Array.from({ length: 33 }, (_, index) => (
-            <i key={index} className="candle-flame-css" style={{ animationDelay: `${(index * 37) % 1200}ms` }} />
-          ))}
+        <blockquote className="letter-whole re-frame">
+          <LetterReading onFinished={() => setLetterDone(true)} />
+        </blockquote>
+        <div className={"letter-finale" + (letterDone ? " is-lit" : "")} aria-hidden={!letterDone}>
+          <div className="candles" aria-label="Thirty-three candles">
+            {Array.from({ length: 33 }, (_, index) => (
+              <i key={index} className="candle-flame-css" style={{ animationDelay: `${(index * 37) % 1200}ms` }} />
+            ))}
+          </div>
+          <h2 className="hbd-line">Happy birthday, Melissa.</h2>
+          <p className="microcopy">The watch has ended. Miha has you now.</p>
+          <button className="text-control" onClick={putTheLetterDown}>
+            Put the letter down
+          </button>
         </div>
-        <h2 className="hbd-line">Happy birthday, Melissa.</h2>
-        <p className="microcopy">The Keeper\'s watch has ended.</p>
       </section>
     );
   }

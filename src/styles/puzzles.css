@@ -1087,3 +1087,74 @@
   .witness-hotspot.is-next,
   .puzzle-chip.is-next { animation: none; }
 }
+
+/* ==================== THE LETTER, READ ALOUD ==================== */
+
+.letter-screen {
+  display: grid;
+  gap: var(--space-lg);
+  align-content: start;
+}
+
+.letter-reading {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.letter-paragraph {
+  margin: 0;
+}
+
+.letter-paragraph--coda {
+  font-style: normal;
+  color: var(--c-bone-bright);
+}
+
+/* Words arrive as the Keeper reads them. */
+.letter-word {
+  opacity: 0;
+  display: inline-block;
+  transform: translateY(7px);
+  filter: blur(3px);
+  transition: opacity 560ms ease, transform 560ms ease, filter 560ms ease;
+  white-space: pre-wrap;
+}
+.letter-word.is-read {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* Candles and the birthday line hold back until the last word lands. */
+.letter-finale {
+  display: grid;
+  gap: var(--space-md);
+  justify-items: center;
+  opacity: 0;
+  transition: opacity 1400ms ease;
+  pointer-events: none;
+}
+.letter-finale.is-lit {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .letter-word { transition: none; transform: none; filter: none; }
+  .letter-finale { transition: none; }
+}
+
+/* The bench eats every spare pixel; tucking the words away feeds it more. */
+.riddle-lock .riddle-bench {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 34dvh;
+}
+.riddle-lock .riddle-bench--puzzle {
+  min-height: 44dvh;
+}
+
+.panel-toggle {
+  justify-self: end;
+  margin-left: auto;
+}

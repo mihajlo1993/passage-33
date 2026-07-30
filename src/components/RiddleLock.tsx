@@ -34,6 +34,7 @@ export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: 
   const [hintCount, setHintCount] = useState(0);
   const [shaking, setShaking] = useState(false);
   const [benchLost, setBenchLost] = useState(false);
+  const [wordsShown, setWordsShown] = useState(true);
   const audio = useAudio();
   const haptics = useHaptics();
 
@@ -96,7 +97,10 @@ export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: 
       </div>
 
       <div className={"riddle-box re-frame" + (shaking ? " riddle-box--shake" : "")}>
-        <p className="riddle-box__riddle">{config.riddle}</p>
+        <button className="text-control panel-toggle" onClick={() => setWordsShown(!wordsShown)}>
+          {wordsShown ? "Give the witness room" : "Show the words"}
+        </button>
+        {wordsShown && <p className="riddle-box__riddle">{config.riddle}</p>}
         <div className="riddle-box__row">
           <input
             className="riddle-box__input"
@@ -122,18 +126,22 @@ export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: 
           </button>
         </div>
         <p className="riddle-box__feedback" aria-live="polite">{feedback}</p>
-        {hintCount > 0 && (
-          <p className="riddle-box__hint">{config.hints[hintCount - 1]}</p>
+        {wordsShown && (
+          <>
+            {hintCount > 0 && (
+              <p className="riddle-box__hint">{config.hints[hintCount - 1]}</p>
+            )}
+            <div className="riddle-box__hintrow">
+              <button className="text-control" onClick={hint} disabled={hintCount >= config.hints.length}>
+                {hintCount === 0
+                  ? "Ask the Keeper for help"
+                  : hintCount < config.hints.length
+                    ? "Ask again"
+                    : "The Keeper has said all he will"}
+              </button>
+            </div>
+          </>
         )}
-        <div className="riddle-box__hintrow">
-          <button className="text-control" onClick={hint} disabled={hintCount >= config.hints.length}>
-            {hintCount === 0
-              ? "Ask the Keeper for help"
-              : hintCount < config.hints.length
-                ? "Ask again"
-                : "The Keeper has said all he will"}
-          </button>
-        </div>
       </div>
 
       <button className="text-control" onClick={onCancel}>Step away</button>

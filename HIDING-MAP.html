@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Keeper's Four Locks: hiding map (operator only)</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0;
+    padding: 24px;
+    background: #f4efe6;
+    color: #262019;
+    font: 15px/1.5 Georgia, serif;
+    max-width: 760px;
+    margin-inline: auto;
+  }
+  h1 { font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; }
+  p.small { color: #6b5f4e; font-size: 13px; }
+  svg { width: 100%; height: auto; display: block; margin: 16px 0; }
+  .wall { fill: none; stroke: #262019; stroke-width: 3; }
+  .furn { fill: none; stroke: #8a7a62; stroke-width: 1.5; }
+  .room-label { font: 11px Georgia, serif; letter-spacing: 0.12em; fill: #6b5f4e; }
+  .gift { fill: #b3541e; }
+  .gift-ring { fill: none; stroke: #b3541e; stroke-width: 2; }
+  .gift-num { font: bold 11px Georgia, serif; fill: #f4efe6; }
+  ol { padding-left: 22px; }
+  li { margin-bottom: 10px; }
+  li strong { letter-spacing: 0.06em; }
+  .placeholder { background: #ffe9c7; padding: 1px 4px; }
+  @media print { body { padding: 8mm; } }
+</style>
+</head>
+<body>
+<h1>Hiding map · The Keeper's Four Locks</h1>
+<p class="small">Operator sheet for Miha only. Markers show where each gift waits.
+The letter names spot 1 after lock I, spot 2 after lock II, and so on, and the
+same markers appear on the in-game map as each lock opens.</p>
+
+<svg viewBox="0 10 660 490" role="img" aria-label="Sketch of the flat with four gift markers">
+  <!-- rooms (same geometry as the in-game survey) -->
+  <polygon class="wall" points="250,40 460,40 460,150 250,150"/>
+  <polygon class="wall" points="250,170 445,170 445,295 250,295"/>
+  <polygon class="wall" points="60,170 245,170 245,420 60,420"/>
+  <polygon class="wall" points="20,200 55,200 55,310 20,310"/>
+  <polygon class="wall" points="290,300 445,300 445,480 290,480"/>
+  <polygon class="wall" points="450,350 640,350 640,480 450,480"/>
+  <text class="room-label" x="355" y="120" text-anchor="middle">KITCHEN</text>
+  <text class="room-label" x="345" y="250" text-anchor="middle">ENTRY</text>
+  <text class="room-label" x="152" y="360" text-anchor="middle">LIVING</text>
+  <text class="room-label" x="386" y="335" text-anchor="middle">CORRIDOR</text>
+  <text class="room-label" x="535" y="410" text-anchor="middle">BATHROOM</text>
+  <text class="room-label" x="37" y="258" text-anchor="middle" transform="rotate(-90 37 258)">BALCONY</text>
+
+  <!-- key furniture -->
+  <polygon class="furn" points="85,265 230,265 230,327 188,327 188,300 128,300 128,327 85,327"/>
+  <text class="room-label" x="158" y="286" text-anchor="middle">SECTIONAL</text>
+  <rect class="furn" x="136" y="182" width="100" height="26"/>
+  <text class="room-label" x="186" y="220" text-anchor="middle">KALLAX</text>
+  <rect class="furn" x="300" y="176" width="120" height="14"/>
+  <rect class="furn" x="380" y="255" width="55" height="30"/>
+  <text class="room-label" x="360" y="205" text-anchor="middle">HANGER / SHOE RACK</text>
+  <rect class="furn" x="460" y="420" width="120" height="50"/>
+  <text class="room-label" x="520" y="465" text-anchor="middle">BATH</text>
+
+  <!-- gift markers -->
+  <g>
+    <circle class="gift" cx="158" cy="296" r="11"/><text class="gift-num" x="158" y="300" text-anchor="middle">1</text>
+    <circle class="gift" cx="408" cy="268" r="11"/><text class="gift-num" x="408" y="272" text-anchor="middle">2</text>
+    <circle class="gift" cx="186" cy="195" r="11"/><text class="gift-num" x="186" y="199" text-anchor="middle">3</text>
+    <circle class="gift" cx="520" cy="435" r="11"/><text class="gift-num" x="520" y="439" text-anchor="middle">4</text>
+  </g>
+</svg>
+
+<ol>
+  <li><strong>GIFT 1 · mouse mat (lock I, THE FIELD)</strong><br>
+    <span class="placeholder">Lift the seat cushion you always choose on the sofa. Underneath, rolled and tied.</span></li>
+  <li><strong>GIFT 2 · mouse (lock II, THE RUNNER)</strong><br>
+    <span class="placeholder">Shoe rack by the front door, third box from the left.</span></li>
+  <li><strong>GIFT 3 · EuroMillions slips (lock III, THE WAGER)</strong><br>
+    <span class="placeholder">Kallax shelf, six compartments from the left, at the back.</span></li>
+  <li><strong>GIFT 4 · carbonator (lock IV, THE SPARKLE)</strong><br>
+    <span class="placeholder">The bath, behind the drawn curtain.</span></li>
+</ol>
+
+<p class="small">Highlighted lines are the CURRENT PLACEHOLDERS from the HIDING block at the
+top of src/pins.ts. If you change a hiding spot, update all three places: the HIDING text,
+the marker on this sheet, and GIFT_MARKS in src/map/SurveyMap.tsx.</p>
+</body>
+</html>

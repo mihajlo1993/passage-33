@@ -46,6 +46,21 @@ export const FRAGMENTS = [
   'The last one breathes in silver and breathes out stars, and it is waiting where water sleeps. Happy birthday, Melissa. The building is proud of you. Signed, the Keeper.',
 ] as const;
 
+/**
+ * The postscript beneath the signature, read aloud at the finale after the
+ * four quarters. This is where the mask comes off. The recorded reading in
+ * public/audio/keeper/keeper-lock4.mp3 speaks FRAGMENTS + LETTER_CODA in
+ * order; regenerate that clip if any of this text changes.
+ */
+export const LETTER_CODA = [
+  'And now the letter is out of quarters, so I will spend the truth instead.',
+  'I am proud of you. Proud of your hard work, of every quiet hour of it that nobody stood up to applaud. I have watched your love and your dedication hold a life together, and I have never once taken either lightly. You are truly special. Not special the way birthday cards say it; special the way a keystone is special: things stand because you hold them.',
+  'I wish you would fear the world much less. Truly, between the two of you, it is the world that should be afraid.',
+  'I wish you the most in this world. I offer you deep love, the kind with no bottom to it and no expiry written anywhere, and I will always, always care for you.',
+  'One last thing, the lock beneath every lock: this building never had a Keeper. It had me. It was always me. My name is Miha, and I have been keeping you all along.',
+  'Happy birthday, Melissa.',
+] as const;
+
 /* ====================== RIDDLE LOCKS ====================== */
 
 /**

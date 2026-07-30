@@ -157,6 +157,15 @@ function HintRow({ hints, hintCount, onHint }: HintRowProps) {
   );
 }
 
+/** Toggle that trades the Keeper's words for a bigger witness. */
+function WordsToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button className="text-control panel-toggle" onClick={onToggle}>
+      {shown ? "Give the witness room" : "Show the words"}
+    </button>
+  );
+}
+
 /* ================= LOCK II: speak click back to the runner ================= */
 
 export function RunnerClicks({ pin, config, onSolved, onCancel, onWrongAttempt }: WitnessPuzzleProps) {
@@ -164,6 +173,7 @@ export function RunnerClicks({ pin, config, onSolved, onCancel, onWrongAttempt }
   const [progress, setProgress] = useState(0);
   const [hintCount, setHintCount] = useState(0);
   const [lost, setLost] = useState(false);
+  const [wordsShown, setWordsShown] = useState(true);
   const feedback = useLockFeedback(onWrongAttempt);
   const glowing = hintCount >= 3;
 
@@ -212,7 +222,8 @@ export function RunnerClicks({ pin, config, onSolved, onCancel, onWrongAttempt }
       </WitnessBench>
 
       <div className={"riddle-box re-frame" + (feedback.shaking ? " riddle-box--shake" : "")}>
-        <p className="riddle-box__riddle">{config.riddle}</p>
+        <WordsToggle shown={wordsShown} onToggle={() => setWordsShown(!wordsShown)} />
+        {wordsShown && <p className="riddle-box__riddle">{config.riddle}</p>}
         <div className="puzzle-pattern" aria-label="The clicks so far">
           {pattern.map((stepId, index) => (
             <span
@@ -235,7 +246,9 @@ export function RunnerClicks({ pin, config, onSolved, onCancel, onWrongAttempt }
           </div>
         )}
         <p className="riddle-box__feedback" aria-live="polite">{feedback.feedback}</p>
-        <HintRow hints={config.hints} hintCount={hintCount} onHint={() => setHintCount(hintCount + 1)} />
+        {wordsShown && (
+          <HintRow hints={config.hints} hintCount={hintCount} onHint={() => setHintCount(hintCount + 1)} />
+        )}
       </div>
 
       <button className="text-control" onClick={onCancel}>Step away</button>
@@ -252,6 +265,7 @@ export function WagerSum({ pin, config, onSolved, onCancel, onWrongAttempt }: Wi
   const [dials, setDials] = useState<[number, number, number, number]>([0, 0, 0, 0]);
   const [hintCount, setHintCount] = useState(0);
   const [lost, setLost] = useState(false);
+  const [wordsShown, setWordsShown] = useState(true);
   const feedback = useLockFeedback(onWrongAttempt);
   const haptics = useHaptics();
 
@@ -296,7 +310,8 @@ export function WagerSum({ pin, config, onSolved, onCancel, onWrongAttempt }: Wi
       />
 
       <div className={"riddle-box re-frame" + (feedback.shaking ? " riddle-box--shake" : "")}>
-        <p className="riddle-box__riddle">{config.riddle}</p>
+        <WordsToggle shown={wordsShown} onToggle={() => setWordsShown(!wordsShown)} />
+        {wordsShown && <p className="riddle-box__riddle">{config.riddle}</p>}
 
         {!lost && (
           <button className="mechanical-button mechanical-button--full" onClick={turnWitness}>
@@ -343,7 +358,9 @@ export function WagerSum({ pin, config, onSolved, onCancel, onWrongAttempt }: Wi
         </button>
 
         <p className="riddle-box__feedback" aria-live="polite">{feedback.feedback}</p>
-        <HintRow hints={config.hints} hintCount={hintCount} onHint={() => setHintCount(hintCount + 1)} />
+        {wordsShown && (
+          <HintRow hints={config.hints} hintCount={hintCount} onHint={() => setHintCount(hintCount + 1)} />
+        )}
       </div>
 
       <button className="text-control" onClick={onCancel}>Step away</button>
@@ -358,6 +375,7 @@ export function StarLadder({ pin, config, onSolved, onCancel, onWrongAttempt }: 
   const [progress, setProgress] = useState(0);
   const [hintCount, setHintCount] = useState(0);
   const [lost, setLost] = useState(false);
+  const [wordsShown, setWordsShown] = useState(true);
   const feedback = useLockFeedback(onWrongAttempt);
   const glowing = hintCount >= 3;
 
@@ -409,7 +427,8 @@ export function StarLadder({ pin, config, onSolved, onCancel, onWrongAttempt }: 
       </WitnessBench>
 
       <div className={"riddle-box re-frame" + (feedback.shaking ? " riddle-box--shake" : "")}>
-        <p className="riddle-box__riddle">{config.riddle}</p>
+        <WordsToggle shown={wordsShown} onToggle={() => setWordsShown(!wordsShown)} />
+        {wordsShown && <p className="riddle-box__riddle">{config.riddle}</p>}
         <p className="puzzle-sum" aria-live="polite">
           {progress} of {count} stars caught{progress > 0 && progress < count ? ". Keep rising." : "."}
         </p>
@@ -427,7 +446,9 @@ export function StarLadder({ pin, config, onSolved, onCancel, onWrongAttempt }: 
           </div>
         )}
         <p className="riddle-box__feedback" aria-live="polite">{feedback.feedback}</p>
-        <HintRow hints={config.hints} hintCount={hintCount} onHint={() => setHintCount(hintCount + 1)} />
+        {wordsShown && (
+          <HintRow hints={config.hints} hintCount={hintCount} onHint={() => setHintCount(hintCount + 1)} />
+        )}
       </div>
 
       <button className="text-control" onClick={onCancel}>Step away</button>

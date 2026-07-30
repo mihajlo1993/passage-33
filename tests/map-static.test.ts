@@ -84,13 +84,16 @@ test("map page copy is removed and the Host route text lives in Notes as a docum
   assert.match(notesSource, /the letter assembles itself/);
 });
 
-test("rendered map surfaces carry room state only, never individual-location data", () => {
+test("rendered map surfaces carry room state and named gifts, never pin bookkeeping", () => {
+  // 2026-07-30, owner decision: gifts named by an open lock DO appear on the
+  // sheet (GIFT_MARKS). Pin counts, ids, and contact language stay banned.
   const renderSources = surveySource + "\n" + screenSource;
   assert.match(surveySource, /data-room=/);
   assert.match(surveySource, /data-room-state=/);
+  assert.match(surveySource, /GIFT_MARKS/);
   assert.doesNotMatch(
     renderSources,
-    /data-pin|pin-marker|pin-count|resolvedPins|getPinById|remaining(?:Count)?|unresolved contacts?/i,
+    /data-pin|pin-marker|pin-count|getPinById|remaining(?:Count)?|unresolved contacts?/i,
   );
   assert.doesNotMatch(renderSources, /aria-label=[^\n]*(?:pin|contact)/i);
 });

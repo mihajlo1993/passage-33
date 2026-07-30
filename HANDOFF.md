@@ -70,8 +70,25 @@ witness itself (2026-07-30 late rework, per Miha: "not only riddles").
 - src/audio/keeper.ts: Keeper voice player (plain HTMLAudio, unlocked by
   the Begin tap). Clips: public/audio/keeper/keeper-{intro,lock1,lock2,
   lock3,lock4,dark,refuse}.mp3 (Callum, ElevenLabs).
-- Finale: src/components/TrophyScreen.tsx (letter + candles + lock4 clip +
-  /audio/music/ending.mp3 loop).
+- Finale: src/components/TrophyScreen.tsx. The letter is read aloud WORD BY
+  WORD (LetterReading component): FRAGMENTS as the formal quarters, then
+  LETTER_CODA (src/pins.ts) where the mask comes off: proud of her, deep
+  love, "the world should fear her", and THE REVEAL: the Keeper is Miha.
+  The recorded reading public/audio/keeper/keeper-lock4.mp3 was REGENERATED
+  (ElevenLabs Callum, 93.6 s) to speak fragments + coda; LETTER_READ_MS in
+  TrophyScreen.tsx must equal its duration (TTS text says "Mee-ha" so the
+  name lands right; display text says Miha). Words follow the voice, her
+  scroll always wins, candles + "Happy birthday, Melissa." light after the
+  last word, and the house goes quiet ONLY via the "Put the letter down"
+  button (an auto-quiet timer once ate the letter after 2 s; never again).
+  The coda never leaks early: the Letter tab shows fragments only.
+- Lock screens: the bench flex-grows; "Give the witness room" tucks the
+  instruction + hints away so the 3D canvas dominates ("Show the words"
+  brings them back).
+- Map: named gifts appear as amber marks when their lock opens and settle
+  with a check once collected (GIFT_MARKS in src/map/SurveyMap.tsx; keep in
+  step with HIDING in src/pins.ts and with HIDING-MAP.html, the standalone
+  operator sketch of all four hiding spots at the repo root).
 - Engine/store/persistence: src/game/* (untouched core; win heals to 100).
 - Map: native-scroll viewport src/map/SurveyScroller.tsx wrapping the pure
   SVG art in src/map/SurveyMap.tsx (SurveyMapArt). Zoom +/- / fit / close
@@ -116,7 +133,9 @@ Same story, same voice clips, same answers.
 
 ## Still on Miha before the night
 
-1. Edit HIDING in src/pins.ts to the real hiding spots (or dictate them).
-2. Commit-push (auto-deploy), refresh phone once, play stage 1.
-3. Decide on the seal cube relabel (finish or revert the pending edit).
-4. Stage the four gifts; lights low; reset from /dev; hand over the phone.
+1. Edit HIDING in src/pins.ts to the real hiding spots (or dictate them),
+   and keep GIFT_MARKS (SurveyMap.tsx) + HIDING-MAP.html in step.
+2. Push to GitHub main; MIHA DEPLOYS VIA v0 (never touch Vercel from here);
+   refresh phone once, play stage 1.
+3. Stage the four gifts per HIDING-MAP.html; lights low; reset from /dev;
+   hand over the phone.
