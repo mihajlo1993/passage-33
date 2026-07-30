@@ -148,16 +148,23 @@ export function deriveAct(resolvedPins: readonly number[]): Act {
   return 5;
 }
 
-/** A zone clears only after every pin physically assigned to it is resolved. */
+/**
+ * Room colours track the SEARCH, not the whole ledger: a zone reads as
+ * cleared once something has been resolved there and the hunt has moved on,
+ * and flips back to searching if a later stage returns to it (the living
+ * room hosts stage one AND stage three). Owner call, 2026-07-30: finding
+ * the first gift must visibly settle its room.
+ */
 export function deriveClearedZones(
   resolvedPins: readonly number[],
 ): ZoneId[] {
   const resolved = new Set(resolvedPins);
+  const nextPin = pins.find((pin) => !resolved.has(pin.id));
   const zones = Array.from(new Set(pins.map((pin) => pin.zone)));
 
   return zones.filter((zone) => {
-    const zonePins = pins.filter((pin) => pin.zone === zone);
-    return zonePins.length > 0 && zonePins.every((pin) => resolved.has(pin.id));
+    if (zone === nextPin?.zone) return false;
+    return pins.some((pin) => pin.zone === zone && resolved.has(pin.id));
   });
 }
 

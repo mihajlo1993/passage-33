@@ -1,4 +1,4 @@
-import { getPinById } from "../pins";
+import { getPinById, pins } from "../pins";
 import type { GameState, ZoneId } from "../types";
 import type {
   FurnitureRecord,
@@ -379,6 +379,11 @@ function enteredRooms(state: GameState): ReadonlySet<ZoneId> {
     const pin = getPinById(pinId);
     if (pin) entered.add(pin.zone);
   }
+
+  // The room she is searching RIGHT NOW reads as active, not unentered.
+  const resolved = new Set(state.resolvedPins);
+  const nextPin = pins.find((pin) => !resolved.has(pin.id));
+  if (nextPin) entered.add(nextPin.zone);
 
   return entered;
 }

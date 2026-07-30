@@ -21,7 +21,7 @@ import type { ItemId, Pin } from './types';
 
 /** Where each gift physically hides. Write these for YOUR flat. */
 export const HIDING = {
-  mat: 'Lift the seat cushion you always choose on the sofa. The first gift is underneath, rolled and tied.',
+  mat: 'The big pillow in the bottom left corner of the living room. Lift it: the first gift is underneath, rolled and tied.',
   mouse: 'The shoe rack by the front door. Third box from the left. It has been waiting to click.',
   slips: 'The shelf of square compartments in the living room. Count six mouths from the left and reach to the back.',
   carbonator: 'Where water sleeps: the bath, behind the drawn curtain. It breathes in silver and breathes out stars.',

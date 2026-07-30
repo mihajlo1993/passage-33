@@ -76,7 +76,7 @@ export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: 
             camera-controls
             disable-pan
             disable-tap
-            touch-action="none"
+            touch-action="pan-y"
             interaction-prompt="none"
             auto-rotate
             auto-rotate-delay="2500"

@@ -84,7 +84,7 @@ function roomAriaLabel(
  * hiding furniture; keep in step with HIDING in src/pins.ts.
  */
 const GIFT_MARKS = [
-  { id: "gift-mat", lockPin: 1, collectPin: 2, label: "GIFT I", point: { x: 158, y: 296 } },
+  { id: "gift-mat", lockPin: 1, collectPin: 2, label: "GIFT I", point: { x: 78, y: 402 } },
   { id: "gift-mouse", lockPin: 3, collectPin: 4, label: "GIFT II", point: { x: 408, y: 262 } },
   { id: "gift-slips", lockPin: 5, collectPin: 6, label: "GIFT III", point: { x: 186, y: 195 } },
   { id: "gift-sparkle", lockPin: 8, collectPin: 9, label: "GIFT IV", point: { x: 520, y: 430 } },

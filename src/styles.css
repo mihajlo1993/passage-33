@@ -32,7 +32,10 @@ body {
   min-width: 100%;
   min-height: 100dvh;
   margin: 0;
-  overflow-x: hidden;
+  /* clip, not hidden: hidden turns body into its own scroll container and,
+     with overscroll-behavior none on html, wheel and touch scrolls die in
+     body's few px of inner overflow instead of scrolling the page. */
+  overflow-x: clip;
   background: var(--c-void);
 }
 

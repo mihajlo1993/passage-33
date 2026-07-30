@@ -101,7 +101,7 @@ function WitnessBench({ config, lost, onLost, cameraOrbit, cameraTarget, viewerR
           camera-controls
           disable-pan
           disable-tap
-          touch-action="none"
+          touch-action="pan-y"
           interaction-prompt="none"
           exposure="1.0"
           shadow-intensity="0.9"
