@@ -8,6 +8,49 @@ import { TOTAL_PIN_COUNT } from "@/src/pins";
 import { motion } from "@/src/tokens";
 import type { GameState } from "@/src/types";
 
+const VERDICT_FRONT = ["L", "O", "S", "E", "R", ""] as const;
+const VERDICT_BACK = ["W", "I", "N", "N", "E", "R"] as const;
+const VERDICT_FLIP_DELAY_MS = 1_400;
+
+/**
+ * The previous guest's padlock, one last time. It holds his verdict just long
+ * enough to be read, then turns over a letter at a time into hers.
+ */
+function PadlockVerdict() {
+  const [flipped, setFlipped] = useState(false);
+  const audio = useAudio();
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setFlipped(true);
+      void audio.play("released");
+    }, VERDICT_FLIP_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [audio]);
+
+  return (
+    <div
+      className="padlock-verdict"
+      role="img"
+      aria-label={flipped ? "The padlock reads WINNER" : "The padlock reads LOSER"}
+    >
+      {VERDICT_BACK.map((back, index) => (
+        <span
+          key={index}
+          className="verdict-tile"
+          data-flipped={flipped}
+          style={{ transitionDelay: `${index * 130}ms` }}
+        >
+          <i className="verdict-tile__face verdict-tile__face--front">
+            {VERDICT_FRONT[index]}
+          </i>
+          <i className="verdict-tile__face verdict-tile__face--back">{back}</i>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function elapsedLabel(startedAt: number, finishedAt: number): string {
   const totalSeconds = Math.max(0, Math.floor((finishedAt - startedAt) / 1000));
   const hours = Math.floor(totalSeconds / 3600);
@@ -100,6 +143,7 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
         )}
       </div>
       <div className="trophy-card">
+        <PadlockVerdict />
         <p className="eyebrow">BIRTHDAY RECORD // 33</p>
         <h1 id="trophy-title">THIRTY-THREE CANDLES</h1>
         <p className="trophy-card__message">{remainingMessage}</p>

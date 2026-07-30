@@ -344,3 +344,57 @@
 @media (prefers-reduced-motion: reduce) {
   .action-beat__staging-line { animation: none; }
 }
+
+/* ---- The padlock verdict ---- */
+
+.padlock-verdict {
+  display: flex;
+  gap: var(--space-xs);
+  justify-content: center;
+  padding-bottom: var(--space-md);
+  perspective: 600px;
+}
+
+.verdict-tile {
+  position: relative;
+  width: calc(var(--touch-target) * 0.82);
+  height: var(--touch-target);
+  transform-style: preserve-3d;
+  transition: transform var(--motion-slow) var(--ease-heavy);
+}
+
+.verdict-tile[data-flipped="true"] {
+  transform: rotateX(180deg);
+}
+
+.verdict-tile__face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--hairline) solid var(--c-hairline);
+  font-family: var(--font-ui);
+  font-size: var(--text-heading);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: var(--tracking-ui);
+  backface-visibility: hidden;
+}
+
+.verdict-tile__face--front {
+  background: var(--c-surface);
+  color: var(--c-rust-hot);
+}
+
+.verdict-tile__face--back {
+  background: var(--c-slate);
+  color: var(--c-bone);
+  transform: rotateX(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict-tile {
+    transition: none;
+  }
+}
