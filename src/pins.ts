@@ -108,7 +108,7 @@ export const dialConfigByPin: Readonly<Partial<Record<number, DialPinConfig>>> =
     value: RING_CODE,
     title: 'The Ring',
     hostText:
-      'Six wheels. The pocket tag gave you five figures, written the way mirrors write. One figure is missing. Only one number makes the date real.',
+      'Six wheels. The pocket tag gave you five figures, written the way mirrors write. One figure was never recorded. The file has been keeping it for thirty-three years.',
     wrongText:
       'That date never happened. One of them did.',
     hints: [
@@ -370,7 +370,7 @@ export const pins: readonly Pin[] = [
     kind: 'puzzle',
     resolution: 'dial',
     objective:
-      'Six wheels want a date. The pocket tag gave five of its figures, mirror-written. The sixth was left out on purpose. Only one number makes the date real.',
+      'Six wheels want a date. The pocket tag gave five of its figures, mirror-written. The first was left out on purpose. The file has been keeping it since it opened.',
     bodyText:
       'Entry 101: the date is accepted. The Division wrote it down thirty-three years ago and has been waiting for the calendar to agree. Listen: the lullaby in the walls has corrected its tempo.',
   },
