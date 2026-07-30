@@ -208,7 +208,7 @@ test("room status is semantic: corridor starts entered, pins enter, clears overr
   const initial = createDefaultGameState(1_000);
   assert.equal(roomState(initial, "bathroom").status, "unentered");
 
-  const enteredBathroom: GameState = { ...initial, resolvedPins: [15] };
+  const enteredBathroom: GameState = { ...initial, resolvedPins: [8] };
   assert.equal(roomState(enteredBathroom, "bathroom").status, "unresolved");
 
   const clearedWithoutPins: GameState = {

@@ -121,6 +121,19 @@ const cssTokens: Record<string, string> = {
 Object.entries(cssTokens).forEach(([name, value]) => root.style.setProperty(name, value));
 root.style.colorScheme = "dark";
 
+// The old build installed a service worker whose stale caches masked every
+// fix. Evict it and its caches permanently.
+if ("serviceWorker" in navigator) {
+  void navigator.serviceWorker.getRegistrations()
+    .then((registrations) => Promise.all(registrations.map((r) => r.unregister())))
+    .catch(() => undefined);
+}
+if (typeof caches !== "undefined") {
+  void caches.keys()
+    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+    .catch(() => undefined);
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <AudioProvider>

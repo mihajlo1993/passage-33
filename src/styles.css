@@ -267,7 +267,7 @@ h2 {
   z-index: 12;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   padding-bottom: env(safe-area-inset-bottom);
   border-top: var(--hairline) solid var(--c-hairline);
   background: var(--c-void);

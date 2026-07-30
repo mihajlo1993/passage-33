@@ -31,7 +31,8 @@ export type PinResolutionMode =
   | 'wheel'
   | 'lines'
   | 'box'
-  | 'reel';
+  | 'reel'
+  | 'riddle';
 export type PinResolutionMethod = PinResolutionMode | 'dev';
 
 

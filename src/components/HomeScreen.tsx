@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { MEDIA_ASSETS } from "@/src/media";
 import {
-  MAT_CELL_INDEX,
-  TAG_GLYPH_INDEX,
+  KEEPER_VOICE_BY_PIN,
   TOTAL_PIN_COUNT,
-  dialConfigByPin,
   pins,
+  riddleConfigByPin,
 } from "@/src/pins";
+import { playKeeper, type KeeperClipId } from "@/src/audio/keeper";
 import { resolutionModeForPin } from "@/src/game/engine";
 import type { PinResolutionResult } from "@/src/game";
 import { motion } from "@/src/tokens";
@@ -16,28 +16,10 @@ import type { GameState, Pin, PinResolutionMethod } from "@/src/types";
 import { useVHS } from "@/src/fx";
 import { ActionBeat } from "./ActionBeat";
 import { ArrivalPanel } from "./ArrivalPanel";
-import { CensusForm } from "./CensusForm";
-import { CrestWheel } from "./CrestWheel";
-import { DialLockScreen } from "./DialLockScreen";
-import { FilmReel } from "./FilmReel";
-import { GlyphGrid } from "./GlyphGrid";
-import { MirrorWipe } from "./MirrorWipe";
-import { MusicBox } from "./MusicBox";
-import { SealCube } from "./SealCube";
-import { SixLines } from "./SixLines";
+import { RiddleLock } from "./RiddleLock";
 
 const APPROACH_LABELS: Record<string, string> = {
-  scan: "Open the lens",
-  ar: "Raise the camera",
-  dial: "Work the lock",
-  wipe: "Develop the photograph",
-  glyphs: "Read the arm tag",
-  cube: "Turn the seal",
-  census: "Open the census",
-  wheel: "Align the crest",
-  lines: "Open the ledger",
-  box: "Wind the box",
-  reel: "Load the projector",
+  riddle: "Face the lock",
 };
 
 export interface HomeScreenProps {
@@ -90,20 +72,20 @@ export function HomeScreen({
           />
         )}
         <div className="cold-open__rule" />
-        <p className="eyebrow">Cadastral Division · Field Terminal 7</p>
+        <p className="eyebrow">Private commission · One guest</p>
         <div className="cold-open__copy">
-          <p className="system-line">THE HOUSE KEEPS THE COUNT</p>
-          <h1 id="cold-title">{resumed ? "File restored." : "File 33 reopened."}</h1>
+          <p className="system-line">THE KEEPER'S FOUR LOCKS</p>
+          <h1 id="cold-title">{resumed ? "The locks remember." : "Four locks. Four gifts."}</h1>
           <p className="host-copy">
             {resumed
-              ? "The terminal kept your place. The survey resumes exactly where it stopped; the house never lost count of anything, including you."
-              : "The survey of this address was opened thirty-three years ago and never closed. Tonight the terminal has decided to finish it. Lights low. Sound on. The house is already counting."}
+              ? "The building kept your place. The Keeper never lost count of anything, least of all you."
+              : "Thirty-three years ago, the night you were born, the Keeper of this building sealed a letter behind four locks and left four gifts in trust. Nobody ever came for them. You are late by exactly one lifetime. The locks kept."}
           </p>
         </div>
         <button className="mechanical-button mechanical-button--primary" onClick={onBegin}>
-          {resumed ? "Resume the survey" : "Reopen the file"}
+          {resumed ? "Return to the locks" : "Begin"}
         </button>
-        <p className="microcopy">Sound on · Lights off · One occupant</p>
+        <p className="microcopy">Sound on · Lights low</p>
       </section>
     );
   }
@@ -148,6 +130,12 @@ export function HomeScreen({
     const result = resolvePin(pin.id, resolutionModeForPin(pin));
     setInteracting(false);
     setArrival(result);
+    if (result.ok) {
+      const clip = KEEPER_VOICE_BY_PIN[pin.id];
+      if (clip) {
+        window.setTimeout(() => playKeeper(clip as KeeperClipId), 700);
+      }
+    }
   };
 
   const wrongTurn = () => {
@@ -160,104 +148,14 @@ export function HomeScreen({
       setInteracting(false);
     };
 
-    if (mode === "cube") {
-      return <SealCube onSolved={() => resolveNow(nextPin)} onCancel={cancel} />;
-    }
-    if (mode === "census") {
-      return (
-        <CensusForm
-          onSolved={() => resolveNow(nextPin)}
-          onCancel={cancel}
-          onWrongAttempt={wrongTurn}
-        />
-      );
-    }
-    if (mode === "wheel") {
-      return <CrestWheel onSolved={() => resolveNow(nextPin)} onCancel={cancel} />;
-    }
-    if (mode === "lines") {
-      return (
-        <SixLines
-          onSolved={() => resolveNow(nextPin)}
-          onCancel={cancel}
-          onWrongAttempt={wrongTurn}
-        />
-      );
-    }
-    if (mode === "box") {
-      return (
-        <MusicBox
-          onSolved={() => resolveNow(nextPin)}
-          onCancel={cancel}
-          onWrongAttempt={wrongTurn}
-        />
-      );
-    }
-    if (mode === "reel") {
-      return (
-        <FilmReel
-          onSolved={() => resolveNow(nextPin)}
-          onCancel={cancel}
-          onWrongAttempt={wrongTurn}
-        />
-      );
-    }
-    if (mode === "wipe") {
-      const mirrored = nextPin.id === 5;
-      return (
-        <MirrorWipe
-          eyebrow={mirrored ? "Entry 021, development" : "Entry 104, development"}
-          title={mirrored ? "The Development" : "The Last Development"}
-          revealText={
-            mirrored
-              ? "THE SHELF OF SIXTEEN\nMOUTH " + MAT_CELL_INDEX + " FROM THE LEFT"
-              : "THE BATH\nBEHIND THE CURTAIN"
-          }
-          mirrored={mirrored}
-          unsolvedCopy={
-            mirrored
-              ? "Clear the fog with your hand. Photographs taken in this flat develop backwards."
-              : "Clear the fog. This one develops the right way round. You earned that."
-          }
-          solvedCopy={
-            mirrored
-              ? "It develops backwards, as warned. The bathroom mirror reads it fluently."
-              : "There. A bath, a curtain, and behind the curtain, the last entry."
-          }
-          confirmLabel={mirrored ? "Read it in the mirror" : "Go to the bath"}
-          onSolved={() => resolveNow(nextPin)}
-          onCancel={cancel}
-        />
-      );
-    }
-    if (mode === "glyphs") {
-      return (
-        <GlyphGrid
-          correctIndex={TAG_GLYPH_INDEX}
-          eyebrow="Entry 100, the arm tag"
-          title="The Tags"
-          introCopy="The arm tag shows the seal, set the way the surveyor set it: hall at heaven. Sixteen glyphs. One is fixed by that setting."
-          solvedCopy="The glyph concedes. The pocket tag and the hem tag are now load-bearing. Keep them close."
-          confirmLabel="Fix the glyph"
-          solvedLabel="Take the tags"
-          onSolved={() => resolveNow(nextPin)}
-          onCancel={cancel}
-          onWrongAttempt={wrongTurn}
-        />
-      );
-    }
-    if (mode === "dial") {
-      const config = dialConfigByPin[nextPin.id];
+    if (mode === "riddle") {
+      const config = riddleConfigByPin[nextPin.id];
       if (config) {
         return (
-          <DialLockScreen
-            kind={config.kind}
-            correctValue={config.value}
-            title={config.title}
-            hostText={config.hostText}
-            wrongText={config.wrongText}
-            hints={config.hints}
-            onSubmit={() => resolveNow(nextPin)}
+          <RiddleLock
+            pin={nextPin}
+            config={config}
+            onSolved={() => resolveNow(nextPin)}
             onCancel={cancel}
             onWrongAttempt={wrongTurn}
           />
@@ -279,15 +177,6 @@ export function HomeScreen({
     }
     if (mode === "scan") {
       navigate("/scan");
-      return;
-    }
-    if (mode === "ar") {
-      const preview = previewPin(nextPin.id, mode);
-      if (!preview.ok) {
-        setArrival(preview);
-        return;
-      }
-      navigate("/ar?pin=" + String(nextPin.id));
       return;
     }
     const preview = previewPin(nextPin.id, mode);

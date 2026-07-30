@@ -189,22 +189,11 @@ test("2D sprites and room creature use local WebP URLs; pixel work remains build
   );
 });
 
-test("the home driver hands eligible AR pins to /ar without resolving them first", () => {
+test("the scanner and home driver never resolve with the ar method", () => {
   const scanSource = source("src/components/ScanScreen.tsx");
   const homeSource = source("src/components/HomeScreen.tsx");
-  const normalized = compact(homeSource);
-  const preview = indexOfPattern(normalized, /previewPin\(nextPin\.id, mode\)/);
-  const navigation = indexOfPattern(
-    normalized,
-    /navigate\("\/ar\?pin=" \+ String\(nextPin\.id\)\)/,
-    preview,
-  );
-
-  assert.ok(preview >= 0);
-  assert.ok(navigation > preview);
-  // The scanner only ever resolves with the scan method.
   assert.doesNotMatch(scanSource, /resolvePin\s*\(\s*pinId\s*,\s*["']ar["']/);
-  assert.match(compact(scanSource), /resolvePin\(pinId, "scan"\)/);
+  assert.ok(!homeSource.includes('"/ar?pin="'), "no AR handoff remains");
   assert.match(arComponentCode, /resolvePin\s*\([^,]+,\s*["']ar["']\s*\)/);
 });
 

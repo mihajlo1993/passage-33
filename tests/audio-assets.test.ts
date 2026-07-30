@@ -241,7 +241,7 @@ test("public inventory exactly matches local precache paths", () => {
   const actual = listFiles(publicRoot).sort();
   const declared = audioPrecachePaths.map((value) => value.replace(/^\/audio\//, "")).sort();
   assert.deepEqual(actual, declared);
-  assert.equal(actual.length, 22);
+  assert.equal(actual.length, 29);
 });
 
 test("generator check and voice report pass without generated payload modules", () => {

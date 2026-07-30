@@ -5,7 +5,8 @@ import { MEDIA_ASSETS } from "@/src/media";
 import { ENDING_MUSIC_PATH } from "@/src/audio/manifest";
 import { useAudio } from "@/src/audio/useAudio";
 import { areFinalPresentsResolved } from "@/src/game/engine";
-import { TOTAL_PIN_COUNT } from "@/src/pins";
+import { FRAGMENTS, TOTAL_PIN_COUNT } from "@/src/pins";
+import { playKeeper } from "@/src/audio/keeper";
 import { motion } from "@/src/tokens";
 import type { GameState } from "@/src/types";
 
@@ -86,9 +87,11 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
     musicRef.current = element;
     const start = () => void element.play().catch(() => undefined);
     const timer = window.setTimeout(start, 2_400);
+    const voiceTimer = window.setTimeout(() => playKeeper("lock4"), 1_000);
     window.addEventListener("pointerdown", start, { once: true });
     return () => {
       window.clearTimeout(timer);
+      window.clearTimeout(voiceTimer);
       window.removeEventListener("pointerdown", start);
       element.pause();
       element.removeAttribute("src");
@@ -113,9 +116,9 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   if (!trophyUnlocked) {
     return (
       <section className="screen trophy-locked" aria-labelledby="trophy-title">
-        <p className="eyebrow">The file</p>
-        <h1 id="trophy-title">Still open.</h1>
-        <p className="host-copy">Entries remain. The Division closes nothing out of order.</p>
+        <p className="eyebrow">The locks</p>
+        <h1 id="trophy-title">Still holding.</h1>
+        <p className="host-copy">Locks remain. The Keeper opens nothing out of order.</p>
         <button className="mechanical-button mechanical-button--primary" onClick={() => navigate("/scan")}>
           RETURN TO THE HUNT
         </button>
@@ -130,14 +133,16 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   if (finalPresentsOpened) {
     return (
       <section className="screen trophy-locked" aria-labelledby="trophy-title">
-        <p className="eyebrow">Entry 105 of 105</p>
-        <h1 id="trophy-title">Classification: Birthday</h1>
-        <p className="host-copy">
-          The survey is closed. Thirty-three years of counting, resolved in one
-          evening, by the specimen herself. The property is released to the
-          occupant. Everything the house counted, it counted for you. Happy
-          birthday, Melissa.
-        </p>
+        <p className="eyebrow">Thirty-three years to the night</p>
+        <h1 id="trophy-title">The letter, whole</h1>
+        <blockquote className="letter-whole re-frame">{FRAGMENTS.join(" ")}</blockquote>
+        <div className="candles" aria-label="Thirty-three candles">
+          {Array.from({ length: 33 }, (_, index) => (
+            <i key={index} className="candle-flame-css" style={{ animationDelay: `${(index * 37) % 1200}ms` }} />
+          ))}
+        </div>
+        <h2 className="hbd-line">Happy birthday, Melissa.</h2>
+        <p className="microcopy">The Keeper\'s watch has ended.</p>
       </section>
     );
   }
@@ -167,8 +172,8 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
       </div>
       <div className="trophy-card">
         <PadlockVerdict />
-        <p className="eyebrow">Survey record 33</p>
-        <h1 id="trophy-title">The Count Is Complete</h1>
+        <p className="eyebrow">Record of trust, year 33</p>
+        <h1 id="trophy-title">Four Locks Open</h1>
         <p className="trophy-card__message">{remainingMessage}</p>
         <dl className="trophy-stats">
           <div><dt>CONTACTS</dt><dd>{String(state.resolvedPins.length).padStart(2, "0")} / {TOTAL_PIN_COUNT}</dd></div>

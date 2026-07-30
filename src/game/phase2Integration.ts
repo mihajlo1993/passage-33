@@ -26,13 +26,7 @@ const SCARE_AUDIO_CUES = {
   closeQuarters: "stinger-c",
 } as const;
 
-export const PHASE2_VOICE_CUES_BY_PIN: Readonly<Partial<Record<number, HostVoiceId>>> = {
-  1: "cold-open",
-  8: "tape",
-  13: "draught",
-  18: "present",
-  19: "trophy",
-};
+export const PHASE2_VOICE_CUES_BY_PIN: Readonly<Partial<Record<number, HostVoiceId>>> = {};
 
 export const SAVE_WRITTEN_AUDIO_CUE = "write";
 export const DIAL_WRONG_AUDIO_CUE = "refused";

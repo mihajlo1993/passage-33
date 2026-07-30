@@ -6,6 +6,7 @@ import {
 import { Phase2IntegrationCoordinator, useGameStore } from "@/src/game";
 import { resolutionModeForPin } from "@/src/game/engine";
 import { TAPE_PLAYBACK_PIN_ID, getPinById } from "@/src/pins";
+import { playKeeper, unlockKeeper } from "@/src/audio/keeper";
 import { useHaptics, useWakeLock } from "@/src/device";
 import { getVHSHealthProfile, useVHS } from "@/src/fx";
 import { motion } from "@/src/tokens";
@@ -124,8 +125,7 @@ function useHouseRouter() {
 const NAV_ITEMS = [
   { path: "/map", label: "Map" },
   { path: "/inventory", label: "Items" },
-  { path: "/scan", label: "Lens" },
-  { path: "/notes", label: "Files" },
+  { path: "/notes", label: "Letter" },
 ] as const;
 
 export function GameApp() {
@@ -273,8 +273,12 @@ export function GameApp() {
 
   const begin = () => {
     const unlock = audio.master.unlock();
+    unlockKeeper();
     setColdOpen(false);
     void unlock.catch(() => undefined);
+    if (store.resolvedPins.length === 0) {
+      window.setTimeout(() => playKeeper("intro"), 600);
+    }
   };
 
   if (!store.hydrated) {
@@ -428,9 +432,9 @@ export function GameApp() {
       {!hideChrome && (
         <header className="app-header">
           <button className="app-header__brand" onClick={() => navigate("/")}>
-            <span>CD</span><strong>FILE 33</strong>
+            <span>K</span><strong>FOUR LOCKS</strong>
           </button>
-          <div className="app-header__status"><span>Chapter {store.act}</span><small>Survey open</small></div>
+          <div className="app-header__status"><span>Stage {store.act}</span><small>Locks kept</small></div>
         </header>
       )}
       <div className="screen-slot">{page}</div>

@@ -797,3 +797,153 @@
   gap: var(--space-sm);
   flex: 1;
 }
+
+
+/* ---- The riddle locks ---- */
+
+.riddle-lock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  min-height: 100dvh;
+}
+
+.riddle-bench {
+  display: flex;
+  flex-direction: column;
+  height: 34dvh;
+  min-height: 220px;
+  background:
+    radial-gradient(ellipse 85% 60% at 50% 40%,
+      rgba(150, 118, 72, 0.7) 0%, rgba(84, 66, 40, 0.36) 42%, rgba(8, 6, 4, 0) 74%),
+    radial-gradient(ellipse 60% 12% at 50% 82%, rgba(0, 0, 0, 0.9) 0%, transparent 70%),
+    linear-gradient(180deg, #0c0906 0%, #060504 60%, #010101 100%);
+}
+
+.riddle-bench__viewer {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.riddle-bench__note,
+.riddle-bench__lost {
+  color: var(--c-text-mute);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  text-align: center;
+  padding: var(--space-sm) 0;
+}
+
+.riddle-box {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-md);
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.riddle-box--shake { animation: riddle-shake 320ms ease-in-out; }
+
+@keyframes riddle-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-7px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+}
+
+.riddle-box__riddle {
+  color: var(--c-bone);
+  font-size: var(--text-heading);
+  line-height: 1.6;
+}
+
+.riddle-box__row { display: flex; gap: var(--space-sm); }
+
+.riddle-box__input {
+  flex: 1;
+  min-height: var(--control-height);
+  padding: 0 var(--space-md);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--c-surface);
+  color: var(--c-bone-bright);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  letter-spacing: 0.06em;
+}
+
+.riddle-box__input:focus {
+  outline: 1px solid var(--c-amber);
+  outline-offset: 2px;
+}
+
+.riddle-box__feedback { color: var(--c-bone-dim); font-size: var(--text-small); min-height: 1.2em; }
+
+.riddle-box__hint {
+  color: var(--c-amber);
+  font-size: var(--text-small);
+  line-height: 1.5;
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--space-sm);
+}
+
+.riddle-box__hintrow { display: flex; justify-content: flex-end; }
+
+/* ---- The finale candles ---- */
+
+.letter-whole {
+  padding: var(--space-lg) var(--space-md);
+  background: rgba(0, 0, 0, 0.85);
+  color: var(--c-bone);
+  font-size: var(--text-body);
+  line-height: 1.8;
+  font-style: italic;
+  margin: 0;
+}
+
+.candles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  justify-content: center;
+  padding: var(--space-lg) var(--space-sm);
+}
+
+.candle-flame-css {
+  width: 7px;
+  height: 22px;
+  background: radial-gradient(ellipse at 50% 75%, #ffd9a0 0%, #e8a54b 55%, rgba(160, 80, 20, 0) 100%);
+  border-radius: 50% 50% 45% 45%;
+  animation: candle-flicker 1.3s ease-in-out infinite alternate;
+  position: relative;
+}
+
+.candle-flame-css::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 3px;
+  height: 14px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, var(--c-bone-muted), var(--c-text-mute));
+}
+
+@keyframes candle-flicker {
+  0% { transform: scaleY(1); opacity: 0.9; }
+  40% { transform: scaleY(1.15); opacity: 1; }
+  100% { transform: scaleY(0.92); opacity: 0.85; }
+}
+
+.hbd-line {
+  text-align: center;
+  color: var(--c-bone-bright);
+  font-size: var(--text-display);
+  text-shadow: 0 0 24px rgba(232, 165, 75, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .candle-flame-css { animation: none; }
+}

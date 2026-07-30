@@ -28,31 +28,31 @@ import {
 
 test("operator resolution bypasses act, item, prerequisite, and mechanism gates", () => {
   const initial = createDefaultGameState(1_000);
-  const roomScare = resolvePinForOperator(initial, 13, 2_000);
+  const roomScare = resolvePinForOperator(initial, 7, 2_000);
 
-  assert.deepEqual(roomScare.resolvedPins, [13]);
-  assert.equal(roomScare.health, 70);
+  assert.deepEqual(roomScare.resolvedPins, [7]);
+  assert.equal(roomScare.health, 75);
   assert.equal(roomScare.act, 1);
 
-  const cabinet = resolvePinForOperator(roomScare, 6, 2_100);
-  assert.ok(cabinet.inventory.includes(itemIds.specimenJar));
+  const cabinet = resolvePinForOperator(roomScare, 3, 2_100);
+  assert.ok(cabinet.inventory.includes(itemIds.fragment02));
   assert.equal(cabinet.lastSavePin, null);
 });
 
 test("operator resolution preserves grants, trophy time, and final-present completion", () => {
   let state = createDefaultGameState(1_000);
   state = resolvePinForOperator(state, 1, 2_000);
-  assert.ok(state.inventory.includes(itemIds.keycard));
+  assert.ok(state.inventory.includes(itemIds.fragment01));
 
-  state = resolvePinForOperator(state, 19, 2_300);
+  state = resolvePinForOperator(state, 9, 2_300);
   assert.equal(state.trophyAt, 2_300);
   assert.equal(state.finishedAt, 2_300);
   assert.ok(state.inventory.includes(itemIds.carbonator));
 
-  state = unresolvePinForOperator(state, 19);
+  state = unresolvePinForOperator(state, 9);
   assert.equal(state.trophyAt, null);
   assert.equal(state.finishedAt, null);
-  assert.ok(state.inventory.includes(itemIds.keycard));
+  assert.ok(state.inventory.includes(itemIds.fragment01));
 });
 
 test("operator health, inventory, act, status, and reset mutations are deterministic", () => {
@@ -62,18 +62,18 @@ test("operator health, inventory, act, status, and reset mutations are determini
   assert.equal(setHealthForOperator(state, -50).health, 0);
   assert.equal(setHealthForOperator(state, 500).health, 100);
 
-  state = setItemForOperator(state, itemIds.specimenJar, true);
-  assert.deepEqual(state.inventory, [itemIds.specimenJar]);
-  state = setItemForOperator(state, itemIds.specimenJar, false);
+  state = setItemForOperator(state, itemIds.giftMat, true);
+  assert.deepEqual(state.inventory, [itemIds.giftMat]);
+  state = setItemForOperator(state, itemIds.giftMat, false);
   assert.deepEqual(state.inventory, []);
 
   state = setActForOperator(state, 4);
   assert.equal(state.act, 4);
-  assert.equal(currentPinForOperator(state), 9);
+  assert.equal(currentPinForOperator(state), 7);
   assert.equal(currentZoneForOperator(state), "corridor");
 
-  state = resolvePinForOperator(state, 9);
-  assert.equal(currentZoneForOperator(state), "balcony");
+  state = resolvePinForOperator(state, 7);
+  assert.equal(currentZoneForOperator(state), "corridor");
 
   const reset = resetGameForOperator(9_000);
   assert.equal(reset.act, 1);
@@ -82,22 +82,12 @@ test("operator health, inventory, act, status, and reset mutations are determini
   assert.equal(currentPinForOperator(reset), 1);
 });
 
-test("the live store advances and cycles sealed-present refusal copy", () => {
+test("the live store refuses the final pin out of order", () => {
   const previous = selectGameState(useGameStore.getState());
-  const early = { ...createDefaultGameState(6_000), act: 4 as const };
-  useGameStore.getState().replaceStateFromOperator(early);
-
+  useGameStore.getState().replaceStateFromOperator(createDefaultGameState(6_000));
   try {
-    const hints: string[] = [];
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const result = useGameStore.getState().resolvePin(19, "scan");
-      assert.equal(result.ok, false);
-      if (result.ok) continue;
-      assert.equal(result.reason, "sealed-present");
-      hints.push(result.hint);
-    }
-    assert.equal(new Set(hints.slice(0, 4)).size, 4);
-    assert.equal(hints[4], hints[0]);
+    const result = useGameStore.getState().resolvePin(9, "action");
+    assert.equal(result.ok, false);
   } finally {
     useGameStore.getState().resetGame(previous.startedAt);
     useGameStore.getState().replaceStateFromOperator(previous);

@@ -79,11 +79,23 @@ export const impulseManifest: readonly ImpulseAssetRecord[] = metadata.impulses.
 /** The mask-off piece, played by the trophy screen outside the engine graph. */
 export const ENDING_MUSIC_PATH = "/audio/music/ending.mp3";
 
+/** The Keeper's voice clips, played by src/audio/keeper.ts outside the graph. */
+export const KEEPER_VOICE_PATHS = [
+  "/audio/keeper/keeper-intro.mp3",
+  "/audio/keeper/keeper-lock1.mp3",
+  "/audio/keeper/keeper-lock2.mp3",
+  "/audio/keeper/keeper-lock3.mp3",
+  "/audio/keeper/keeper-lock4.mp3",
+  "/audio/keeper/keeper-dark.mp3",
+  "/audio/keeper/keeper-refuse.mp3",
+] as const;
+
 /** Complete public audio inventory for Workbox/config integration. */
 export const audioPrecachePaths = [
   ...audioManifest.map(({ publicPath }) => publicPath),
   ...impulseManifest.map(({ publicPath }) => publicPath),
   ENDING_MUSIC_PATH,
+  ...KEEPER_VOICE_PATHS,
 ] as const;
 
 export const audioAssets = audioManifest;

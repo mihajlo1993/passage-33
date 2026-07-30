@@ -33,41 +33,25 @@ export interface ItemModel {
  * this table is safe to extend before the model lands on disk.
  */
 export const modelByItem: Readonly<Partial<Record<ItemId, ItemModel>>> = {
-  keycard: {
-    src: "/models/keycard3d.glb",
-    alt: "A laminated Cadastral Division clearance card",
-    secret: {
-      hint: "THE EDGE CARRIES SOMETHING RAISED",
-      revealText:
-        "Embossed along the rim, felt before seen: 1 9 9 3. The year the survey began.",
-      view: "edge",
-    },
+  sealArtifact: {
+    src: "/models/sealcube.glb",
+    alt: "The Keeper's bronze seal",
   },
-  specimenJar: {
+  jarArtifact: {
     src: "/models/jar.glb",
-    alt: "A sealed specimen jar holding a bent wire cast",
-    secret: {
-      hint: "A TAG HANGS ON THE UNDERSIDE",
-      revealText:
-        "The tag, in the surveyor's hand: CAST AT FLOOR HEIGHT. THREE ARMS SPEAK. THE SHORTEST SPEAKS FIRST.",
-    },
+    alt: "The Keeper's specimen jar",
   },
-  reliquary: {
+  reliquaryArtifact: {
     src: "/models/reliquary.glb",
-    alt: "A small reliquary box with five slots and a notched rim",
+    alt: "The Keeper's reliquary",
     secret: {
       hint: "THE LID IS ENGRAVED",
-      revealText:
-        "FIVE WOUNDS, TWO STARS. THE HOUSE KEEPS THE COUNT. Beneath, smaller: IT HAS ALWAYS KEPT IT.",
+      revealText: "Held in trust. Thirty-three years. Signed, the Keeper.",
     },
   },
-  fieldRecording: {
-    src: "/models/tape.glb",
-    alt: "The recovered field recording",
-  },
-  giftMouse: {
-    src: "/models/creature.glb",
-    alt: "Entry 033, as catalogued",
+  candleArtifact: {
+    src: "/models/candleLit.glb",
+    alt: "The Keeper's candle",
   },
 } as const;
 

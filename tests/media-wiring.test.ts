@@ -38,9 +38,7 @@ test("build order keys the incoming creature and precaches WebP without general 
   assert.match(arGenerator, /defaultIncomingDirectory/);
   assert.match(arGenerator, /incomingName = "creature\.png"/);
   assert.match(arGenerator, /path\.join\(incomingDirectory, incomingName\)/);
-  assert.match(vite, /html,webp,svg,webmanifest/);
   assert.doesNotMatch(vite, /\*\.\{[^}]*png/);
-  assert.match(vite, /icons\/icon-192\.png/);
   assert.match(arGenerator, /ar["'], ["']sprites/);
   assert.match(arGenerator, /ar["'], ["']textures["'], ["']creature\.webp/);
   assert.doesNotMatch(arGenerator, /data:image|base64/i);

@@ -33,10 +33,9 @@ const GAMEPLAY_ORDER = [
 
 
 
-test("the coordinator walks the whole survey and claims each voice once", () => {
+test("the coordinator walks all nine pins without engine voices", () => {
   const plays: string[] = [];
   const voices: HostVoiceId[] = [];
-  const claimed = new Set<HostVoiceId>();
   const coordinator = new Phase2IntegrationCoordinator({
     audio: {
       setZone: () => undefined,
@@ -44,41 +43,22 @@ test("the coordinator walks the whole survey and claims each voice once", () => 
       startVoice: async (id) => { voices.push(id); return null; },
       heartbeat: () => undefined,
     },
-    voices: {
-      claim: (id) => {
-        if (claimed.has(id)) return false;
-        claimed.add(id);
-        return true;
-      },
-    },
+    voices: { claim: () => true },
   });
-
   let state = createDefaultGameState(1_000);
   for (const pin of pins) {
     const result = attemptResolvePin(state, pin, 1_000 + pin.id, resolutionModeForPin(pin));
     assert.equal(result.ok, true, `pin ${pin.id}`);
     state = result.state;
     coordinator.handleResolution(result);
-    // A second delivery of the same resolution must not double-claim voices.
-    coordinator.handleResolution(result);
   }
-
-  assert.deepEqual(
-    [...voices].sort(),
-    ["cold-open", "draught", "present", "tape", "trophy"].sort(),
-    "each mapped voice exactly once",
-  );
-  assert.ok(plays.filter((id) => id === "found").length >= 5, "grants play the found cue");
+  assert.equal(voices.length, 0, "the Keeper speaks outside the engine");
+  assert.ok(plays.filter((id) => id === "found").length >= 4);
   coordinator.stopSession();
 });
 
-test("the voice map covers the five slots on real pins", () => {
-  const mapped = Object.entries(PHASE2_VOICE_CUES_BY_PIN);
-  assert.equal(mapped.length, 5);
-  for (const [pinId, voice] of mapped) {
-    assert.ok(pins.some((pin) => pin.id === Number(pinId)), `voice pin ${pinId} exists`);
-    assert.ok(["cold-open", "tape", "draught", "trophy", "present"].includes(voice as string));
-  }
+test("the engine voice map is empty by design", () => {
+  assert.equal(Object.keys(PHASE2_VOICE_CUES_BY_PIN).length, 0);
 });
 
 test("health anchors and critical flags preserve the exact Phase 2 contract", () => {
@@ -117,12 +97,10 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   const mapModel = compact(source("src/map/model.ts"));
   const scanner = compact(source("src/components/ScanScreen.tsx"));
   const home = compact(source("src/components/HomeScreen.tsx"));
-  const dial = compact(source("src/components/DialLockScreen.tsx"));
   const save = compact(source("src/components/SaveScreen.tsx"));
   const arScreen = compact(source("src/ar/ARScreen.tsx"));
   const imageAr = compact(source("src/ar/ImageARScreen.tsx"));
   const room = compact(source("src/ar/RoomARScreen.tsx"));
-  const fieldDesk = compact(source("src/components/FieldDeskTorch.tsx"));
   const pinSource = compact(source("src/pins.ts"));
 
   const vhsStart = main.indexOf("<VHSLayer");
@@ -148,16 +126,12 @@ test("production source mounts and drives every Phase 2 integration surface", ()
 
   assert.match(home, /previewPin\(nextPin\.id, mode\)/);
   assert.doesNotMatch(scanner, /\bcontact\(\)|\bfound\(\)|\bstutter\(\)/);
-  assert.match(dial, /audio\.play\(phase2DialAudioCue\(false\)\)/);
   assert.match(save, /onCommit\(\) \.then\(\(\) => audio\.play\(SAVE_WRITTEN_AUDIO_CUE\)\)/);
 
   assert.match(mapScreen, /<SurveyScroller state=\{state\}/);
   assert.match(mapModel, /const cleared = new Set\(state\.clearedZones\)/);
   assert.match(mapModel, /state\.resolvedPins\.includes\(BALCONY_UNLOCK_PIN\)/);
-
-  assert.match(home, /mode === "ar"/);
-  assert.match(home, /navigate\("\/ar\?pin=" \+ String\(nextPin\.id\)\)/);
-  assert.match(pinSource, /id: 13,[\s\S]*beat: 'threshold'/);
+  assert.match(pinSource, /id: 7,[\s\S]*beat: 'threshold'/);
   assert.match(room, /shotFiredRef\.current = true;[\s\S]*onResolved\(\)/);
 
   assert.match(arScreen, /subscribeToOperatorScareSkip/);
@@ -170,7 +144,4 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   assert.match(room, /reportOperatorArInitialization\("error"\)/);
 
   assert.match(app, /useWakeLock\(\)/);
-  assert.match(fieldDesk, /camera\.status === "ready" && torch\.supported && !torch\.enabled/);
-  assert.match(fieldDesk, /void torch\.on\(\)/);
-  assert.match(fieldDesk, /latestOff\.current\(\)\.finally\(camera\.stop\)/);
 });

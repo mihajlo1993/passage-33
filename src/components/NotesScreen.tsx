@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 import { itemById } from "@/src/items";
 import type { GameState, Item } from "@/src/types";
 
-const DOCUMENT_IDS = new Set(["file01", "file02", "file03", "file04", "development01", "development02", "sixLines"]);
+const DOCUMENT_IDS = new Set(["fragment01", "fragment02", "fragment03", "fragment04"]);
 
 const HOST_ROUTE_DOCUMENT = {
   id: "survey-route",
-  name: "SURVEY COVER SHEET",
-  examine: "Cadastral Division, file 33. The survey of this address was opened and never closed. The terminal will reopen entries in their original order. The occupant is advised that the house has been counting the interval.",
+  name: "THE KEEPER'S NOTE",
+  examine: "Four locks, four gifts, one letter in quarters. The Keeper sealed them the night you were born and has kept the count ever since. Open the locks in order; the letter assembles itself.",
 } as const;
 
 export function NotesScreen({ state }: { state: GameState }) {

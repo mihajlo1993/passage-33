@@ -40,11 +40,7 @@ test("every referenced model exists on disk as a real GLB and ships offline", ()
   }
 
   const viteConfig = readFileSync(new URL("vite.config.ts", root), "utf8");
-  assert.match(
-    viteConfig,
-    /globPatterns:[\s\S]*?glb/,
-    "GLB models must be in the offline precache globs",
-  );
+  assert.doesNotMatch(viteConfig, /VitePWA\(/, "the service worker stays gone");
 });
 
 test("the model-viewer bundle is vendored locally and loaded before the app", () => {

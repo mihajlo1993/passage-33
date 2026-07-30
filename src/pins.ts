@@ -2,452 +2,295 @@ import { itemIds } from './items';
 import type { ItemId, Pin } from './types';
 
 /*
- * THE HOUSE KEEPS THE COUNT
+ * THE KEEPER'S FOUR LOCKS
  *
- * Before she lived here, the flat was catalogued. The Cadastral Division
- * surveyed every room, counted every slat and tile and blade, and recorded
- * one entry it could not classify: SPECIMEN 33, known only by its shadow.
- * The survey was never closed. Tonight the terminal reopens the file.
+ * Thirty-three years ago, on the night Melissa was born, the building's
+ * Keeper sealed a birthday letter behind four locks and left four gifts in
+ * trust, one lock each. Nobody ever came for them. Tonight the terminal
+ * wakes. Each opened lock releases a quarter of the letter and names where
+ * its gift waits in the real flat. The fourth opens on the whole letter,
+ * read aloud, and thirty-three candles.
  *
- * Five chapters. Every gift is guarded by a signature puzzle. QR marks are
- * artifact pickups, never gates: scanning one lifts an object into the
- * terminal's custody, and the puzzles decide what happens next.
+ * Four stages, one per gift. Riddles are the locks. The 3D artifacts are
+ * flavor on the bench and never gate anything.
  */
 
-/** SETUP CONSTANT: the admission code embossed on the clearance card edge. */
-export const ADMISSION_CODE = '1993';
+/* ====================== MIHA'S SETUP BLOCK ====================== */
 
-/** SETUP CONSTANT: the word the cadastral tiles spell when ordered and flipped. */
-export const TILE_WORD = 'SALT';
+/** Where each gift physically hides. Write these for YOUR flat. */
+export const HIDING = {
+  mat: 'Lift the seat cushion you always choose on the sofa. The first gift is underneath, rolled and tied.',
+  mouse: 'The shoe rack by the front door. Third box from the left. It has been waiting to click.',
+  slips: 'The shelf of square compartments in the living room. Count six mouths from the left and reach to the back.',
+  carbonator: 'Where water sleeps: the bath, behind the drawn curtain. It breathes in silver and breathes out stars.',
+} as const;
 
-/** SETUP CONSTANT: the three letters the shadow arms select on the plate. */
-export const CAST_WORD = 'RAT';
+/** The number lock on stage three: yearBorn + dayOfNight + locks. */
+export const NUMBER_LOCK = {
+  yearBorn: 1993,
+  dayOfNight: 31,
+  locks: 4,
+} as const;
 
-/**
- * SETUP CONSTANTS: the census. Verify each count in the real flat before the
- * night and correct these numbers; the printed census card asks exactly these
- * five questions in this order. Every value must land between 1 and 50.
- */
-export const CENSUS_ANSWERS = [7, 12, 14, 21, 19] as const;
-
-/** SETUP CONSTANTS: the two star numbers framed by the crest windows (1-12). */
-export const STAR_ANSWERS = [4, 9] as const;
-
-/** The hidden rule of the six lines. Never printed, never spoken. */
-export const LINE_STEP = 33;
-export const STAR_STEP = 3;
-
-/**
- * SETUP CONSTANT: the ring date, DDMMYY. The coat tag prints it MIRRORED with
- * the fifth digit missing; only one digit makes it a real date, and that digit
- * is hers. Default is the night itself.
- */
-export const RING_CODE = '310726';
-
-/** Which of the sixteen glyphs the arm tag points to via the seal orientation. */
-export const TAG_GLYPH_INDEX = 7;
-
-/** Kallax cell (1-16, counted from the left) hiding the rolled mat. */
-export const MAT_CELL_INDEX = 6;
-
-export interface DialPinConfig {
-  readonly kind: 'numeric' | 'alpha';
-  readonly value: string;
-  readonly title: string;
-  readonly hostText: string;
-  readonly wrongText: string;
-  /** Escalating help, one step per wrong attempt from the second on. */
-  readonly hints: readonly string[];
+export function numberLockAnswer(): number {
+  return NUMBER_LOCK.yearBorn + NUMBER_LOCK.dayOfNight + NUMBER_LOCK.locks;
 }
 
-export const dialConfigByPin: Readonly<Partial<Record<number, DialPinConfig>>> = {
-  2: {
-    kind: 'numeric',
-    value: ADMISSION_CODE,
-    title: 'Admission',
-    hostText:
-      'The clearance card carries its number on the edge, where numbers go when they are not for everyone. Hold the card against the light of the lens and read the rim.',
-    wrongText:
-      'Entry refused. The Division does not repeat itself. Read the edge again.',
+/** The letter, one fragment per lock; read aloud whole at the finale. */
+export const FRAGMENTS = [
+  'To the one born while I watched the door: I counted your first night in this world, and I have counted every one since.',
+  'Some things are sealed not to hide them, but to keep them safe until they are grown into.',
+  'The gifts were never mine. They were always yours; I only held the locks.',
+  'The last one breathes in silver and breathes out stars, and it is waiting where water sleeps. Happy birthday, Melissa. The building is proud of you. Signed, the Keeper.',
+] as const;
+
+/* ====================== RIDDLE LOCKS ====================== */
+
+export interface RiddleConfig {
+  readonly model: string;
+  readonly riddle: string;
+  /** Normalised acceptable answers; empty when numeric. */
+  readonly answers: readonly string[];
+  readonly numeric?: boolean;
+  readonly hints: readonly [string, string, string];
+}
+
+export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> = {
+  1: {
+    model: '/models/sealcube.glb',
+    riddle:
+      'My whole life is spent under a runner who never leaves home. Storms of clicking pass over me and I keep every journey but show none. Cities get maps. Desks get me. What am I?',
+    answers: ['mat', 'mousemat', 'mousepad', 'pad', 'podloga', 'deskmat', 'matt'],
     hints: [
-      'Numbers hide on edges. Turn the card in the lens until the light grazes it.',
-      'Four digits, embossed, not printed. The year the survey began.',
-      'The survey began in 1993. Enter it.',
+      'It lies flat, and something small travels across it all day.',
+      'You would find one next to every keyboard in the world.',
+      'A mouse runs on it. Tell the lock what it runs on.',
     ],
   },
-  4: {
-    kind: 'alpha',
-    value: TILE_WORD,
-    title: 'The Tile Word',
-    hostText:
-      'Four tiles were issued, one to a room. The seal fixed their order. Their frames fix their faces: square meets square, six meets six. When the tiles agree, their corners speak.',
-    wrongText:
-      'The tiles disagree with you. Look at the frames, not the pictures.',
+  3: {
+    model: '/models/jar.glb',
+    riddle:
+      'I have a tail but no bones. I run all day and never leave your side. I speak only in clicks, and I am happiest under your hand. What am I?',
+    answers: ['mouse', 'miska', 'computermouse', 'amouse', 'themouse', 'mis'],
     hints: [
-      'Lay the tiles in the order the seal core showed. Physically. On the floor.',
-      'Adjacent frames must match shape. Two of your tiles are lying face down.',
-      'Read the small corner letters left to right once every frame agrees.',
+      'It is an animal only by name.',
+      'Its tail is a cable, or nothing at all these days.',
+      'It moves the little arrow on every screen you have ever used.',
     ],
   },
-  7: {
-    kind: 'alpha',
-    value: CAST_WORD,
-    title: 'The Cast',
-    hostText:
-      'The specimen speaks in shadow. Floor height, three arms, the shortest first. Read the wall, not the screen.',
-    wrongText:
-      'That is not what the wall says. Kill the lights and look again.',
+  5: {
+    model: '/models/reliquary.glb',
+    riddle:
+      'Take the year you were born. Add the day of this very night. Add the number of locks the Keeper built. Give the lock the sum.',
+    answers: [],
+    numeric: true,
     hints: [
-      'Lights off. Caster on its floor mark. Torch flat on the cradle mark.',
-      'Three of the eight letters are touched by shadow. Order by arm length, shortest first.',
-      'The wall spells a small grey animal. Three letters.',
+      'Three numbers: a year, a day of the month, and a very small count of locks.',
+      'The year is 1993. Tonight is the 31st. How many locks did the Keeper build?',
+      'It is 1993 plus 31 plus 4.',
     ],
   },
-  15: {
-    kind: 'numeric',
-    value: RING_CODE,
-    title: 'The Ring',
-    hostText:
-      'Six wheels. The pocket tag gave you five figures, written the way mirrors write. One figure was never recorded. The file has been keeping it for thirty-three years.',
-    wrongText:
-      'That date never happened. One of them did.',
+  8: {
+    model: '/models/candleLit.glb',
+    riddle:
+      'I am still until you press me. I take the plainest drink there is and teach it to dance. I breathe in silver and breathe out stars. What am I?',
+    answers: [
+      'carbonator', 'aarke', 'sodastream', 'sparklingwater', 'sodamaker',
+      'gaziranavoda', 'soda', 'fizzywater', 'watercarbonator',
+      'sparklingwatermaker', 'sodawater',
+    ],
     hints: [
-      'The tag reads correctly in the bathroom mirror. You have done this before.',
-      'Five digits recovered, one hole. It is a date: day, month, year.',
-      'The missing figure is the age the file was opened for.',
+      'It stands on a kitchen counter and hisses politely when used.',
+      'It turns still water into sparkling water.',
+      'A carbonator. Tell the lock so.',
     ],
   },
 };
 
-/** Retired routes; kept as inert constants so older code paths stay typed. */
+/** In-character replies to wrong answers; they rotate and never punish. */
+export const REFUSAL_LINES = [
+  'The lock listens, considers, and declines.',
+  'No. But the lock admires the attempt.',
+  'The Keeper wrote: wrong guesses cost nothing but pride.',
+  'Not that. The lock has waited thirty-three years; it can wait another minute.',
+] as const;
+
+/** Keeper voice clip per pin, played when the pin resolves. */
+export const KEEPER_VOICE_BY_PIN: Readonly<Partial<Record<number, string>>> = {
+  1: 'lock1',
+  3: 'lock2',
+  5: 'lock3',
+  7: 'dark',
+};
+
+/* ====================== THE GRAPH ====================== */
+
+/** Retired identifiers kept as typed inert constants for old code paths. */
 export const TAPE_PLAYBACK_PIN_ID = -1;
 export const RELIGHT_ACTION_PIN_ID = -2;
+export const ADMISSION_CODE = '0000';
 
-export const TROPHY_PIN_ID = 19;
-export const SEALED_PRESENT_PIN_ID = 19;
-export const FINAL_PRESENT_PIN_IDS = [19] as const;
+export const TROPHY_PIN_ID = 9;
+export const SEALED_PRESENT_PIN_ID = 9;
+export const FINAL_PRESENT_PIN_IDS = [9] as const;
+
+export const dialConfigByPin: Readonly<Partial<Record<number, never>>> = {};
 
 export const pins: readonly Pin[] = [
-  // ---- CHAPTER 1: ADMISSION ----
+  // ---- STAGE ONE: THE FIELD (the mouse mat) ----
   {
     id: 1,
     act: 1,
-    zone: 'entry',
-    name: 'The Clearance Card',
+    zone: 'living',
+    name: 'The First Lock',
     requires: [],
-    grants: [itemIds.keycard, itemIds.file01],
-    kind: 'item',
-    resolution: 'scan',
+    grants: [itemIds.fragment01, itemIds.sealArtifact],
+    kind: 'puzzle',
+    resolution: 'riddle',
     objective:
-      'A mark is fixed to the front door. Scan it. The Division left a card for whoever came next.',
+      'The first lock listens for the name of a quiet servant. Solve it, and a quarter of the letter is yours.',
     bodyText:
-      'Entry 001. One laminated clearance card, Cadastral Division, issue date illegible. The bearer is advised that the survey of this address was opened and never closed. Examine the card. Edges first. The Division always kept its numbers on the edges.',
-    refusalHint:
-      'The terminal accepts nothing before the card. The door mark is waiting.',
+      'The first lock turns. A quarter of the letter is released, and the first gift is named. ' + HIDING.mat,
   },
   {
     id: 2,
     act: 1,
-    zone: 'entry',
-    name: 'Admission',
-    requires: [itemIds.keycard],
+    zone: 'living',
+    name: 'The Field',
+    requires: [],
     requiresPin: [1],
-    grants: [],
-    kind: 'puzzle',
-    resolution: 'dial',
+    grants: [itemIds.giftMat],
+    kind: 'item',
+    resolution: 'action',
+    actionLabel: 'I have it in my hands',
     objective:
-      'The card carries a number where numbers are kept from casual eyes. Find it, then give it to the terminal.',
+      'Go and take the first gift from its keeping. Come back to the terminal with it in your hands.',
     bodyText:
-      'Admission granted. Entry 002: the occupant has accepted the survey. The Division thanks you and regrets that it cannot stop what resumes now. The living room desk was surveyed last. Its underside was not.',
+      'Catalogued and released: one flat place for a small runner. The Keeper chose it for the desk where you will win things. Three locks remain.',
   },
 
-  // ---- CHAPTER 2: THE CADASTRE (guards the mat) ----
+  // ---- STAGE TWO: THE RUNNER (the mouse) ----
   {
     id: 3,
     act: 2,
-    zone: 'living',
-    name: 'The Survey Seal',
+    zone: 'entry',
+    name: 'The Second Lock',
     requires: [],
     requiresPin: [2],
-    grants: [itemIds.sealCore, itemIds.file02],
+    grants: [itemIds.fragment02, itemIds.jarArtifact],
     kind: 'puzzle',
-    resolution: 'cube',
+    resolution: 'riddle',
     objective:
-      'Under the lip of the desk, a second mark. The surveyor sealed his findings in bronze. The note that came with it says: the surveyor sets his stone with the hall at heaven.',
+      'The second lock keeps a small grey tenant. It has no bones and no bad intentions.',
     bodyText:
-      'The seal opens. Entry 019: four rooms were tiled for reference. The core fixes their order. The tiles were left where they were cut; each room keeps its own. Collect all four before you ask the terminal anything.',
-    refusalHint:
-      'The seal will not open for a stone set wrong. The hall belongs at heaven.',
+      'The second lock turns. Half the letter now. ' + HIDING.mouse,
   },
   {
     id: 4,
     act: 2,
-    zone: 'living',
-    name: 'The Cadastral Tiles',
-    requires: [itemIds.sealCore],
-    requiresPin: [3],
-    grants: [],
-    kind: 'puzzle',
-    resolution: 'dial',
-    objective:
-      'Four tiles, four rooms. Lay them in the order the core fixed. Make the frames agree. Then tell the terminal what the corners spell.',
-    bodyText:
-      'Entry 020: the tiles agree. Development of the reference photograph may proceed. The Division notes, without comment, that photographs taken in this flat develop backwards.',
-  },
-  {
-    id: 5,
-    act: 2,
-    zone: 'living',
-    name: 'The Development',
+    zone: 'entry',
+    name: 'The Runner',
     requires: [],
-    requiresPin: [4],
-    grants: [itemIds.development01, itemIds.giftMat],
-    kind: 'puzzle',
-    resolution: 'wipe',
+    requiresPin: [3],
+    grants: [itemIds.giftMouse],
+    kind: 'item',
+    resolution: 'action',
+    actionLabel: 'I have it in my hands',
     objective:
-      'The reference photograph is fogged. Clear it with your hand. What it shows, it shows the wrong way round.',
+      'Collect the small grey runner from its box. It will not run away; it has been patient.',
     bodyText:
-      'Entry 021. The photograph shows a shelf of sixteen mouths. Count the way the mirror taught you. What was rolled and tied and put away is yours; it was always going to be. The Division catalogued it as A FLAT PLACE FOR A SMALL ANIMAL TO RUN.',
+      'Catalogued and released: one runner, grey, clicking, boneless. The Keeper trusts you will get along famously. Two locks remain.',
   },
 
-  // ---- CHAPTER 3: THE SHADOW OF THE OPERATOR (guards the mouse) ----
+  // ---- STAGE THREE: THE WAGER (the EuroMillions slips) ----
+  {
+    id: 5,
+    act: 3,
+    zone: 'living',
+    name: 'The Third Lock',
+    requires: [],
+    requiresPin: [4],
+    grants: [itemIds.fragment03, itemIds.reliquaryArtifact],
+    kind: 'puzzle',
+    resolution: 'riddle',
+    objective:
+      'The third lock is arithmetic. The Keeper built it from three numbers only the two of you could know tonight.',
+    bodyText:
+      'The third lock turns. Three quarters of the letter. ' + HIDING.slips,
+  },
   {
     id: 6,
     act: 3,
-    zone: 'kitchen',
-    name: 'The Specimen',
+    zone: 'living',
+    name: 'The Wager',
     requires: [],
     requiresPin: [5],
-    grants: [itemIds.specimenJar, itemIds.file03],
+    grants: [itemIds.giftSlips],
     kind: 'item',
-    resolution: 'scan',
+    resolution: 'action',
+    actionLabel: 'I have them in my hands',
     objective:
-      'The kitchen keeps its mark inside the top drawer. Scan it. Entry 033 could not be classified, but something of it was preserved.',
+      'Collect the third gift: thin as paper and worth whatever the future decides.',
     bodyText:
-      'Entry 033. SPECIMEN. Classification pending since the survey opened. The jar preserves the only cast the Division managed to take. Turn it in the light. The tag is on the underside, where tags end up.',
-    refusalHint:
-      'The jar comes first. The kitchen drawer keeps its mark.',
+      'Catalogued and released: six lines, three red, three blue. Thirty-three chances, by the Keeper\'s arithmetic. One lock remains, and it prefers the dark.',
   },
+
+  // ---- STAGE FOUR: THE SPARKLE (the carbonator) ----
   {
     id: 7,
-    act: 3,
+    act: 4,
     zone: 'corridor',
-    name: 'The Cast',
-    requires: [itemIds.specimenJar],
+    name: 'The Dark',
+    requires: [],
     requiresPin: [6],
     grants: [],
-    kind: 'puzzle',
-    resolution: 'dial',
-    objective:
-      'What is in the jar was catalogued by its shadow. Cast it again: the folded arms on the floor mark, your torch on the cradle mark, all other lights dead. Read the wall.',
-    bodyText:
-      'Entry 034: the shadow answers. The Division notes that the specimen was small, grey, and fond of running along flat places. A field recording was made the night it was catalogued. Play it standing still.',
-  },
-  {
-    id: 8,
-    act: 3,
-    zone: 'entry',
-    name: 'The Field Recording',
-    requires: [],
-    requiresPin: [7],
-    grants: [itemIds.fieldRecording, itemIds.giftMouse],
-    kind: 'puzzle',
-    resolution: 'action',
-    actionLabel: 'Play the recording',
-    beat: 'listen',
-    objective:
-      'The terminal has recovered the field recording. Play it. Recordings from this flat are clearest near the front door, where things leave.',
-    bodyText:
-      'Entry 035, appended in a later hand: the specimen was never caught. It was REPLACED. A small grey runner, boxed and counted from the left of where the shoes sleep, third of its row. The Division does not explain itself. Collect it.',
-  },
-
-  // ---- CHAPTER 4: SIX LINES (guards the slips) ----
-  {
-    id: 9,
-    act: 4,
-    zone: 'balcony',
-    name: 'The Reliquary',
-    requires: [],
-    requiresPin: [8],
-    grants: [itemIds.reliquary, itemIds.file04],
-    kind: 'item',
-    resolution: 'scan',
-    objective:
-      'The balcony planter has kept a mark dry in a sleeve since the survey. Scan it. The Division buried its arithmetic where things grow.',
-    bodyText:
-      'Entry 040. One reliquary, five numbered slots, twelve notches at the rim. The lid is engraved: FIVE WOUNDS, TWO STARS. THE HOUSE KEEPS THE COUNT. The census card tells you where the house keeps it.',
-    refusalHint:
-      'The reliquary first. The planter has been patient for years; it can wait one more minute.',
-  },
-  {
-    id: 10,
-    act: 4,
-    zone: 'living',
-    name: 'The Census',
-    requires: [itemIds.reliquary],
-    requiresPin: [9],
-    grants: [],
-    kind: 'puzzle',
-    resolution: 'census',
-    objective:
-      'Five questions, five rooms, five numbers. Nothing here is a riddle; it is arithmetic and legwork. The house has never once been miscounted.',
-    bodyText:
-      'Entry 041: five wounds filled. The house confirms its own count, as it always has, as it did the first time, when the surveyor wrote that the rooms seemed to be counting him back.',
-  },
-  {
-    id: 11,
-    act: 4,
-    zone: 'living',
-    name: 'The Two Stars',
-    requires: [],
-    requiresPin: [10],
-    grants: [],
-    kind: 'puzzle',
-    resolution: 'wheel',
-    objective:
-      'The stars are not counted. They are aligned. Hold the crest card flat against the glass of the terminal and turn the wheel until the notches marry.',
-    bodyText:
-      'Entry 042: two stars fixed. The Division notes that the crest predates the building. It does not note by how much.',
-  },
-  {
-    id: 12,
-    act: 4,
-    zone: 'living',
-    name: 'The Six Lines',
-    requires: [],
-    requiresPin: [11],
-    grants: [itemIds.sixLines, itemIds.giftSlips],
-    kind: 'puzzle',
-    resolution: 'lines',
-    objective:
-      'The file holds six lines of numbers. The first is yours already; the last is written. The four between are missing, and the rule that fills them was never recorded. Something happened five times.',
-    bodyText:
-      'Entry 043: the lines agree with the ledger. Transcribe all six onto the paper slips; the Division has always considered them a wager against the future. The last number of the last line counts a mouth on the shelf of sixteen. What waits inside is red and blue and twice lucky.',
-  },
-
-  // ---- CHAPTER 5: THE PARTY REMEMBERS EVERYTHING (finale) ----
-  {
-    id: 13,
-    act: 5,
-    zone: 'corridor',
-    name: 'The Threshold',
-    requires: [],
-    requiresPin: [12],
-    grants: [],
     kind: 'scare',
-    damage: 30,
+    damage: 25,
     resolution: 'action',
     actionLabel: 'Put the lights out',
     beat: 'threshold',
     objective:
-      'The last page of the survey opens in the dark. Put out every light in the flat. Walk the corridor once, end to end, with the torch off. The terminal will know.',
+      'Before the last lock, a courtesy. Put out every light. Stand still, and let the building look at you the way the Keeper did, the night the letter was sealed.',
     bodyText:
-      'Entry 099. The corridor measured the same in both directions, which the surveyor noted was no longer true at night. Something has been left on the soft furniture. Three tags. The Division tags what it means to keep.',
+      'Nothing here has ever wished you harm. Nothing here ever will. The last lock is listening now.',
   },
   {
-    id: 14,
-    act: 5,
-    zone: 'living',
-    name: 'The Tags',
-    requires: [],
-    requiresPin: [13],
-    grants: [itemIds.coatTags],
-    kind: 'puzzle',
-    resolution: 'glyphs',
-    objective:
-      'Your own coat, tagged at the arm like a specimen. The arm tag shows the seal, set the way the surveyor set it. Which glyph does it fix? Choose on the terminal.',
-    bodyText:
-      'Entry 100: the arm concedes its glyph. The pocket tag is written in mirror-hand and incomplete. The hem tag holds a single film frame. Keep it within reach. The reel is missing exactly one frame, and it is that one.',
-  },
-  {
-    id: 15,
-    act: 5,
+    id: 8,
+    act: 4,
     zone: 'bathroom',
-    name: 'The Ring',
-    requires: [itemIds.coatTags],
-    requiresPin: [14],
-    grants: [],
-    kind: 'puzzle',
-    resolution: 'dial',
-    objective:
-      'Six wheels want a date. The pocket tag gave five of its figures, mirror-written. The first was left out on purpose. The file has been keeping it since it opened.',
-    bodyText:
-      'Entry 101: the date is accepted. The Division wrote it down thirty-three years ago and has been waiting for the calendar to agree. Listen: the lullaby in the walls has corrected its tempo.',
-  },
-  {
-    id: 16,
-    act: 5,
-    zone: 'living',
-    name: 'The Music Box',
+    name: 'The Last Lock',
     requires: [],
-    requiresPin: [15],
-    grants: [],
+    requiresPin: [7],
+    grants: [itemIds.fragment04, itemIds.candleArtifact],
     kind: 'puzzle',
-    resolution: 'box',
+    resolution: 'riddle',
     objective:
-      'Five cylinders, one scratch each. IT REMEMBERS YOUR FIRST LINE.',
+      'The last lock guards the gift the Keeper chose himself. It has held its breath for thirty-three years.',
     bodyText:
-      'Entry 102: the box plays clean. The tune is the one the surveyor heard through the party wall on his last night here, and could never afterwards stop hearing. It is, he noted, a birthday song slowed to the speed of waiting.',
+      'The last lock turns. The letter is whole. ' + HIDING.carbonator,
   },
   {
-    id: 17,
-    act: 5,
-    zone: 'living',
-    name: 'The Reel',
-    requires: [itemIds.coatTags],
-    requiresPin: [16],
-    grants: [itemIds.filmReel],
-    kind: 'puzzle',
-    resolution: 'reel',
-    objective:
-      'Six frames. Five belong to tonight; the sixth is in your hand, stamped at the hem. Put the evening in the order it happened. The empty frame goes last. The evening is not over.',
-    bodyText:
-      'Entry 103: the reel is complete and the projector agrees. The survey has recorded everything it was opened to record. One development remains. It is the one the Division kept for itself.',
-  },
-  {
-    id: 18,
-    act: 5,
+    id: 9,
+    act: 4,
     zone: 'bathroom',
-    name: 'The Last Development',
+    name: 'The Sparkle',
     requires: [],
-    requiresPin: [17],
-    grants: [itemIds.development02],
-    kind: 'puzzle',
-    resolution: 'wipe',
-    objective:
-      'One photograph left. Clear it. This one develops the right way round; the Division decided you had earned that.',
-    bodyText:
-      'Entry 104. The photograph shows a bath, a drawn curtain, and behind the curtain a machine for putting the sparkle into water. The final mark is on its wrapping. The file is ready to close.',
-  },
-  {
-    id: 19,
-    act: 5,
-    zone: 'bathroom',
-    name: 'Classification',
-    requires: [],
-    requiresPin: [18],
+    requiresPin: [8],
     grants: [itemIds.carbonator],
     kind: 'win',
-    resolution: 'scan',
-    scannableFromAct: 4,
-    earlyRefusals: [
-      'The file is still open. The Division closes nothing out of order.',
-      'Again at the wrapping. The survey admires persistence and remains unmoved.',
-      'Not yet. Four entries stand between you and the last mark.',
-      'The Division has waited thirty-three years. It can watch you wait a little.',
-    ],
+    resolution: 'action',
+    actionLabel: 'I have it. Read me the letter.',
     objective:
-      'Scan the final mark and close the file.',
+      'Take the last gift from where water sleeps, and bring it back. The Keeper will read the letter himself.',
     bodyText:
-      'Entry 105, the last. SPECIMEN 33: classification resolved. The shadow on the corridor wall was measured at one metre sixty-something and thirty-three years, and it was yours; it was always yours; the house had simply been keeping it until you grew into it. CLASSIFICATION: BIRTHDAY. The survey is closed. The property is released to the occupant. Everything it counted, it counted for you.',
+      'The Keeper\'s watch is ended. The letter is yours, the gifts were always yours, and the building is proud of you. Happy birthday, Melissa.',
   },
 ];
 
 export const TOTAL_PIN_COUNT = pins.length;
-/** Only scan-resolved pins print a QR mark: five artifact pickups. */
+/** No printed marks in this game; the scanner stays dormant. */
 export const printablePins = pins.filter((pin) => (pin.resolution ?? 'scan') === 'scan');
 export const scannablePins = printablePins;
-
 export const NON_PRINTED_PIN_IDS = new Set<number>();
 
 export const pinById: Readonly<Partial<Record<number, Pin>>> =
@@ -460,32 +303,21 @@ export function getPinById(id: number): Pin | undefined {
 /** Side effects that intentionally do not alter the Pin contract. */
 export const pinRevocations: Readonly<Partial<Record<number, ItemId[]>>> = {};
 
-/** EuroMillions line arithmetic: the never-spoken rule of the six lines. */
-export function wrapMain(value: number): number {
-  return ((value - 1) % 50 + 50) % 50 + 1;
+/** Forgiving answer matching: case, spacing, and accents are ignored. */
+export function normaliseAnswer(value: string): string {
+  return String(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]/g, '');
 }
 
-export function wrapStar(value: number): number {
-  return ((value - 1) % 12 + 12) % 12 + 1;
-}
-
-export function lineAt(index: number): { mains: number[]; stars: number[] } {
-  const mains = CENSUS_ANSWERS
-    .map((main) => wrapMain(main + LINE_STEP * index))
-    .sort((a, b) => a - b);
-  const stars = STAR_ANSWERS
-    .map((star) => wrapStar(star + STAR_STEP * index))
-    .sort((a, b) => a - b);
-  return { mains, stars };
-}
-
-/** The Kallax mouth counted by the last number of the last line. */
-export function slipsCellIndex(): number {
-  const finalLine = lineAt(5);
-  return ((finalLine.mains[finalLine.mains.length - 1] - 1) % 16) + 1;
-}
-
-/** Music box cylinder targets: line 1 mains mod 12. */
-export function musicBoxTargets(): number[] {
-  return lineAt(0).mains.map((main) => main % 12);
+export function riddleAnswerMatches(config: RiddleConfig, raw: string): boolean {
+  if (config.numeric) {
+    const number = parseInt(String(raw).replace(/[^0-9]/g, ''), 10);
+    return Number.isFinite(number) && number === numberLockAnswer();
+  }
+  const given = normaliseAnswer(raw);
+  if (given.length === 0) return false;
+  return config.answers.some((answer) => normaliseAnswer(answer) === given);
 }

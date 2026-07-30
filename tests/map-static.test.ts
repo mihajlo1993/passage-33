@@ -80,8 +80,8 @@ test("map page copy is removed and the Host route text lives in Notes as a docum
   }
   assert.doesNotMatch(screenSource, /The front door stays shut/);
   assert.match(notesSource, /id: "survey-route"/);
-  assert.match(notesSource, /The survey of this address was opened and never closed/);
-  assert.match(notesSource, /the house has been counting the interval/);
+  assert.match(notesSource, /Four locks, four gifts, one letter in quarters/);
+  assert.match(notesSource, /the letter assembles itself/);
 });
 
 test("rendered map surfaces carry room state only, never individual-location data", () => {
