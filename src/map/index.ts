@@ -1,4 +1,5 @@
-export { SurveyMap } from "./SurveyMap";
+export { SurveyMapArt } from "./SurveyMap";
+export { SurveyScroller } from "./SurveyScroller";
 export {
   deriveRoomStates,
   deriveSurveyMap,

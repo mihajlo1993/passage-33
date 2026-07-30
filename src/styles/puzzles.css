@@ -416,8 +416,8 @@
   background:
     radial-gradient(
       ellipse 85% 60% at 50% 42%,
-      rgba(122, 96, 58, 0.5) 0%,
-      rgba(64, 50, 30, 0.24) 40%,
+      rgba(150, 118, 72, 0.7) 0%,
+      rgba(84, 66, 40, 0.38) 40%,
       rgba(10, 8, 6, 0) 72%
     ),
     linear-gradient(180deg, #0a0806 0%, #060504 55%, #020202 100%);
@@ -744,4 +744,56 @@
 
 .mirror-wipe__figures--lines[data-mirrored="true"] {
   transform: scaleX(-1);
+}
+
+
+/* ---- The surveyor's diagram (seal net) ---- */
+
+.seal-net {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-md) 0;
+}
+
+.seal-net__cross {
+  display: grid;
+  grid-template-areas:
+    ". north ."
+    "west up east"
+    ". south .";
+  gap: var(--space-xs);
+}
+
+.seal-net__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: 1px solid var(--line);
+  background: var(--c-raised);
+  color: var(--c-text);
+  font-family: var(--font-award);
+  font-size: var(--text-heading);
+}
+
+.seal-net__cell--north { grid-area: north; }
+.seal-net__cell--west { grid-area: west; }
+.seal-net__cell--up { grid-area: up; border-width: 2px; border-color: var(--c-amber); }
+.seal-net__cell--east { grid-area: east; }
+.seal-net__cell--south { grid-area: south; }
+
+.seal-net__cell--up[data-aligned="true"] {
+  background: linear-gradient(180deg, var(--c-bone-bright), var(--c-bone-muted));
+  color: var(--c-ink);
+  box-shadow: var(--glow-select);
+}
+
+.seal-net__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex: 1;
 }

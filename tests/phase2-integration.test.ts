@@ -151,7 +151,7 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   assert.match(dial, /audio\.play\(phase2DialAudioCue\(false\)\)/);
   assert.match(save, /onCommit\(\) \.then\(\(\) => audio\.play\(SAVE_WRITTEN_AUDIO_CUE\)\)/);
 
-  assert.match(mapScreen, /<SurveyMap state=\{state\}/);
+  assert.match(mapScreen, /<SurveyScroller state=\{state\}/);
   assert.match(mapModel, /const cleared = new Set\(state\.clearedZones\)/);
   assert.match(mapModel, /state\.resolvedPins\.includes\(BALCONY_UNLOCK_PIN\)/);
 

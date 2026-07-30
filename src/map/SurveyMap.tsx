@@ -9,7 +9,6 @@ import type {
   OpeningBounds,
   RoomStatusLabel,
 } from "./types";
-import { useMapViewport } from "./useMapViewport";
 
 function pointList(points: readonly MapPoint[]): string {
   return points.map(({ x, y }) => `${x},${y}`).join(" ");
@@ -79,11 +78,11 @@ function roomAriaLabel(
   return `${name}, ${statusLabel.toLowerCase()}${lockDescription}`;
 }
 
-export function SurveyMap({ state, onClose }: { state: GameState; onClose?: () => void }) {
+/** The pure drawing. Motion, zoom, and chrome live in SurveyScroller. */
+export function SurveyMapArt({ state }: { state: GameState }) {
   const map = deriveSurveyMap(state);
   const balconyOutlineOnly =
     map.rooms.find((room) => room.id === "balcony")?.outlineLocked ?? true;
-  const { handlers, frameRef, style, zoomBy, reset } = useMapViewport();
   const viewBox = [
     map.viewBox.x,
     map.viewBox.y,
@@ -92,29 +91,10 @@ export function SurveyMap({ state, onClose }: { state: GameState; onClose?: () =
   ].join(" ");
 
   return (
-    <div
-      ref={frameRef}
-      className="survey-frame"
-      aria-label="Hand-drafted survey map of the flat"
-      {...handlers}
-    >
-      <div className="map-controls" aria-label="Map controls">
-        <button type="button" className="map-control" aria-label="Zoom in" onClick={() => zoomBy(1.5)}>+</button>
-        <button type="button" className="map-control" aria-label="Zoom out" onClick={() => zoomBy(1 / 1.5)}>&minus;</button>
-        <button type="button" className="map-control" aria-label="Fit the whole flat" onClick={reset}>[]</button>
-        {onClose && (
-          <button type="button" className="map-control map-control--close" aria-label="Close the map" onClick={onClose}>X</button>
-        )}
-      </div>
-      <div className="map-legend" aria-hidden="true">
-        <span><i className="map-legend__swatch map-legend__swatch--searching" /> Currently searching</span>
-        <span><i className="map-legend__swatch map-legend__swatch--done" /> Search completed</span>
-      </div>
       <svg
         className="survey-map"
-        style={style}
         viewBox={viewBox}
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-labelledby="survey-map-title survey-map-description"
       >
@@ -434,6 +414,5 @@ export function SurveyMap({ state, onClose }: { state: GameState; onClose?: () =
           </text>
         </g>
       </svg>
-    </div>
   );
 }

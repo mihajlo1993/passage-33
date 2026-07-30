@@ -321,3 +321,44 @@ body:has(.map-screen),
 
 .map-legend__swatch--searching { background: var(--c-map-red); }
 .map-legend__swatch--done { background: var(--c-slate); }
+
+
+/* ---- Native-scroll viewport: the browser owns panning ---- */
+
+.survey-scroller-shell {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--c-surface);
+}
+
+.survey-scroller {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+}
+
+.survey-scroller::-webkit-scrollbar { display: none; }
+
+.survey-scroller__canvas {
+  /* Height follows the drawing's own ratio; min sizes keep zoom 1 = fit. */
+  min-width: 100%;
+  aspect-ratio: var(--map-aspect);
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.survey-scroller__canvas .survey-map {
+  width: 100%;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: var(--map-aspect);
+}
