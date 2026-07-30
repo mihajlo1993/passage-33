@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MEDIA_ASSETS } from "@/src/media";
+import { ENDING_MUSIC_PATH } from "@/src/audio/manifest";
 import { useAudio } from "@/src/audio/useAudio";
 import { areFinalPresentsResolved } from "@/src/game/engine";
 import { TOTAL_PIN_COUNT } from "@/src/pins";
@@ -73,6 +74,27 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   const [quiet, setQuiet] = useState(false);
   const trophy = MEDIA_ASSETS.trophy;
   const audio = useAudio();
+  const musicRef = useRef<HTMLAudioElement | null>(null);
+
+  // The mask-off piece: a dusty music box that starts as WINNER settles and
+  // keeps the room warm through the letter. Local file, precached, looped.
+  useEffect(() => {
+    if (!trophyUnlocked || typeof window === "undefined") return;
+    const element = new window.Audio(ENDING_MUSIC_PATH);
+    element.loop = true;
+    element.volume = 0.5;
+    musicRef.current = element;
+    const start = () => void element.play().catch(() => undefined);
+    const timer = window.setTimeout(start, 2_400);
+    window.addEventListener("pointerdown", start, { once: true });
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("pointerdown", start);
+      element.pause();
+      element.removeAttribute("src");
+      musicRef.current = null;
+    };
+  }, [trophyUnlocked]);
 
   useEffect(() => {
     if (!finalPresentsOpened) {

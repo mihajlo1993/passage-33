@@ -519,9 +519,41 @@ const knownPlaceholdersByFile = new Map();
 const detailsById = new Map();
 const oneShots = manifest.audio.filter(({ category }) => category === "oneshot");
 oneShots.forEach((entry, index) => {
-  const bytes = generatedOneShot(entry, index);
-  publicOutputs.set(publicFile(entry.fileName), bytes);
-  detailsById.set(entry.id, waveMetadata(bytes, entry, true));
+  const file = publicFile(entry.fileName);
+  const generatedBytes = generatedOneShot(entry, index);
+  const existing = existsSync(file) ? readFileSync(file) : null;
+  // Mirror the voice path: a hand-produced replacement (valid PCM16 mono
+  // 44.1 kHz wave that differs from the deterministic render) is production
+  // audio and is kept; anything else is regenerated.
+  let productionWave = null;
+  if (existing !== null && !existing.equals(generatedBytes)) {
+    try {
+      const wave = parsePcmWave(existing, entry.fileName);
+      if (wave.sampleRate === 44_100 && wave.channels === 1 && wave.bitsPerSample === 16) {
+        productionWave = wave;
+      }
+    } catch {
+      productionWave = null;
+    }
+  }
+  const bytes = productionWave ? existing : generatedBytes;
+  publicOutputs.set(file, bytes);
+  knownPlaceholdersByFile.set(file, [generatedBytes]);
+  if (productionWave) {
+    detailsById.set(entry.id, {
+      ...fileMetadata(bytes),
+      sampleRate: productionWave.sampleRate,
+      channels: productionWave.channels,
+      bitsPerSample: productionWave.bitsPerSample,
+      frameCount: productionWave.frameCount,
+      actualDurationMs: Math.round((productionWave.frameCount / productionWave.sampleRate) * 1_000),
+      encoding: "pcm-signed-16",
+      placeholder: false,
+      generated: false,
+    });
+  } else {
+    detailsById.set(entry.id, waveMetadata(bytes, entry, true));
+  }
 });
 
 for (const entry of manifest.audio.filter(({ category }) => category === "voice")) {

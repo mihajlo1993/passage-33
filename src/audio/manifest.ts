@@ -76,10 +76,14 @@ export const impulseManifest: readonly ImpulseAssetRecord[] = metadata.impulses.
   }),
 );
 
+/** The mask-off piece, played by the trophy screen outside the engine graph. */
+export const ENDING_MUSIC_PATH = "/audio/music/ending.mp3";
+
 /** Complete public audio inventory for Workbox/config integration. */
 export const audioPrecachePaths = [
   ...audioManifest.map(({ publicPath }) => publicPath),
   ...impulseManifest.map(({ publicPath }) => publicPath),
+  ENDING_MUSIC_PATH,
 ] as const;
 
 export const audioAssets = audioManifest;

@@ -160,9 +160,16 @@ test("one-shots on disk are exact PCM16 mono 44.1 kHz at their target peaks", ()
     assert.equal(asset.fileName, fileName);
     assert.equal(asset.durationMs, durationMs);
     assert.equal(asset.placeholder, false);
-    assert.equal(asset.generated, true);
     const wave = parseWave(readFileSync(path.join(publicRoot, fileName)));
     assert.equal(wave.sampleRate, 44_100, id);
+    if (asset.generated === false) {
+      // Production audio (hand-produced replacement): format is enforced,
+      // exact duration and design peaks are the producer's choice.
+      assert.equal(wave.channels ?? 1, 1, id);
+      assert.ok(wave.frameCount > 0, id);
+      continue;
+    }
+    assert.equal(asset.generated, true);
     assert.equal(wave.frameCount * 1_000, durationMs * wave.sampleRate, id);
     const peak = peakAbs(wave.samples);
     const targetDb = id.startsWith("stinger-") ? -3 : -6;
@@ -234,7 +241,7 @@ test("public inventory exactly matches local precache paths", () => {
   const actual = listFiles(publicRoot).sort();
   const declared = audioPrecachePaths.map((value) => value.replace(/^\/audio\//, "")).sort();
   assert.deepEqual(actual, declared);
-  assert.equal(actual.length, 21);
+  assert.equal(actual.length, 22);
 });
 
 test("generator check and voice report pass without generated payload modules", () => {
