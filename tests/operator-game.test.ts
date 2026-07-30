@@ -28,45 +28,31 @@ import {
 
 test("operator resolution bypasses act, item, prerequisite, and mechanism gates", () => {
   const initial = createDefaultGameState(1_000);
-  const roomScare = resolvePinForOperator(initial, 18, 2_000);
+  const roomScare = resolvePinForOperator(initial, 13, 2_000);
 
-  assert.deepEqual(roomScare.resolvedPins, [18]);
+  assert.deepEqual(roomScare.resolvedPins, [13]);
   assert.equal(roomScare.health, 70);
   assert.equal(roomScare.act, 1);
 
-  const cabinet = resolvePinForOperator(roomScare, 8, 2_100);
-  assert.ok(cabinet.inventory.includes(itemIds.chemFluid));
-  assert.equal(cabinet.lastSavePin, 8);
+  const cabinet = resolvePinForOperator(roomScare, 6, 2_100);
+  assert.ok(cabinet.inventory.includes(itemIds.specimenJar));
+  assert.equal(cabinet.lastSavePin, null);
 });
 
 test("operator resolution preserves grants, trophy time, and final-present completion", () => {
   let state = createDefaultGameState(1_000);
-  state = setItemForOperator(state, itemIds.candleLit, true);
-  state = resolvePinForOperator(state, 23, 2_000);
-  assert.equal(state.inventory.includes(itemIds.candleLit), false);
+  state = resolvePinForOperator(state, 1, 2_000);
+  assert.ok(state.inventory.includes(itemIds.keycard));
 
-  state = resolvePinForOperator(state, 2, 2_100);
-  state = resolvePinForOperator(state, 8, 2_200);
-  assert.equal(state.lastSavePin, 8);
-
-  state = resolvePinForOperator(state, 26, 2_300);
+  state = resolvePinForOperator(state, 19, 2_300);
   assert.equal(state.trophyAt, 2_300);
-  assert.equal(state.finishedAt, null);
+  assert.equal(state.finishedAt, 2_300);
+  assert.ok(state.inventory.includes(itemIds.carbonator));
 
-  state = resolvePinForOperator(state, 28, 2_400);
-  assert.equal(state.finishedAt, null);
-  state = resolvePinForOperator(state, 27, 2_500);
-  assert.equal(state.finishedAt, 2_500);
-
-  state = unresolvePinForOperator(state, 28);
-  assert.equal(state.trophyAt, 2_300);
-  assert.equal(state.finishedAt, null);
-  state = unresolvePinForOperator(state, 26);
+  state = unresolvePinForOperator(state, 19);
   assert.equal(state.trophyAt, null);
-  assert.ok(state.inventory.includes(itemIds.knife));
-
-  state = unresolvePinForOperator(state, 8);
-  assert.equal(state.lastSavePin, 2);
+  assert.equal(state.finishedAt, null);
+  assert.ok(state.inventory.includes(itemIds.keycard));
 });
 
 test("operator health, inventory, act, status, and reset mutations are deterministic", () => {
@@ -76,18 +62,18 @@ test("operator health, inventory, act, status, and reset mutations are determini
   assert.equal(setHealthForOperator(state, -50).health, 0);
   assert.equal(setHealthForOperator(state, 500).health, 100);
 
-  state = setItemForOperator(state, itemIds.pistol, true);
-  assert.deepEqual(state.inventory, [itemIds.pistol]);
-  state = setItemForOperator(state, itemIds.pistol, false);
+  state = setItemForOperator(state, itemIds.specimenJar, true);
+  assert.deepEqual(state.inventory, [itemIds.specimenJar]);
+  state = setItemForOperator(state, itemIds.specimenJar, false);
   assert.deepEqual(state.inventory, []);
 
   state = setActForOperator(state, 4);
   assert.equal(state.act, 4);
-  assert.equal(currentPinForOperator(state), 19);
+  assert.equal(currentPinForOperator(state), 9);
   assert.equal(currentZoneForOperator(state), "corridor");
 
-  state = resolvePinForOperator(state, 19);
-  assert.equal(currentZoneForOperator(state), "kitchen");
+  state = resolvePinForOperator(state, 9);
+  assert.equal(currentZoneForOperator(state), "balcony");
 
   const reset = resetGameForOperator(9_000);
   assert.equal(reset.act, 1);
@@ -104,7 +90,7 @@ test("the live store advances and cycles sealed-present refusal copy", () => {
   try {
     const hints: string[] = [];
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const result = useGameStore.getState().resolvePin(28, "scan");
+      const result = useGameStore.getState().resolvePin(19, "scan");
       assert.equal(result.ok, false);
       if (result.ok) continue;
       assert.equal(result.reason, "sealed-present");

@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { resolutionModeForPin } from "../src/game/engine";
-import { getPinById } from "../src/pins";
+import { getPinById, pins } from "../src/pins";
+import { IMAGE_AR_PIN_IDS, ROOM_AR_PIN_ID } from "../src/game/phase2Integration";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
@@ -54,21 +55,12 @@ const arComponentCode = combinedSource(
   arCodeFiles.filter((file) => file.endsWith(".tsx")),
 );
 
-test("AR pins and the game engine use the dedicated resolution method", () => {
-  for (const [pinId, sheet] of [[3, "sheet01"], [17, "sheet02"]] as const) {
-    const pin = getPinById(pinId);
-    assert.ok(pin, `pin ${pinId} exists`);
-    assert.equal(pin.resolution, "ar");
-    assert.equal(pin.arTarget, sheet);
-    assert.equal(resolutionModeForPin(pin), "ar");
+test("no pin declares an AR resolution; the AR runtime stays dormant but typed", () => {
+  for (const pin of pins) {
+    assert.notEqual(pin.resolution, "ar", `pin ${pin.id} must not be AR in this graph`);
   }
-
-  const roomPin = getPinById(18);
-  assert.ok(roomPin);
-  assert.equal(roomPin.resolution, "ar");
-  assert.equal(roomPin.scare, "roomMonster");
-  assert.equal(roomPin.arTarget, undefined);
-  assert.equal(resolutionModeForPin(roomPin), "ar");
+  assert.equal(IMAGE_AR_PIN_IDS.length, 0);
+  assert.equal(ROOM_AR_PIN_ID, -1);
 });
 
 test("the removed image-tracking package is absent while build tools stay pinned", () => {
@@ -204,7 +196,7 @@ test("the home driver hands eligible AR pins to /ar without resolving them first
   const preview = indexOfPattern(normalized, /previewPin\(nextPin\.id, mode\)/);
   const navigation = indexOfPattern(
     normalized,
-    /navigate\(mode === "ar" \? "\/ar\?pin=" \+ String\(nextPin\.id\) : "\/tape"\)/,
+    /navigate\("\/ar\?pin=" \+ String\(nextPin\.id\)\)/,
     preview,
   );
 

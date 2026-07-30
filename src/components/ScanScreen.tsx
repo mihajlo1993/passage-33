@@ -4,6 +4,9 @@ import { useState } from "react";
 import { motion } from "@/src/tokens";
 import type { PinResolutionMethod } from "@/src/types";
 import { ArrivalPanel } from "./ArrivalPanel";
+import { ExamineModel } from "./ExamineModel";
+import { getItemModel } from "@/src/models/manifest";
+import { itemById } from "@/src/items";
 import type { PinResolutionResult } from "@/src/game";
 import { useTorch } from "@/src/device";
 import { ScannerView, type ScannerStatus } from "@/src/scanner";
@@ -21,12 +24,22 @@ export interface ScanScreenProps {
  */
 export function ScanScreen({ resolvePin, flushPersistence, navigate }: ScanScreenProps) {
   const [result, setResult] = useState<PinResolutionResult | null>(null);
+  const [pickup, setPickup] = useState<{ name: string; itemId: string } | null>(null);
   const [status, setStatus] = useState<ScannerStatus>("initializing");
   const [cameraError, setCameraError] = useState(false);
   const torch = useTorch();
 
   const handleScan = (pinId: number) => {
-    setResult(resolvePin(pinId, "scan"));
+    const attempt = resolvePin(pinId, "scan");
+    setResult(attempt);
+    if (attempt.ok) {
+      // A mark is a pickup: the first modelled artifact it grants is lifted
+      // into the lens for a closer look before the entry is read.
+      const modelled = attempt.grantedItems.find((itemId) => getItemModel(itemId));
+      if (modelled) {
+        setPickup({ itemId: modelled, name: itemById[modelled]?.name ?? modelled });
+      }
+    }
   };
 
   const continueFromResult = async () => {
@@ -46,6 +59,18 @@ export function ScanScreen({ resolvePin, flushPersistence, navigate }: ScanScree
     setResult(null);
     navigate("/");
   };
+
+  const pickupModel = pickup ? getItemModel(pickup.itemId) : undefined;
+  if (pickup && pickupModel) {
+    return (
+      <ExamineModel
+        itemName={pickup.name}
+        model={pickupModel}
+        onClose={() => setPickup(null)}
+        onUnavailable={() => setPickup(null)}
+      />
+    );
+  }
 
   return (
     <section className="scan-screen" aria-labelledby="scan-title">

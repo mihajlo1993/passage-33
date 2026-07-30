@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KALLAX_KEY_GLYPH_INDEX, kallaxGlyphs } from "@/src/glyphs";
+import { kallaxGlyphs } from "@/src/glyphs";
 import { colours } from "@/src/tokens";
 import { useAudio } from "@/src/audio/useAudio";
 import { GameIcon } from "./GameIcon";
@@ -13,6 +13,13 @@ const WRONG_LINES = [
 ];
 
 export interface GlyphGridProps {
+  correctIndex: number;
+  eyebrow: string;
+  title: string;
+  introCopy: string;
+  solvedCopy: string;
+  confirmLabel: string;
+  solvedLabel: string;
   onSolved: () => void;
   onCancel: () => void;
   onWrongAttempt: () => void;
@@ -23,23 +30,30 @@ export interface GlyphGridProps {
  * Kallax. She matches the mark from the cistern card, and only then does the
  * app tell her to open the physical cell.
  */
-export function GlyphGrid({ onSolved, onCancel, onWrongAttempt }: GlyphGridProps) {
+export function GlyphGrid({
+  correctIndex,
+  eyebrow,
+  title,
+  introCopy,
+  solvedCopy,
+  confirmLabel,
+  solvedLabel,
+  onSolved,
+  onCancel,
+  onWrongAttempt,
+}: GlyphGridProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [attempts, setAttempts] = useState(0);
-  const [feedback, setFeedback] = useState(
-    "Sixteen cells. One wears the mark from the water. Choose with your eyes, not your hopes.",
-  );
+  const [feedback, setFeedback] = useState(introCopy);
   const [solved, setSolved] = useState(false);
   const audio = useAudio();
 
   const confirm = () => {
     if (selected === null || solved) return;
-    if (selected === KALLAX_KEY_GLYPH_INDEX) {
+    if (selected === correctIndex) {
       setSolved(true);
       void audio.play("released");
-      setFeedback(
-        "That one. Open the real cell with the same mark. What is inside was always going to be yours.",
-      );
+      setFeedback(solvedCopy);
       return;
     }
     void audio.play("refused");
@@ -52,8 +66,8 @@ export function GlyphGrid({ onSolved, onCancel, onWrongAttempt }: GlyphGridProps
   return (
     <section className="glyph-grid-screen" aria-labelledby="glyph-title">
       <header className="lock-screen__heading">
-        <p className="eyebrow">THE KALLAX // SIXTEEN CELLS</p>
-        <h1 id="glyph-title">Match the Mark</h1>
+        <p className="eyebrow">{eyebrow}</p>
+        <h1 id="glyph-title">{title}</h1>
       </header>
       <p className="host-copy" aria-live="polite">{feedback}</p>
       <div className="glyph-grid" role="group" aria-label="Sixteen Kallax cells">
@@ -62,7 +76,7 @@ export function GlyphGrid({ onSolved, onCancel, onWrongAttempt }: GlyphGridProps
             key={glyph.index}
             className="glyph-cell"
             data-selected={selected === glyph.index}
-            data-solved={solved && glyph.index === KALLAX_KEY_GLYPH_INDEX}
+            data-solved={solved && glyph.index === correctIndex}
             disabled={solved}
             onClick={() => setSelected(glyph.index)}
             aria-label={`Cell ${glyph.index}`}
@@ -82,9 +96,9 @@ export function GlyphGrid({ onSolved, onCancel, onWrongAttempt }: GlyphGridProps
           disabled={selected === null && !solved}
           onClick={solved ? onSolved : confirm}
         >
-          {solved ? "I HAVE OPENED THE CELL" : "CONFIRM THE MARK"}
+          {solved ? solvedLabel : confirmLabel}
         </button>
-        <button className="text-control" onClick={onCancel}>STEP AWAY</button>
+        <button className="text-control" onClick={onCancel}>Step away</button>
       </div>
     </section>
   );

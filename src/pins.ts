@@ -1,13 +1,54 @@
 import { itemIds } from './items';
 import type { ItemId, Pin } from './types';
 
-/**
- * SETUP CONSTANT: change this value if the bathroom cabinet combination is
- * changed. Keep it to exactly three decimal digits.
+/*
+ * THE HOUSE KEEPS THE COUNT
+ *
+ * Before she lived here, the flat was catalogued. The Cadastral Division
+ * surveyed every room, counted every slat and tile and blade, and recorded
+ * one entry it could not classify: SPECIMEN 33, known only by its shadow.
+ * The survey was never closed. Tonight the terminal reopens the file.
+ *
+ * Five chapters. Every gift is guarded by a signature puzzle. QR marks are
+ * artifact pickups, never gates: scanning one lifts an object into the
+ * terminal's custody, and the puzzles decide what happens next.
  */
-export const CABINET_DIAL_CODE = '731';
 
-export const BALCONY_DIAL_WORD = 'LOSER';
+/** SETUP CONSTANT: the admission code embossed on the clearance card edge. */
+export const ADMISSION_CODE = '1993';
+
+/** SETUP CONSTANT: the word the cadastral tiles spell when ordered and flipped. */
+export const TILE_WORD = 'SALT';
+
+/** SETUP CONSTANT: the three letters the shadow arms select on the plate. */
+export const CAST_WORD = 'RAT';
+
+/**
+ * SETUP CONSTANTS: the census. Verify each count in the real flat before the
+ * night and correct these numbers; the printed census card asks exactly these
+ * five questions in this order. Every value must land between 1 and 50.
+ */
+export const CENSUS_ANSWERS = [7, 12, 14, 21, 19] as const;
+
+/** SETUP CONSTANTS: the two star numbers framed by the crest windows (1-12). */
+export const STAR_ANSWERS = [4, 9] as const;
+
+/** The hidden rule of the six lines. Never printed, never spoken. */
+export const LINE_STEP = 33;
+export const STAR_STEP = 3;
+
+/**
+ * SETUP CONSTANT: the ring date, DDMMYY. The coat tag prints it MIRRORED with
+ * the fifth digit missing; only one digit makes it a real date, and that digit
+ * is hers. Default is the night itself.
+ */
+export const RING_CODE = '310726';
+
+/** Which of the sixteen glyphs the arm tag points to via the seal orientation. */
+export const TAG_GLYPH_INDEX = 7;
+
+/** Kallax cell (1-16, counted from the left) hiding the rolled mat. */
+export const MAT_CELL_INDEX = 6;
 
 export interface DialPinConfig {
   readonly kind: 'numeric' | 'alpha';
@@ -19,534 +60,395 @@ export interface DialPinConfig {
   readonly hints: readonly string[];
 }
 
-/**
- * Lock configuration for every dial-resolved pin. Screens read this table;
- * they never carry their own pin-id literals or copy.
- */
 export const dialConfigByPin: Readonly<Partial<Record<number, DialPinConfig>>> = {
-  8: {
+  2: {
     kind: 'numeric',
-    value: CABINET_DIAL_CODE,
-    title: 'On-Screen Dial',
+    value: ADMISSION_CODE,
+    title: 'Admission',
     hostText:
-      'The cabinet kept only the square. The mirror introduced three figures. Turn the wheels here on the screen.',
+      'The clearance card carries its number on the edge, where numbers go when they are not for everyone. Hold the card against the light of the lens and read the rim.',
     wrongText:
-      'Those are three numbers, certainly. They are not my three. Again.',
+      'Entry refused. The Division does not repeat itself. Read the edge again.',
     hints: [
-      'The mirror gave you three figures, and it gave them in an order. The order was part of the gift.',
-      'Steam remembers what fingers wrote. If the figures have faded, go back to the glass and breathe again.',
-      'Very well, since it is your birthday: seven, three, one. Tell no one I said so.',
+      'Numbers hide on edges. Turn the card in the lens until the light grazes it.',
+      'Four digits, embossed, not printed. The year the survey began.',
+      'The survey began in 1993. Enter it.',
     ],
   },
-  16: {
+  4: {
     kind: 'alpha',
-    value: BALCONY_DIAL_WORD,
-    title: 'Balcony Padlock',
+    value: TILE_WORD,
+    title: 'The Tile Word',
     hostText:
-      'Five letters. The tape was almost embarrassingly clear. Spell what our previous guest became.',
+      'Four tiles were issued, one to a room. The seal fixed their order. Their frames fix their faces: square meets square, six meets six. When the tiles agree, their corners speak.',
     wrongText:
-      'A word, but not the one the balcony enjoys. The shackle is still listening.',
+      'The tiles disagree with you. Look at the frames, not the pictures.',
     hints: [
-      'It is not a name. It is a verdict.',
-      'The tape spelled it out on a padlock exactly like this one. Five letters, one loser.',
-      'L, O, S, E, R. What he became. What you are not.',
+      'Lay the tiles in the order the seal core showed. Physically. On the floor.',
+      'Adjacent frames must match shape. Two of your tiles are lying face down.',
+      'Read the small corner letters left to right once every frame agrees.',
+    ],
+  },
+  7: {
+    kind: 'alpha',
+    value: CAST_WORD,
+    title: 'The Cast',
+    hostText:
+      'The specimen speaks in shadow. Floor height, three arms, the shortest first. Read the wall, not the screen.',
+    wrongText:
+      'That is not what the wall says. Kill the lights and look again.',
+    hints: [
+      'Lights off. Caster on its floor mark. Torch flat on the cradle mark.',
+      'Three of the eight letters are touched by shadow. Order by arm length, shortest first.',
+      'The wall spells a small grey animal. Three letters.',
+    ],
+  },
+  15: {
+    kind: 'numeric',
+    value: RING_CODE,
+    title: 'The Ring',
+    hostText:
+      'Six wheels. The pocket tag gave you five figures, written the way mirrors write. One figure is missing. Only one number makes the date real.',
+    wrongText:
+      'That date never happened. One of them did.',
+    hints: [
+      'The tag reads correctly in the bathroom mirror. You have done this before.',
+      'Five digits recovered, one hole. It is a date: day, month, year.',
+      'The missing figure is the age the file was opened for.',
     ],
   },
 };
 
-/** The pin whose scan routes to the tape playback screen before resolving. */
-export const TAPE_PLAYBACK_PIN_ID = 12;
+/** Retired routes; kept as inert constants so older code paths stay typed. */
+export const TAPE_PLAYBACK_PIN_ID = -1;
+export const RELIGHT_ACTION_PIN_ID = -2;
 
-/** The in-app relight action; it has no printed code. */
-export const RELIGHT_ACTION_PIN_ID = 24;
-
-export const NON_PRINTED_PIN_IDS = new Set([RELIGHT_ACTION_PIN_ID]);
-export const TROPHY_PIN_ID = 26;
-export const SEALED_PRESENT_PIN_ID = 28;
-export const FINAL_PRESENT_PIN_IDS = [27, SEALED_PRESENT_PIN_ID] as const;
+export const TROPHY_PIN_ID = 19;
+export const SEALED_PRESENT_PIN_ID = 19;
+export const FINAL_PRESENT_PIN_IDS = [19] as const;
 
 export const pins: readonly Pin[] = [
+  // ---- CHAPTER 1: ADMISSION ----
   {
     id: 1,
     act: 1,
-    zone: 'corridor',
-    name: 'Waking',
+    zone: 'entry',
+    name: 'The Clearance Card',
     requires: [],
-    grants: [],
-    kind: 'flavour',
+    grants: [itemIds.keycard, itemIds.file01],
+    kind: 'item',
     resolution: 'scan',
     objective:
-      'Find the printed mark at the far end of the corridor, where you woke. The camera knows what to do with it.',
+      'A mark is fixed to the front door. Scan it. The Division left a card for whoever came next.',
     bodyText:
-      'There she is. Awake at last, birthday girl. Thirty-three years old today, and the house has been holding its breath all morning. Everything that happens next, I arranged for you. Walk the corridor slowly. Anticipation is the only gift I get to keep.',
+      'Entry 001. One laminated clearance card, Cadastral Division, issue date illegible. The bearer is advised that the survey of this address was opened and never closed. Examine the card. Edges first. The Division always kept its numbers on the edges.',
+    refusalHint:
+      'The terminal accepts nothing before the card. The door mark is waiting.',
   },
   {
     id: 2,
     act: 1,
-    zone: 'corridor',
-    name: 'Item Locker',
-    requires: [],
+    zone: 'entry',
+    name: 'Admission',
+    requires: [itemIds.keycard],
     requiresPin: [1],
-    grants: [itemIds.knife, itemIds.note01],
-    kind: 'save',
-    resolution: 'action',
+    grants: [],
+    kind: 'puzzle',
+    resolution: 'dial',
     objective:
-      'There is a box in the corridor that was never there before. Open it and take what I packed for you.',
-    actionLabel: 'OPEN THE BOX',
+      'The card carries a number where numbers are kept from casual eyes. Find it, then give it to the terminal.',
     bodyText:
-      'A knife and a note, exactly where I promised myself you would find them. Take both. Every celebration needs something sharp, and every guest deserves instructions. The little deck beside you keeps memories better than people do. Give it this one.',
+      'Admission granted. Entry 002: the occupant has accepted the survey. The Division thanks you and regrets that it cannot stop what resumes now. The living room desk was surveyed last. Its underside was not.',
   },
+
+  // ---- CHAPTER 2: THE CADASTRE (guards the mat) ----
   {
     id: 3,
-    act: 1,
-    zone: 'corridor',
-    name: 'Marked Wall',
+    act: 2,
+    zone: 'living',
+    name: 'The Survey Seal',
     requires: [],
     requiresPin: [2],
-    grants: [],
-    kind: 'item',
-    arTarget: 'sheet01',
-    resolution: 'ar',
+    grants: [itemIds.sealCore, itemIds.file02],
+    kind: 'puzzle',
+    resolution: 'cube',
     objective:
-      'Now hold the camera to the drawing on the corridor wall. Let it settle.',
+      'Under the lip of the desk, a second mark. The surveyor sealed his findings in bronze. The note that came with it says: the surveyor sets his stone with the hall at heaven.',
     bodyText:
-      'Hold the camera to my mark and let the shape settle. The last guest rushed this part. He was in such a hurry to be finished with the evening that he never saw what the wall was offering him. You were never like that. Look properly.',
+      'The seal opens. Entry 019: four rooms were tiled for reference. The core fixes their order. The tiles were left where they were cut; each room keeps its own. Collect all four before you ask the terminal anything.',
+    refusalHint:
+      'The seal will not open for a stone set wrong. The hall belongs at heaven.',
   },
   {
     id: 4,
     act: 2,
-    zone: 'bathroom',
-    name: 'Threshold',
-    requires: [],
+    zone: 'living',
+    name: 'The Cadastral Tiles',
+    requires: [itemIds.sealCore],
     requiresPin: [3],
     grants: [],
-    kind: 'flavour',
-    resolution: 'action',
+    kind: 'puzzle',
+    resolution: 'dial',
     objective:
-      'The bathroom next. Cross the threshold and let the room notice you.',
-    actionLabel: 'CROSS THE THRESHOLD',
+      'Four tiles, four rooms. Lay them in the order the core fixed. Make the frames agree. Then tell the terminal what the corners spell.',
     bodyText:
-      'The bathroom. Every morning you stand in here half-asleep, certain nothing is watching. Tonight the room would like to correct the record. Everything you need is already inside. None of it is where a polite host would leave it.',
+      'Entry 020: the tiles agree. Development of the reference photograph may proceed. The Division notes, without comment, that photographs taken in this flat develop backwards.',
   },
   {
     id: 5,
     act: 2,
-    zone: 'bathroom',
-    name: 'The Mirror',
+    zone: 'living',
+    name: 'The Development',
     requires: [],
     requiresPin: [4],
-    grants: [itemIds.code3],
+    grants: [itemIds.development01, itemIds.giftMat],
     kind: 'puzzle',
     resolution: 'wipe',
     objective:
-      'The mirror keeps three figures for you. Stand in front of the real glass. My screen will do the fogging.',
+      'The reference photograph is fogged. Clear it with your hand. What it shows, it shows the wrong way round.',
     bodyText:
-      'Closer, Melissa. The mirror has kept every version of you it ever held, and tonight it will part with three of its figures. Do not ask the glass questions. Breathe on it, the way you do on cold mornings, and watch what it chooses to repeat.',
+      'Entry 021. The photograph shows a shelf of sixteen mouths. Count the way the mirror taught you. What was rolled and tied and put away is yours; it was always going to be. The Division catalogued it as A FLAT PLACE FOR A SMALL ANIMAL TO RUN.',
   },
+
+  // ---- CHAPTER 3: THE SHADOW OF THE OPERATOR (guards the mouse) ----
   {
     id: 6,
-    act: 2,
-    zone: 'bathroom',
-    name: 'The Cistern',
+    act: 3,
+    zone: 'kitchen',
+    name: 'The Specimen',
     requires: [],
     requiresPin: [5],
-    grants: [itemIds.kallaxGlyph],
+    grants: [itemIds.specimenJar, itemIds.file03],
     kind: 'item',
-    resolution: 'action',
+    resolution: 'scan',
     objective:
-      'Lift the cistern lid. In the dark water there is a card with one mark on it. Fish it out before you think too hard.',
-    actionLabel: 'REACH INTO THE WATER',
+      'The kitchen keeps its mark inside the top drawer. Scan it. Entry 033 could not be classified, but something of it was preserved.',
     bodyText:
-      'Reach into the cistern. Yes. In. There is a card waiting in the dark water with one mark on it, and one square shelf in this flat wears the same mark. The last guest checked every cell except the right one. He did not trust the water. Trust the water.',
+      'Entry 033. SPECIMEN. Classification pending since the survey opened. The jar preserves the only cast the Division managed to take. Turn it in the light. The tag is on the underside, where tags end up.',
+    refusalHint:
+      'The jar comes first. The kitchen drawer keeps its mark.',
   },
   {
     id: 7,
-    act: 2,
-    zone: 'bathroom',
-    name: 'The Shower',
-    requires: [],
+    act: 3,
+    zone: 'corridor',
+    name: 'The Cast',
+    requires: [itemIds.specimenJar],
     requiresPin: [6],
-    grants: [itemIds.pistol],
-    kind: 'item',
-    resolution: 'action',
+    grants: [],
+    kind: 'puzzle',
+    resolution: 'dial',
     objective:
-      'Behind the shower curtain, something heavy is waiting. Take it before you leave the tiles.',
-    actionLabel: 'PULL BACK THE CURTAIN',
+      'What is in the jar was catalogued by its shadow. Cast it again: the folded arms on the floor mark, your torch on the cradle mark, all other lights dead. Read the wall.',
     bodyText:
-      'Behind the curtain. Heavy, oiled, and not remotely festive. I would apologise for the tone of this particular present, but you will want it before the night is done, and I have never once heard you complain about being prepared.',
+      'Entry 034: the shadow answers. The Division notes that the specimen was small, grey, and fond of running along flat places. A field recording was made the night it was catalogued. Play it standing still.',
   },
   {
     id: 8,
-    act: 2,
-    zone: 'bathroom',
-    name: 'Cabinet',
-    requires: [itemIds.code3],
-    requiresPin: [7],
-    grants: [itemIds.chemFluid],
-    kind: 'save',
-    resolution: 'dial',
-    refusalHint:
-      'The wheels want the mirror\'s three figures, in the mirror\'s order. If the glass has not introduced them yet, go back and breathe on it.',
-    objective:
-      'The cabinet\'s little lock lives on your screen. The mirror already made the introductions.',
-    bodyText:
-      'Three wheels, and a mirror that has already made the introductions. Set them in the order the glass remembers and the cabinet gives up its chemistry. Then let the deck take another memory. You are doing better than he did. I keep the comparisons honest.',
-  },
-  {
-    id: 9,
     act: 3,
     zone: 'entry',
-    name: 'The Turn',
+    name: 'The Field Recording',
+    requires: [],
+    requiresPin: [7],
+    grants: [itemIds.fieldRecording, itemIds.giftMouse],
+    kind: 'puzzle',
+    resolution: 'action',
+    actionLabel: 'Play the recording',
+    beat: 'listen',
+    objective:
+      'The terminal has recovered the field recording. Play it. Recordings from this flat are clearest near the front door, where things leave.',
+    bodyText:
+      'Entry 035, appended in a later hand: the specimen was never caught. It was REPLACED. A small grey runner, boxed and counted from the left of where the shoes sleep, third of its row. The Division does not explain itself. Collect it.',
+  },
+
+  // ---- CHAPTER 4: SIX LINES (guards the slips) ----
+  {
+    id: 9,
+    act: 4,
+    zone: 'balcony',
+    name: 'The Reliquary',
     requires: [],
     requiresPin: [8],
-    grants: [],
-    kind: 'scare',
-    scare: 'torchKill',
-    damage: 20,
-    resolution: 'action',
+    grants: [itemIds.reliquary, itemIds.file04],
+    kind: 'item',
+    resolution: 'scan',
     objective:
-      'Step out of the bathroom into the entry. Slowly. The dark wants a proper look at you.',
-    actionLabel: 'STEP INTO THE DARK',
-    beat: 'blackout',
+      'The balcony planter has kept a mark dry in a sleeve since the survey. Scan it. The Division buried its arithmetic where things grow.',
     bodyText:
-      'Lights out. Forgive me. No. I planned this for weeks and I regret nothing. Stand still if it helps. The dark in this flat is mine, and it has waited all day to meet you. The last guest ran. The corridor still remembers how he sounded.',
+      'Entry 040. One reliquary, five numbered slots, twelve notches at the rim. The lid is engraved: FIVE WOUNDS, TWO STARS. THE HOUSE KEEPS THE COUNT. The census card tells you where the house keeps it.',
+    refusalHint:
+      'The reliquary first. The planter has been patient for years; it can wait one more minute.',
   },
   {
     id: 10,
-    act: 3,
-    zone: 'entry',
-    name: 'Sealed Exit',
-    requires: [],
+    act: 4,
+    zone: 'living',
+    name: 'The Census',
+    requires: [itemIds.reliquary],
     requiresPin: [9],
     grants: [],
-    kind: 'flavour',
-    resolution: 'action',
+    kind: 'puzzle',
+    resolution: 'census',
     objective:
-      'Try the front door if you must. It has instructions not to embarrass you.',
-    actionLabel: 'TRY THE FRONT DOOR',
+      'Five questions, five rooms, five numbers. Nothing here is a riddle; it is arithmetic and legwork. The house has never once been miscounted.',
     bodyText:
-      'The front door has been told it is furniture tonight. Do not take it personally. Everything worth having is already on this side of it. I made very sure of that before you woke.',
+      'Entry 041: five wounds filled. The house confirms its own count, as it always has, as it did the first time, when the surveyor wrote that the rooms seemed to be counting him back.',
   },
   {
     id: 11,
-    act: 3,
-    zone: 'entry',
-    name: 'Coat Pocket',
+    act: 4,
+    zone: 'living',
+    name: 'The Two Stars',
     requires: [],
     requiresPin: [10],
-    grants: [itemIds.tape],
-    kind: 'item',
-    resolution: 'action',
+    grants: [],
+    kind: 'puzzle',
+    resolution: 'wheel',
     objective:
-      'There is a coat on the hooks that neither of you owns. Its pocket hangs heavier than it should.',
-    actionLabel: 'CHECK THE POCKET',
+      'The stars are not counted. They are aligned. Hold the crest card flat against the glass of the terminal and turn the wheel until the notches marry.',
     bodyText:
-      'Check the coat. Not your coat. The pocket has been carrying a home movie for a long time and has grown tired of the weight. Take it somewhere with a screen. Every household has one tape it never labels honestly.',
+      'Entry 042: two stars fixed. The Division notes that the crest predates the building. It does not note by how much.',
   },
   {
     id: 12,
-    act: 3,
+    act: 4,
     zone: 'living',
-    name: 'The Tape',
-    requires: [itemIds.tape],
+    name: 'The Six Lines',
+    requires: [],
     requiresPin: [11],
-    grants: [itemIds.knowLoser],
+    grants: [itemIds.sixLines, itemIds.giftSlips],
     kind: 'puzzle',
-    refusalHint:
-      'You arrived at the screening empty-handed. Check the coat by the front door; its pocket has been keeping something for you.',
-    resolution: 'action',
+    resolution: 'lines',
     objective:
-      'Take what you found to the sofa and press play when you are sitting comfortably. Comfort will not last.',
-    actionLabel: 'PRESS PLAY',
+      'The file holds six lines of numbers. The first is yours already; the last is written. The four between are missing, and the rule that fills them was never recorded. Something happened five times.',
     bodyText:
-      'Press play. The guest before you left his finest hour on this tape. All of it true, none of it flattering. Watch what the padlock decided he was. He left you one useful word, and it cost him everything he came here to win.',
+      'Entry 043: the lines agree with the ledger. Transcribe all six onto the paper slips; the Division has always considered them a wager against the future. The last number of the last line counts a mouth on the shelf of sixteen. What waits inside is red and blue and twice lucky.',
   },
+
+  // ---- CHAPTER 5: THE PARTY REMEMBERS EVERYTHING (finale) ----
   {
     id: 13,
-    act: 3,
-    zone: 'living',
-    name: 'The Cushion',
+    act: 5,
+    zone: 'corridor',
+    name: 'The Threshold',
     requires: [],
     requiresPin: [12],
-    grants: [itemIds.keycardRed, itemIds.theAltar],
-    kind: 'item',
+    grants: [],
+    kind: 'scare',
+    damage: 30,
     resolution: 'action',
+    actionLabel: 'Put the lights out',
+    beat: 'threshold',
     objective:
-      'You are already close to the next one. The seat you always take. Lift the cushion properly.',
-    actionLabel: 'LIFT THE CUSHION',
+      'The last page of the survey opens in the dark. Put out every light in the flat. Walk the corridor once, end to end, with the torch off. The terminal will know.',
     bodyText:
-      'Under the seat you always take. A red card, one half of a paired invitation, and beneath it, flat and patient, the Altar. Lift the cushion properly and take both into your keeping. The ceremony they belong to is closer than you think.',
+      'Entry 099. The corridor measured the same in both directions, which the surveyor noted was no longer true at night. Something has been left on the soft furniture. Three tags. The Division tags what it means to keep.',
   },
   {
     id: 14,
-    act: 3,
+    act: 5,
     zone: 'living',
-    name: 'The Kallax',
-    requires: [itemIds.kallaxGlyph],
+    name: 'The Tags',
+    requires: [],
     requiresPin: [13],
-    grants: [itemIds.keycardBlue, itemIds.theHand],
+    grants: [itemIds.coatTags],
     kind: 'puzzle',
-    refusalHint:
-      'Bare fingers will not choose the right cell. The card in the cistern knows which square; go and get your hand wet.',
     resolution: 'glyphs',
     objective:
-      'The Kallax is holding its breath. Sixteen cells, one wet little mark. Choose on my screen first; then open the real cell.',
+      'Your own coat, tagged at the arm like a specimen. The arm tag shows the seal, set the way the surveyor set it. Which glyph does it fix? Choose on the terminal.',
     bodyText:
-      'Sixteen cells, and one of them wears your wet little mark. Inside, the blue half of the invitation and the Hand. Yes, a hand. It will answer to yours and no one else\'s. The house has strange ideas about gifts. So does your Host.',
+      'Entry 100: the arm concedes its glyph. The pocket tag is written in mirror-hand and incomplete. The hem tag holds a single film frame. Keep it within reach. The reel is missing exactly one frame, and it is that one.',
   },
   {
     id: 15,
-    act: 3,
-    zone: 'living',
-    name: 'Field Desk',
-    requires: [],
+    act: 5,
+    zone: 'bathroom',
+    name: 'The Ring',
+    requires: [itemIds.coatTags],
     requiresPin: [14],
-    grants: [itemIds.knowKitchen],
+    grants: [],
     kind: 'puzzle',
-    resolution: 'shadow',
+    resolution: 'dial',
     objective:
-      'The field desk in the living room. Lay your torch flat against the paper and rake the light sideways.',
+      'Six wheels want a date. The pocket tag gave five of its figures, mirror-written. The sixth was left out on purpose. Only one number makes the date real.',
     bodyText:
-      'Lay the torch flat against the desk and let the light rake sideways. Pressed writing throws a shadow when the angle is cruel enough. The last guest held his light straight above it, like a man reading a menu. He remained hungry.',
+      'Entry 101: the date is accepted. The Division wrote it down thirty-three years ago and has been waiting for the calendar to agree. Listen: the lullaby in the walls has corrected its tempo.',
   },
   {
     id: 16,
-    act: 3,
+    act: 5,
     zone: 'living',
-    name: 'Balcony Door',
-    requires: [itemIds.knowLoser],
+    name: 'The Music Box',
+    requires: [],
     requiresPin: [15],
     grants: [],
-    kind: 'gate',
-    resolution: 'dial',
-    refusalHint:
-      'The padlock listens for one word, and only the tape can teach it. Watch the screening to its end.',
+    kind: 'puzzle',
+    resolution: 'box',
     objective:
-      'The balcony padlock takes one word. You watched a man become it.',
+      'Five cylinders, one scratch each. IT REMEMBERS YOUR FIRST LINE.',
     bodyText:
-      'The padlock out here has a vocabulary of exactly one word, and the tape has already taught it to you. Spell what he became. Then step out and breathe. You have earned one cold, honest breath before the finale begins.',
+      'Entry 102: the box plays clean. The tune is the one the surveyor heard through the party wall on his last night here, and could never afterwards stop hearing. It is, he noted, a birthday song slowed to the speed of waiting.',
   },
   {
     id: 17,
-    act: 3,
-    zone: 'balcony',
-    name: 'The Planter',
-    requires: [],
+    act: 5,
+    zone: 'living',
+    name: 'The Reel',
+    requires: [itemIds.coatTags],
     requiresPin: [16],
-    grants: [itemIds.herb, itemIds.valve],
-    kind: 'item',
-    arTarget: 'sheet02',
-    resolution: 'ar',
+    grants: [itemIds.filmReel],
+    kind: 'puzzle',
+    resolution: 'reel',
     objective:
-      'Out on the balcony, the planter has been growing something for you. Let the camera see what took root.',
+      'Six frames. Five belong to tonight; the sixth is in your hand, stamped at the hem. Put the evening in the order it happened. The empty frame goes last. The evening is not over.',
     bodyText:
-      'The planter has been growing your insurance since spring. Take the herb. Study the valve. The draught you are about to meet is machinery pretending to be weather, and machinery can be made to stop. I planted everything here except the part that matters.',
+      'Entry 103: the reel is complete and the projector agrees. The survey has recorded everything it was opened to record. One development remains. It is the one the Division kept for itself.',
   },
   {
     id: 18,
-    act: 3,
-    zone: 'living',
-    name: 'Re-entry',
-    requires: [itemIds.pistol],
+    act: 5,
+    zone: 'bathroom',
+    name: 'The Last Development',
+    requires: [],
     requiresPin: [17],
-    grants: [],
-    kind: 'scare',
-    scare: 'roomMonster',
-    resolution: 'ar',
-    damage: 30,
-    refusalHint:
-      'You walked in on our guest empty-handed. The shower left you something heavy for exactly this introduction. He will wait. He enjoys waiting.',
+    grants: [itemIds.development02],
+    kind: 'puzzle',
+    resolution: 'wipe',
     objective:
-      'Come back inside through the balcony door. Bring the heavy present from the shower. The living room has a guest.',
+      'One photograph left. Clear it. This one develops the right way round; the Division decided you had earned that.',
     bodyText:
-      'Back inside. Slowly. The living room acquired a guest while you were out breathing my cold air, and nobody told him it is your birthday. You are carrying the shower\'s heavy present. Use it. He hates being ignored far more than he hates being shot.',
+      'Entry 104. The photograph shows a bath, a drawn curtain, and behind the curtain a machine for putting the sparkle into water. The final mark is on its wrapping. The file is ready to close.',
   },
   {
     id: 19,
-    act: 4,
-    zone: 'kitchen',
-    name: 'Kitchen Door',
-    requires: [
-      itemIds.keycardRed,
-      itemIds.keycardBlue,
-      itemIds.knowKitchen,
-    ],
+    act: 5,
+    zone: 'bathroom',
+    name: 'Classification',
+    requires: [],
     requiresPin: [18],
-    grants: [],
-    kind: 'gate',
-    refusalHint:
-      'This door wants the red half, the blue half, and the desk\'s route. Arrive with all three, or do not arrive.',
-    resolution: 'slot',
-    objective:
-      'The kitchen door wants both halves of the invitation. Slot them on my screen, red before blue.',
-    bodyText:
-      'Both halves of the invitation, presented the way the desk taught you. The kitchen has been patient with you. So has your supper. So, frankly, have I, and patience was never the strongest part of my character.',
-  },
-  {
-    id: 20,
-    act: 4,
-    zone: 'kitchen',
-    name: 'Glass Mixture',
-    requires: [itemIds.herb, itemIds.chemFluid],
-    requiresPin: [19],
-    grants: [itemIds.firstAid],
-    kind: 'craft',
-    refusalHint:
-      'The glass wants both halves of the medicine: something grown and something poured. Half a recipe is only a poison, and I want you standing at the end.',
-    resolution: 'action',
-    objective:
-      'A glass, the grown thing, the poured thing. Mix them at the kitchen counter and keep the result within reach.',
-    actionLabel: 'MIX THE GLASS',
-    beat: 'mix',
-    bodyText:
-      'Herb first, fluid second. Put them in a glass, mix, and drink it down when the edge gets close. It will taste like a garden fire, and it will pull you back. Once. That sound is your own heart. I checked.',
-  },
-  {
-    id: 22,
-    act: 4,
-    zone: 'kitchen',
-    name: 'Behind You',
-    requires: [],
-    requiresPin: [20],
-    grants: [],
-    kind: 'scare',
-    scare: 'closeQuarters',
-    damage: 25,
-    resolution: 'action',
-    objective:
-      'Stand at the kitchen counter, face the window, and do not turn around until I say so.',
-    actionLabel: 'I AM READY',
-    beat: 'behindYou',
-    bodyText:
-      'Do not finish reading this. Turn around first. There. He stood close enough to count your eyelashes, and all he did was watch, because I asked nicely and I outrank him. That was the last favour I call in tonight. Steady hands now. The candle is next.',
-  },
-  {
-    id: 21,
-    act: 4,
-    zone: 'kitchen',
-    name: 'The Flame',
-    requires: [],
-    requiresPin: [22],
-    grants: [itemIds.candleLit],
-    kind: 'item',
-    resolution: 'action',
-    objective:
-      'The candle on the kitchen table. Light it. The matches are in the drawer where matches always live.',
-    actionLabel: 'LIGHT THE CANDLE',
-    bodyText:
-      'Light the candle. One flame standing in for thirty-two absent friends. Guard it like it owes you money. The kitchen has opinions about open fire, and the loudest of them hangs on a wall, spinning, waiting to be introduced.',
-  },
-  {
-    id: 23,
-    act: 5,
-    zone: 'kitchen',
-    name: 'The Draught',
-    requires: [itemIds.candleLit],
-    requiresPin: [21],
-    grants: [],
-    kind: 'scare',
-    resolution: 'action',
-    objective:
-      'Carry the flame across the kitchen. Walk as if the room were not watching.',
-    actionLabel: 'CARRY THE FLAME',
-    beat: 'carry',
-    bodyText:
-      'Out. Just like that. One breath of moving air, and your little wish is smoke. I am nearly sorry. I needed you to feel it go out once, so that keeping it alive would mean something. Nothing in the dark behind you is new. Go and find another light.',
-  },
-  {
-    id: 24,
-    act: 5,
-    zone: 'kitchen',
-    name: 'Relight',
-    requires: [],
-    requiresPin: [23],
-    grants: [itemIds.candleLit],
-    kind: 'item',
-    resolution: 'action',
-    objective:
-      'The matches again. This time cup your hand around the little life.',
-    bodyText:
-      'Strike. Cup. Shield. The flat has learned what your hands look like when they are protecting something, and so have I. This time, the flame travels with an escort.',
-  },
-  {
-    id: 25,
-    act: 5,
-    zone: 'kitchen',
-    name: 'The Fan',
-    requires: [itemIds.valve],
-    requiresPin: [24],
-    grants: [itemIds.fanOff],
-    kind: 'puzzle',
-    refusalHint:
-      'The fan cannot be argued with bare-handed. The balcony planter holds the piece that knows how it dies.',
-    resolution: 'valve',
-    objective:
-      'The fan. You know the one; it has been moving air at you all evening. Its valve is on my screen.',
-    bodyText:
-      'The draught has a source. Switch it off. Yes, the real fan, the one moving the air. The planter already told you it could be stopped, and you are carrying the how. Listen. Blades surrendering: the house admitting it cannot take this from you anymore. Nothing between you and the wish now but your own two feet.',
-  },
-  {
-    id: 26,
-    act: 5,
-    zone: 'kitchen',
-    name: 'Thirty-Three Candles',
-    requires: [itemIds.candleLit, itemIds.fanOff],
-    requiresPin: [25],
-    grants: [],
-    kind: 'win',
-    refusalHint:
-      'The wish needs a living flame and dead air. You are missing at least one, and the kitchen knows which.',
-    resolution: 'action',
-    objective:
-      'Bring the living flame into the still air and make the wish, Melissa.',
-    actionLabel: 'MAKE THE WISH',
-    beat: 'hold',
-    bodyText:
-      'Bring the flame into the still air and make the wish. Picture the other thirty-two candles: every year that carried you here, to my house, to my game, to the end of it. You won. He never did. Two last presents are unlocked: the box where you woke, and the paper in the kitchen. The house is finished being cruel.',
-  },
-  {
-    id: 27,
-    act: 5,
-    zone: 'corridor',
-    name: 'Full Circle',
-    requires: [],
-    requiresPin: [26],
-    grants: [itemIds.note02],
-    kind: 'flavour',
-    resolution: 'scan',
-    objective:
-      'The corridor box, one more time. It kept something back. The mark on its lid is the second to last I ever printed.',
-    bodyText:
-      'The corridor box, back where you woke. Inside is the last thing I ever hid from you: a letter. Read it in good light, all the way to the signature. It was not written in the Host\'s hand. It never was.',
-  },
-  {
-    id: SEALED_PRESENT_PIN_ID,
-    act: 5,
-    zone: 'kitchen',
-    name: 'The Present',
-    requires: [],
-    requiresPin: [26],
     grants: [itemIds.carbonator],
-    kind: 'sealed',
+    kind: 'win',
+    resolution: 'scan',
     scannableFromAct: 4,
     earlyRefusals: [
-      'Already? Delightful. I know exactly what is under that paper. The birthday girl may open it after the candles.',
-      'Back at the ribbon. Curious birthday girl. I know what is inside. I am still not telling.',
-      'You do make waiting look difficult. The birthday present stays sealed until the wish. I chose it myself.',
-      'Again? Wonderful. Your curiosity is the best part of this party. Candles first. Then the paper.',
+      'The file is still open. The Division closes nothing out of order.',
+      'Again at the wrapping. The survey admires persistence and remains unmoved.',
+      'Not yet. Four entries stand between you and the last mark.',
+      'The Division has waited thirty-three years. It can watch you wait a little.',
     ],
-    resolution: 'scan',
     objective:
-      'The kitchen parcel with the ribbon. The mark on the wrapping paper is the last one. The paper tears from the corner.',
+      'Scan the final mark and close the file.',
     bodyText:
-      'Open it. I have known what is under that paper for weeks, and keeping the secret nearly finished me, which would have been a twist worthy of the tape. It sparkles, like the water it makes. Happy birthday, from a man who was never as anonymous as he pretended to be.',
+      'Entry 105, the last. SPECIMEN 33: classification resolved. The shadow on the corridor wall was measured at one metre sixty-something and thirty-three years, and it was yours; it was always yours; the house had simply been keeping it until you grew into it. CLASSIFICATION: BIRTHDAY. The survey is closed. The property is released to the occupant. Everything it counted, it counted for you.',
   },
 ];
 
 export const TOTAL_PIN_COUNT = pins.length;
-/** Only scan-resolved pins print a QR mark: the start, the box, the present. */
+/** Only scan-resolved pins print a QR mark: five artifact pickups. */
 export const printablePins = pins.filter((pin) => (pin.resolution ?? 'scan') === 'scan');
 export const scannablePins = printablePins;
+
+export const NON_PRINTED_PIN_IDS = new Set<number>();
 
 export const pinById: Readonly<Partial<Record<number, Pin>>> =
   Object.fromEntries(pins.map((pin) => [pin.id, pin]));
@@ -555,10 +457,35 @@ export function getPinById(id: number): Pin | undefined {
   return pinById[id];
 }
 
-/** Side effects that intentionally do not alter the Phase 2 Pin contract. */
-export const pinRevocations: Readonly<
-  Partial<Record<number, ItemId[]>>
-> = {
-  23: [itemIds.candleLit],
-};
+/** Side effects that intentionally do not alter the Pin contract. */
+export const pinRevocations: Readonly<Partial<Record<number, ItemId[]>>> = {};
 
+/** EuroMillions line arithmetic: the never-spoken rule of the six lines. */
+export function wrapMain(value: number): number {
+  return ((value - 1) % 50 + 50) % 50 + 1;
+}
+
+export function wrapStar(value: number): number {
+  return ((value - 1) % 12 + 12) % 12 + 1;
+}
+
+export function lineAt(index: number): { mains: number[]; stars: number[] } {
+  const mains = CENSUS_ANSWERS
+    .map((main) => wrapMain(main + LINE_STEP * index))
+    .sort((a, b) => a - b);
+  const stars = STAR_ANSWERS
+    .map((star) => wrapStar(star + STAR_STEP * index))
+    .sort((a, b) => a - b);
+  return { mains, stars };
+}
+
+/** The Kallax mouth counted by the last number of the last line. */
+export function slipsCellIndex(): number {
+  const finalLine = lineAt(5);
+  return ((finalLine.mains[finalLine.mains.length - 1] - 1) % 16) + 1;
+}
+
+/** Music box cylinder targets: line 1 mains mod 12. */
+export function musicBoxTargets(): number[] {
+  return lineAt(0).mains.map((main) => main % 12);
+}

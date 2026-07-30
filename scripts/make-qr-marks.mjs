@@ -11,21 +11,27 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const MARKS = [
   {
     id: 1,
-    title: "START",
-    name: "Waking",
-    where: "Far end of the corridor, where she wakes. Eye height.",
+    title: "THE DOOR",
+    name: "The Clearance Card",
+    where: "On the front door, eye height. The survey begins here.",
   },
   {
-    id: 27,
-    title: "THE BOX",
-    name: "Full Circle",
-    where: "On the lid of the corridor box (the letter lives inside).",
+    id: 6,
+    title: "THE DRAWER",
+    name: "The Specimen",
+    where: "Inside the top kitchen drawer, taped to the base.",
   },
   {
-    id: 28,
-    title: "THE PRESENT",
-    name: "The Present",
-    where: "On the wrapping paper of the sealed carbonator, visible from Act 4.",
+    id: 9,
+    title: "THE PLANTER",
+    name: "The Reliquary",
+    where: "In a zip-lock sleeve pushed into the balcony planter soil.",
+  },
+  {
+    id: 19,
+    title: "THE PROPERTY",
+    name: "Classification",
+    where: "On the carbonator's wrapping, in the bath behind the curtain.",
   },
 ];
 
@@ -96,7 +102,7 @@ const html = `<!doctype html>
 </style>
 </head>
 <body>
-  <p class="sheet-title">BIRTHDAY HOUSE SEVEN // THE THREE MARKS</p>
+  <p class="sheet-title">CADASTRAL DIVISION // THE FOUR MARKS</p>
   <div class="cards">
 ${cards}
   </div>

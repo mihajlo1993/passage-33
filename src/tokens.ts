@@ -5,22 +5,61 @@
  * same source for inline styles, CSS custom properties, timers, and canvas
  * drawing without maintaining a second token table.
  */
+/**
+ * The measured Resident Evil ramp. Panels are TRUE black; every "white" is
+ * warm bone; selection inverts (bone fill, ink text); red is rationed to one
+ * element per screen and is never a button.
+ */
 export const colours = {
-  void: '#0B0A08',
-  surface: '#14120E',
-  raised: '#1F1B15',
-  hairline: '#2C2620',
-  bone: '#D8D2C4',
-  boneDim: '#8A8377',
-  rust: '#8E2A1E',
-  rustHot: '#C4351F',
-  slate: '#2E5A73',
-  bile: '#6E7A2E',
-  amber: '#B8843A',
+  void: '#000000',
+  surface: '#050504',
+  raised: '#1A1815',
+  hairline: '#3A352E',
+  bone: '#E4DBD2',
+  boneBright: '#F2ECE2',
+  boneMuted: '#D8D0C2',
+  boneDim: '#877F78',
+  textHi: '#ECE3DC',
+  text: '#C4BCB2',
+  textMute: '#6E6A64',
+  ink: '#241F1A',
+  plate: '#6E6963',
+  plateHi: '#7E7B76',
+  plateLo: '#56514D',
+  rust: '#B0261E',
+  rustHot: '#D63A2E',
+  mapRed: '#58332F',
+  slate: '#354A52',
+  bile: '#5CBF3A',
+  amber: '#C88A3C',
+  ecg: '#2FBF6F',
+  ecgCaution: '#D8C33A',
+  ecgOrange: '#E08A22',
   chromaRed: '#7A211D',
   chromaCyan: '#246673',
   printBlack: '#000000',
   printWhite: '#FFFFFF',
+} as const;
+
+/** Warm hairline runs; always these, never neutral grey borders. */
+export const lines = {
+  line: 'rgba(200, 190, 175, 0.28)',
+  lineSoft: 'rgba(200, 190, 175, 0.14)',
+  lineWarm: 'rgba(160, 140, 110, 0.30)',
+  tick: 'rgba(210, 200, 185, 0.75)',
+} as const;
+
+/** Layered surface treatments; dimming is always flat multiply, never blur. */
+export const surfaces = {
+  sceneDim:
+    'linear-gradient(180deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.48) 45%, rgba(0,0,0,0.86) 100%)',
+  vignette:
+    'radial-gradient(ellipse 120% 120% at 50% 45%, transparent 28%, rgba(0,0,0,0.50) 74%, rgba(0,0,0,0.94) 100%)',
+  glowSelect: '0 0 18px 4px rgba(255, 248, 236, 0.45)',
+  glowCombine: '0 0 20px 5px rgba(232, 192, 96, 0.55)',
+  shadowItem: '2px 4px 5px rgba(0, 0, 0, 0.45)',
+  shadowProp: '3px 6px 10px rgba(0, 0, 0, 0.75)',
+  grainOpacity: 0.045,
 } as const;
 
 // Kept as a type with the requested name so Item.tint can be `keyof colours`.
@@ -29,11 +68,17 @@ export type ColourName = keyof colours;
 
 export const typography = {
   fontFamily: {
-    ui: '"Archivo Narrow", "Arial Narrow", sans-serif',
+    // Libre Franklin is the open revival of RE7's Franklin Gothic.
+    ui: '"Libre Franklin", "Franklin Gothic Medium", "Arial", sans-serif',
+    display: '"Archivo Narrow", "Arial Narrow", sans-serif',
     doc: '"Courier Prime", "Courier New", monospace',
     award: '"Special Elite", "Courier New", serif',
   },
-  uiLetterSpacing: '0.08em',
+  // RE tracking scale: body 0, labels 0.005, caps 0.08, titles 0.12, menu 0.18.
+  uiLetterSpacing: '0.005em',
+  capsLetterSpacing: '0.08em',
+  titleLetterSpacing: '0.12em',
+  menuLetterSpacing: '0.18em',
   scalePx: {
     micro: 11,
     small: 13,

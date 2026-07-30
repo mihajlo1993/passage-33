@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { MEDIA_ASSETS } from "@/src/media";
 import {
-  RELIGHT_ACTION_PIN_ID,
-  TAPE_PLAYBACK_PIN_ID,
+  MAT_CELL_INDEX,
+  TAG_GLYPH_INDEX,
   TOTAL_PIN_COUNT,
   dialConfigByPin,
   pins,
@@ -16,24 +16,28 @@ import type { GameState, Pin, PinResolutionMethod } from "@/src/types";
 import { useVHS } from "@/src/fx";
 import { ActionBeat } from "./ActionBeat";
 import { ArrivalPanel } from "./ArrivalPanel";
+import { CensusForm } from "./CensusForm";
+import { CrestWheel } from "./CrestWheel";
 import { DialLockScreen } from "./DialLockScreen";
-import { FieldDeskTorch } from "./FieldDeskTorch";
+import { FilmReel } from "./FilmReel";
 import { GlyphGrid } from "./GlyphGrid";
-import { KeycardSlot } from "./KeycardSlot";
 import { MirrorWipe } from "./MirrorWipe";
-import { RelightAction } from "./RelightAction";
-import { ShadowWall } from "./ShadowWall";
-import { ValveWheel } from "./ValveWheel";
+import { MusicBox } from "./MusicBox";
+import { SealCube } from "./SealCube";
+import { SixLines } from "./SixLines";
 
 const APPROACH_LABELS: Record<string, string> = {
-  scan: "OPEN THE SCANNER",
-  ar: "RAISE THE CAMERA",
-  dial: "WORK THE LOCK",
-  wipe: "FACE THE MIRROR",
-  glyphs: "FACE THE SHELVES",
-  slot: "PRESENT THE CARDS",
-  valve: "GRIP THE VALVE",
-  shadow: "RAKE THE LIGHT",
+  scan: "Open the lens",
+  ar: "Raise the camera",
+  dial: "Work the lock",
+  wipe: "Develop the photograph",
+  glyphs: "Read the arm tag",
+  cube: "Turn the seal",
+  census: "Open the census",
+  wheel: "Align the crest",
+  lines: "Open the ledger",
+  box: "Wind the box",
+  reel: "Load the projector",
 };
 
 export interface HomeScreenProps {
@@ -63,7 +67,6 @@ export function HomeScreen({
   navigate,
 }: HomeScreenProps) {
   const [interacting, setInteracting] = useState(false);
-  const [shadowStage, setShadowStage] = useState<"torch" | "wall">("torch");
   const [arrival, setArrival] = useState<PinResolutionResult | null>(null);
   const vhs = useVHS();
 
@@ -87,20 +90,20 @@ export function HomeScreen({
           />
         )}
         <div className="cold-open__rule" />
-        <p className="eyebrow">PRIVATE EVENT // THIRTY-THREE</p>
+        <p className="eyebrow">Cadastral Division · Field Terminal 7</p>
         <div className="cold-open__copy">
-          <p className="system-line">BIRTHDAY HOUSE SEVEN</p>
-          <h1 id="cold-title">{resumed ? "WELCOME BACK." : "OPEN YOUR EYES."}</h1>
+          <p className="system-line">THE HOUSE KEEPS THE COUNT</p>
+          <h1 id="cold-title">{resumed ? "File restored." : "File 33 reopened."}</h1>
           <p className="host-copy">
             {resumed
-              ? "There you are. I kept everything exactly where you left it. A good host never clears the table before the birthday girl has finished."
-              : "Happy thirty-third. I have prepared the flat, the presents, and every unpleasant little interruption. All you need to bring is the nerve to look."}
+              ? "The terminal kept your place. The survey resumes exactly where it stopped; the house never lost count of anything, including you."
+              : "The survey of this address was opened thirty-three years ago and never closed. Tonight the terminal has decided to finish it. Lights low. Sound on. The house is already counting."}
           </p>
         </div>
         <button className="mechanical-button mechanical-button--primary" onClick={onBegin}>
-          {resumed ? "RETURN TO THE HOUSE" : "BEGIN"}
+          {resumed ? "Resume the survey" : "Reopen the file"}
         </button>
-        <p className="microcopy">HEADPHONES OPTIONAL // LIGHTS OFF</p>
+        <p className="microcopy">Sound on · Lights off · One occupant</p>
       </section>
     );
   }
@@ -144,7 +147,6 @@ export function HomeScreen({
   const resolveNow = (pin: Pin): void => {
     const result = resolvePin(pin.id, resolutionModeForPin(pin));
     setInteracting(false);
-    setShadowStage("torch");
     setArrival(result);
   };
 
@@ -156,32 +158,92 @@ export function HomeScreen({
   if (nextPin && interacting) {
     const cancel = () => {
       setInteracting(false);
-      setShadowStage("torch");
     };
 
-    if (mode === "wipe") {
-      return <MirrorWipe onSolved={() => resolveNow(nextPin)} onCancel={cancel} />;
+    if (mode === "cube") {
+      return <SealCube onSolved={() => resolveNow(nextPin)} onCancel={cancel} />;
     }
-    if (mode === "glyphs") {
+    if (mode === "census") {
       return (
-        <GlyphGrid
+        <CensusForm
           onSolved={() => resolveNow(nextPin)}
           onCancel={cancel}
           onWrongAttempt={wrongTurn}
         />
       );
     }
-    if (mode === "slot") {
-      return <KeycardSlot onSolved={() => resolveNow(nextPin)} onCancel={cancel} />;
+    if (mode === "wheel") {
+      return <CrestWheel onSolved={() => resolveNow(nextPin)} onCancel={cancel} />;
     }
-    if (mode === "valve") {
-      return <ValveWheel onSolved={() => resolveNow(nextPin)} onCancel={cancel} />;
+    if (mode === "lines") {
+      return (
+        <SixLines
+          onSolved={() => resolveNow(nextPin)}
+          onCancel={cancel}
+          onWrongAttempt={wrongTurn}
+        />
+      );
     }
-    if (mode === "shadow") {
-      return shadowStage === "torch" ? (
-        <FieldDeskTorch onSubmit={() => setShadowStage("wall")} onCancel={cancel} />
-      ) : (
-        <ShadowWall onSolved={() => resolveNow(nextPin)} onCancel={cancel} />
+    if (mode === "box") {
+      return (
+        <MusicBox
+          onSolved={() => resolveNow(nextPin)}
+          onCancel={cancel}
+          onWrongAttempt={wrongTurn}
+        />
+      );
+    }
+    if (mode === "reel") {
+      return (
+        <FilmReel
+          onSolved={() => resolveNow(nextPin)}
+          onCancel={cancel}
+          onWrongAttempt={wrongTurn}
+        />
+      );
+    }
+    if (mode === "wipe") {
+      const mirrored = nextPin.id === 5;
+      return (
+        <MirrorWipe
+          eyebrow={mirrored ? "Entry 021, development" : "Entry 104, development"}
+          title={mirrored ? "The Development" : "The Last Development"}
+          revealText={
+            mirrored
+              ? "THE SHELF OF SIXTEEN\nMOUTH " + MAT_CELL_INDEX + " FROM THE LEFT"
+              : "THE BATH\nBEHIND THE CURTAIN"
+          }
+          mirrored={mirrored}
+          unsolvedCopy={
+            mirrored
+              ? "Clear the fog with your hand. Photographs taken in this flat develop backwards."
+              : "Clear the fog. This one develops the right way round. You earned that."
+          }
+          solvedCopy={
+            mirrored
+              ? "It develops backwards, as warned. The bathroom mirror reads it fluently."
+              : "There. A bath, a curtain, and behind the curtain, the last entry."
+          }
+          confirmLabel={mirrored ? "Read it in the mirror" : "Go to the bath"}
+          onSolved={() => resolveNow(nextPin)}
+          onCancel={cancel}
+        />
+      );
+    }
+    if (mode === "glyphs") {
+      return (
+        <GlyphGrid
+          correctIndex={TAG_GLYPH_INDEX}
+          eyebrow="Entry 100, the arm tag"
+          title="The Tags"
+          introCopy="The arm tag shows the seal, set the way the surveyor set it: hall at heaven. Sixteen glyphs. One is fixed by that setting."
+          solvedCopy="The glyph concedes. The pocket tag and the hem tag are now load-bearing. Keep them close."
+          confirmLabel="Fix the glyph"
+          solvedLabel="Take the tags"
+          onSolved={() => resolveNow(nextPin)}
+          onCancel={cancel}
+          onWrongAttempt={wrongTurn}
+        />
       );
     }
     if (mode === "dial") {
@@ -203,9 +265,6 @@ export function HomeScreen({
       }
     }
     if (mode === "action") {
-      if (nextPin.id === RELIGHT_ACTION_PIN_ID) {
-        return <RelightAction onSubmit={() => resolveNow(nextPin)} />;
-      }
       return (
         <ActionBeat pin={nextPin} onResolve={() => resolveNow(nextPin)} onCancel={cancel} />
       );
@@ -222,13 +281,13 @@ export function HomeScreen({
       navigate("/scan");
       return;
     }
-    if (mode === "ar" || nextPin.id === TAPE_PLAYBACK_PIN_ID) {
+    if (mode === "ar") {
       const preview = previewPin(nextPin.id, mode);
       if (!preview.ok) {
         setArrival(preview);
         return;
       }
-      navigate(mode === "ar" ? "/ar?pin=" + String(nextPin.id) : "/tape");
+      navigate("/ar?pin=" + String(nextPin.id));
       return;
     }
     const preview = previewPin(nextPin.id, mode);
@@ -240,12 +299,10 @@ export function HomeScreen({
   };
 
   const approachLabel = nextPin
-    ? nextPin.id === TAPE_PLAYBACK_PIN_ID
-      ? "PRESS PLAY"
-      : mode === "action"
-        ? nextPin.actionLabel ?? "PROCEED"
-        : APPROACH_LABELS[mode] ?? "PROCEED"
-    : "VIEW TROPHY";
+    ? mode === "action"
+      ? nextPin.actionLabel ?? "Proceed"
+      : APPROACH_LABELS[mode] ?? "Proceed"
+    : "Open the file";
 
   return (
     <section className="screen home-screen" aria-labelledby="home-title">

@@ -1,195 +1,193 @@
 import type { Item, ItemId } from './types';
-import { KALLAX_KEY_GLYPH_INDEX, kallaxKeyGlyph } from './glyphs';
-
 
 export const itemIds = {
-  knife: 'knife',
-  note01: 'note01',
-  code3: 'code3',
-  kallaxGlyph: 'kallaxGlyph',
-  pistol: 'pistol',
-  chemFluid: 'chemFluid',
-  tape: 'tape',
-  knowLoser: 'knowLoser',
-  keycardRed: 'keycardRed',
-  keycardBlue: 'keycardBlue',
-  knowKitchen: 'knowKitchen',
-  herb: 'herb',
-  valve: 'valve',
-  firstAid: 'firstAid',
-  candleLit: 'candleLit',
-  fanOff: 'fanOff',
+  keycard: 'keycard',
+  sealCore: 'sealCore',
+  development01: 'development01',
+  giftMat: 'giftMat',
+  specimenJar: 'specimenJar',
+  fieldRecording: 'fieldRecording',
+  giftMouse: 'giftMouse',
+  reliquary: 'reliquary',
+  sixLines: 'sixLines',
+  giftSlips: 'giftSlips',
+  coatTags: 'coatTags',
+  filmReel: 'filmReel',
+  development02: 'development02',
   carbonator: 'carbonator',
-  theHand: 'theHand',
-  theAltar: 'theAltar',
-  note02: 'note02',
+  file01: 'file01',
+  file02: 'file02',
+  file03: 'file03',
+  file04: 'file04',
 } as const satisfies Record<string, ItemId>;
 
 /**
- * Every value granted by a pin has an entry here, including knowledge and
- * world-state tokens. Icons are bare slugs from the bundled game-icons set.
+ * Everything the terminal takes into custody. Descriptions are survey
+ * entries: dry, procedural, and quietly wrong. `thumb` names a generated
+ * media asset (Tier 2 renders); the icon slug is the offline fallback.
  */
 export const items: readonly Item[] = [
   {
-    id: itemIds.knife,
-    name: 'Kitchen Knife',
-    icon: 'bowie-knife',
-    tint: 'boneDim',
-    examine:
-      'The edge has been sharpened recently. A dark line marks the handle where another hand gripped it too tightly.',
-  },
-  {
-    id: itemIds.note01,
-    name: 'Note 01',
-    icon: 'secret-book',
+    id: itemIds.keycard,
+    name: 'Clearance card',
+    icon: 'key-card',
     tint: 'bone',
+    thumb: 'itemKeycard',
     examine:
-      'HAPPY THIRTY-THIRD. START WHERE THE HOUSE HAS BEEN MARKED. BRING THE CAMERA. DO NOT MAKE ME REPEAT MYSELF.',
+      'Cadastral Division clearance, one bearer. The lamination has yellowed from the inside. The card number is embossed on the edge, felt more easily than seen.',
   },
   {
-    id: itemIds.code3,
-    name: 'Three-Digit Code',
+    id: itemIds.sealCore,
+    name: 'Seal core',
     icon: 'combination-lock',
     tint: 'amber',
+    thumb: 'itemSealcube',
     examine:
-      'Three figures copied from the mirror. Their order feels deliberate, as if the glass expected them to be remembered.',
+      'The inner core of the survey seal. Four room glyphs in a fixed order. The bronze is warm, which the Division asks you not to think about.',
   },
   {
-    id: itemIds.kallaxGlyph,
-    name: 'Kallax Glyph Card',
-    icon: kallaxKeyGlyph.icon,
-    tint: 'amber',
+    id: itemIds.development01,
+    name: 'Development 01',
+    icon: 'treasure-map',
+    tint: 'bone',
+    thumb: 'paperPhoto',
     examine:
-      `A damp card carrying GLYPH ${String(KALLAX_KEY_GLYPH_INDEX).padStart(2, '0')}. One Kallax cell wears the same mark.`,
+      'A photograph developed backwards. A shelf of sixteen mouths, one of them holding its breath. Held to a mirror, it behaves.',
   },
   {
-    id: itemIds.pistol,
-    name: 'M19 Handgun',
-    icon: 'pistol-gun',
-    tint: 'boneDim',
+    id: itemIds.giftMat,
+    name: 'A flat place',
+    icon: 'star-altar',
+    tint: 'bone',
+    thumb: 'itemMat',
     examine:
-      'Old, oiled, and heavier than it looks. The slide has been worked recently. Someone intended it to be found ready.',
+      'Catalogued as A FLAT PLACE FOR A SMALL ANIMAL TO RUN. Rolled, tied, and released to the occupant. Property of the occupant now.',
   },
   {
-    id: itemIds.chemFluid,
-    name: 'Chem Fluid',
+    id: itemIds.specimenJar,
+    name: 'Specimen jar',
     icon: 'chemical-drop',
     tint: 'bile',
+    thumb: 'itemJar',
     examine:
-      'A cloudy reagent in a scuffed bottle. The label promises nothing, but the sharp medicinal smell suggests a use.',
+      'Entry 033. A cast of three bent arms in preserving fluid. The label has been rewritten at least twice. The tag hides underneath.',
   },
   {
-    id: itemIds.tape,
-    name: 'Derelict Tape',
+    id: itemIds.fieldRecording,
+    name: 'Field recording',
     icon: 'vhs',
     tint: 'boneDim',
+    thumb: 'itemRecording',
     examine:
-      'A video cassette with LOSER written across its label. The plastic is warm despite the cold room.',
+      'A microcassette, catalogued the night Entry 033 was heard in the walls. The Division notes that the recording is clearest near doors.',
   },
   {
-    id: itemIds.knowLoser,
-    name: 'The Loser Rule',
-    icon: 'brain',
+    id: itemIds.giftMouse,
+    name: 'The small grey runner',
+    icon: 'hand',
+    tint: 'bone',
+    thumb: 'itemMouse',
+    examine:
+      'Entry 035. The specimen was never caught; it was replaced. Fits under a palm. Clicks. Released to the occupant.',
+  },
+  {
+    id: itemIds.reliquary,
+    name: 'Reliquary',
+    icon: 'locked-chest',
     tint: 'amber',
+    thumb: 'itemReliquary',
     examine:
-      'The tape made the word important. A lock on the balcony was built to recognise the same ugly little lesson.',
+      'Five numbered slots, twelve notches at the rim. FIVE WOUNDS, TWO STARS. THE HOUSE KEEPS THE COUNT. It is lighter than it looks and colder than it should be.',
   },
   {
-    id: itemIds.keycardRed,
-    name: 'Red Keycard',
+    id: itemIds.sixLines,
+    name: 'The six lines',
+    icon: 'secret-book',
+    tint: 'bone',
+    thumb: 'itemCensus',
+    examine:
+      'Six lines of numbers, five mains and two stars each, advancing by a rule the file never states. The Division called them a wager against the future. Transcribe them onto the slips.',
+  },
+  {
+    id: itemIds.giftSlips,
+    name: 'Two lucky slips',
     icon: 'key-card',
     tint: 'rust',
+    thumb: 'itemSlips',
     examine:
-      'The red half of a paired invitation. Three printed lines of numbers run down its face. Not codes. Chances. Keep it very safe after tonight.',
+      'One red, one blue, three lines each. The only new things in the file. Released to the occupant with the Division\'s compliments and, uncharacteristically, its hope.',
   },
   {
-    id: itemIds.keycardBlue,
-    name: 'Blue Keycard',
-    icon: 'key-card',
-    tint: 'slate',
-    examine:
-      'The blue half, pulled from the marked cell. Three more printed lines. Between red and blue you now hold six chances, and the Host insists they stay valuable long after his locks are open.',
-  },
-  {
-    id: itemIds.knowKitchen,
-    name: 'Kitchen Route',
-    icon: 'treasure-map',
-    tint: 'amber',
-    examine:
-      'Raking torchlight exposed a sequence pressed into the field desk. It describes how the kitchen door expects to be approached.',
-  },
-  {
-    id: itemIds.herb,
-    name: 'Green Herb',
-    icon: 'herbs-bundle',
-    tint: 'bile',
-    examine:
-      'A tough green herb with a bitter, clean smell. Its leaves have survived in soil that should have killed them.',
-  },
-  {
-    id: itemIds.valve,
-    name: 'Fan Shutoff',
-    icon: 'valve',
+    id: itemIds.coatTags,
+    name: 'Coat tags',
+    icon: 'folded-paper',
     tint: 'boneDim',
+    thumb: 'itemTag',
     examine:
-      'A reminder from the planter: the draught is machinery, not weather. The real fan can be switched off when the flame needs still air.',
+      'Three manila tags, pinned to a coat that was not tagged yesterday. Arm: a seal glyph. Pocket: a mirrored date, incomplete. Hem: one film frame, stamped.',
   },
   {
-    id: itemIds.firstAid,
-    name: 'First Aid Med',
-    icon: 'health-potion',
-    tint: 'bile',
+    id: itemIds.filmReel,
+    name: 'The reel',
+    icon: 'vhs',
+    tint: 'boneDim',
+    thumb: 'itemFilm',
     examine:
-      'A fresh medicinal mixture. Use it once to steady the body and restore health completely.',
-    consumable: true,
+      'Six frames, spliced tonight. The projector accepted them in one order only: the true one. The last frame is empty because the evening was still happening.',
   },
   {
-    id: itemIds.candleLit,
-    name: 'Living Flame',
-    icon: 'candle-flame',
-    tint: 'amber',
+    id: itemIds.development02,
+    name: 'Development 02',
+    icon: 'treasure-map',
+    tint: 'bone',
+    thumb: 'paperPhoto',
     examine:
-      'A single candle burns with a narrow flame. Every movement of air bends it toward extinction.',
-  },
-  {
-    id: itemIds.fanOff,
-    name: 'Silent Fan',
-    icon: 'wind-slap',
-    tint: 'slate',
-    examine:
-      'The fan has stopped. In the sudden stillness, a candle might cross the kitchen without losing its flame.',
+      'The last photograph, developed the right way round. A bath. A drawn curtain. Behind the curtain, a machine for putting the sparkle into water.',
   },
   {
     id: itemIds.carbonator,
-    name: 'Carbonator',
+    name: 'The property',
     icon: 'soda-can',
     tint: 'bone',
+    thumb: 'itemCarbonator',
     examine:
-      'The sealed birthday present at last. Heavy, useful, and chosen by someone who enjoyed knowing the answer before you did.',
+      'Entry 105. One machine for carbonating water, brushed steel, unused. Held in trust by the Division for thirty-three years. CLASSIFICATION: BIRTHDAY. Released to the occupant.',
   },
   {
-    id: itemIds.theHand,
-    name: 'The Hand',
-    icon: 'hand',
-    tint: 'bone',
-    examine:
-      'The Hand. It fits under your palm and clicks when pressed, which is a strange property for a relic. It will move a cursor with uncanny grace once the ceremony is over.',
-  },
-  {
-    id: itemIds.theAltar,
-    name: 'The Altar',
-    icon: 'star-altar',
-    tint: 'amber',
-    examine:
-      'The Altar: a soft, flat rectangle on which the Hand is meant to rest and glide. Domestic ritual equipment of the highest order. The pair belong on a desk you already own.',
-  },
-  {
-    id: itemIds.note02,
-    name: 'The Last Letter',
+    id: itemIds.file01,
+    name: 'Survey file 01',
     icon: 'secret-book',
-    tint: 'bone',
+    tint: 'boneDim',
+    thumb: 'paperMemo',
     examine:
-      'Melissa. There was no previous guest. It was me, every year, standing in front of your birthday like a man in front of a padlock, and every year it read LOSER. Dinner. Flowers. A card, gone by morning. This year I wanted you to have the one thing I mean to be for you always: someone beside you when it matters the most, in every dark room, holding the light. You walked tonight braver than I ever did. The padlock says WINNER now. It is yours. So am I. Yours, M.',
+      'FILE 01, OPENING REMARKS. The address presents as a two-bedroom flat. Initial count found six rooms, then six rooms, then six rooms. The surveyor has requested that the third count not be discussed.',
+  },
+  {
+    id: itemIds.file02,
+    name: 'Survey file 02',
+    icon: 'secret-book',
+    tint: 'boneDim',
+    thumb: 'paperMemo',
+    examine:
+      'FILE 02, FURNISHINGS. Shelving unit, sixteen apertures, all measured identical. The surveyor notes that at night the apertures do not stay identical, and that he has stopped measuring after dark.',
+  },
+  {
+    id: itemIds.file03,
+    name: 'Survey file 03',
+    icon: 'secret-book',
+    tint: 'boneDim',
+    thumb: 'paperMemo',
+    examine:
+      'FILE 03, ENTRY 033. Movement recorded at skirting level, corridor, 03:12. Small, grey, quick. The cast was taken on the fourth attempt. The first three casts came out shaped like something else.',
+  },
+  {
+    id: itemIds.file04,
+    name: 'Survey file 04',
+    icon: 'secret-book',
+    tint: 'boneDim',
+    thumb: 'paperMemo',
+    examine:
+      'FILE 04, CLOSING REMARKS, UNFILED. The house counts back. It has been counting toward a date. The Division has decided to leave the file open and the building alone until the count completes. It completes on a birthday.',
   },
 ] as const;
 
@@ -199,4 +197,3 @@ export const itemById: Readonly<Partial<Record<ItemId, Item>>> =
 export function getItemById(id: ItemId): Item | undefined {
   return itemById[id];
 }
-

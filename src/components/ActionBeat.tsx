@@ -13,6 +13,10 @@ const BEHIND_YOU_MS = 3_200;
 /** How far across the kitchen the flame gets before the draught finds it. */
 const CARRY_MS = 2_800;
 const MIX_HOLD_MS = 1_600;
+/** The corridor walk in the dark: long enough to be sure nothing happened. */
+const THRESHOLD_MS = 14_000;
+/** The field recording plays through before the entry appends itself. */
+const LISTEN_MS = 9_000;
 const WISH_HOLD_MS = 3_000;
 
 export interface ActionBeatProps {
@@ -93,6 +97,15 @@ export function ActionBeat({ pin, onResolve, onCancel }: ActionBeatProps) {
       case "carry":
         stage(CARRY_MS, () => vhs.glitch(motion.eventMs.vhsDamageSpike));
         return;
+      case "threshold":
+        // Every light out, the torch dead, one slow walk. Nothing happens.
+        stage(THRESHOLD_MS, () => {
+          void torch.kill(motion.eventMs.torchKill);
+        });
+        return;
+      case "listen":
+        stage(LISTEN_MS);
+        return;
       case "mix":
       case "hold":
       default:
@@ -112,7 +125,11 @@ export function ActionBeat({ pin, onResolve, onCancel }: ActionBeatProps) {
         ? "DO NOT TURN AROUND YET."
         : pin.beat === "carry"
           ? "WALK. KEEP THE FLAME CLOSE."
-          : "";
+          : pin.beat === "threshold"
+            ? "WALK THE CORRIDOR. THE TERMINAL WILL KNOW."
+            : pin.beat === "listen"
+              ? "RECORDING. STAND STILL."
+              : "";
 
   if (phase === "staging") {
     return (

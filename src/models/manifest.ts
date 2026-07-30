@@ -27,52 +27,40 @@ export interface ItemModel {
  * this table is safe to extend before the model lands on disk.
  */
 export const modelByItem: Readonly<Partial<Record<ItemId, ItemModel>>> = {
-  knife: {
-    src: "/models/knife.glb",
-    alt: "A kitchen knife with a worn handle",
+  keycard: {
+    src: "/models/keycard3d.glb",
+    alt: "A laminated Cadastral Division clearance card",
     secret: {
-      hint: "SOMETHING IS SCRATCHED NEAR THE HANDLE",
+      hint: "THE EDGE CARRIES SOMETHING RAISED",
       revealText:
-        "Two letters are scratched into the flat of the blade, small and close together: M + M. The scratches are old.",
+        "Embossed along the rim, felt before seen: 1 9 9 3. The year the survey began.",
     },
   },
-  chemFluid: {
-    src: "/models/chemFluid.glb",
-    alt: "A stoppered chemistry flask of cloudy fluid",
+  specimenJar: {
+    src: "/models/jar.glb",
+    alt: "A sealed specimen jar holding a bent wire cast",
     secret: {
-      hint: "THE BASE CARRIES A MARK",
+      hint: "A TAG HANGS ON THE UNDERSIDE",
       revealText:
-        "A glyph is scratched into the glass base. You have seen the same mark on a damp little card. The Host checks his own work.",
+        "The tag, in the surveyor's hand: CAST AT FLOOR HEIGHT. THREE ARMS SPEAK. THE SHORTEST SPEAKS FIRST.",
     },
   },
-  tape: {
+  reliquary: {
+    src: "/models/reliquary.glb",
+    alt: "A small reliquary box with five slots and a notched rim",
+    secret: {
+      hint: "THE LID IS ENGRAVED",
+      revealText:
+        "FIVE WOUNDS, TWO STARS. THE HOUSE KEEPS THE COUNT. Beneath, smaller: IT HAS ALWAYS KEPT IT.",
+    },
+  },
+  fieldRecording: {
     src: "/models/tape.glb",
-    alt: "A VHS cassette with LOSER on the label",
-    secret: {
-      hint: "THE SPINE HAS A SECOND LABEL",
-      revealText:
-        "A second label hides on the underside, written smaller, in a gentler hand: PLEASE WATCH TO THE END.",
-    },
+    alt: "The recovered field recording",
   },
-  pistol: {
-    src: "/models/pistol.glb",
-    alt: "An old, oiled handgun",
-  },
-  herb: {
-    src: "/models/herb.glb",
-    alt: "A green herb growing in a small pot",
-  },
-  valve: {
-    src: "/models/valve.glb",
-    alt: "A heavy valve wheel",
-  },
-  candleLit: {
-    src: "/models/candleLit.glb",
-    alt: "A single candle",
-  },
-  firstAid: {
-    src: "/models/chemFluid.glb",
-    alt: "A mixed medicinal draught",
+  giftMouse: {
+    src: "/models/creature.glb",
+    alt: "Entry 033, as catalogued",
   },
 } as const;
 

@@ -25,7 +25,13 @@ export type PinResolutionMode =
   | 'glyphs'
   | 'slot'
   | 'valve'
-  | 'shadow';
+  | 'shadow'
+  | 'cube'
+  | 'census'
+  | 'wheel'
+  | 'lines'
+  | 'box'
+  | 'reel';
 export type PinResolutionMethod = PinResolutionMode | 'dev';
 
 
@@ -34,6 +40,8 @@ export interface Item {
   name: string;
   icon: string;
   tint?: keyof colours;
+  /** Generated media asset id for the RE-style item render, when present. */
+  thumb?: string;
   examine: string;
   consumable?: boolean;
 }
@@ -67,7 +75,7 @@ export interface Pin {
   /** Button label for action-resolved pins. */
   actionLabel?: string;
   /** Choreography for action beats that need staging before they resolve. */
-  beat?: 'blackout' | 'behindYou' | 'carry' | 'mix' | 'hold';
+  beat?: 'blackout' | 'behindYou' | 'carry' | 'mix' | 'hold' | 'threshold' | 'listen';
   /** Pin-specific line used when this pin refuses for missing items or pins. */
   refusalHint?: string;
   bodyText: string;

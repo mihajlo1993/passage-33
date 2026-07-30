@@ -78,5 +78,29 @@
     "license": "CC0",
     "source": "https://poly.pizza/m/cKloIsNcT8",
     "bytes": 125880
+  },
+  "jar": {
+    "file": "/models/jar.glb",
+    "name": "jar",
+    "author": "Jarlan Perez",
+    "license": "CC-BY",
+    "source": "https://poly.pizza/m/8dGz3QaoAG-",
+    "bytes": 11108
+  },
+  "reliquary": {
+    "file": "/models/reliquary.glb",
+    "name": "chest",
+    "author": "Quaternius",
+    "license": "CC0",
+    "source": "https://poly.pizza/m/O72u4Drp8k",
+    "bytes": 95736
+  },
+  "keycard3d": {
+    "file": "/models/keycard3d.glb",
+    "name": "card",
+    "author": "Vice Cooper",
+    "license": "CC-BY",
+    "source": "https://poly.pizza/m/eNL1vYa4P6b",
+    "bytes": 16436
   }
 }

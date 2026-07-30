@@ -1,5 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import "@fontsource/libre-franklin/400.css";
+import "@fontsource/libre-franklin/500.css";
+import "@fontsource/libre-franklin/600.css";
 import "@fontsource/archivo-narrow/400.css";
 import "@fontsource/archivo-narrow/600.css";
 import "@fontsource/archivo-narrow/700.css";
@@ -12,7 +15,7 @@ import { GameApp } from "./components/GameApp";
 import { VHSLayer } from "./fx";
 import { OperatorPanel } from "./operator";
 import { MAP_CONTENT_ASPECT_RATIO } from "./map/viewport";
-import { colours, effects, layout, motion, typography } from "./tokens";
+import { colours, effects, layout, lines, motion, surfaces, typography } from "./tokens";
 import "./styles.css";
 
 const root = document.documentElement;
@@ -32,10 +35,37 @@ const cssTokens: Record<string, string> = {
   "--c-chroma-cyan": colours.chromaCyan,
   "--c-print-black": colours.printBlack,
   "--c-print-white": colours.printWhite,
+  "--c-bone-bright": colours.boneBright,
+  "--c-bone-muted": colours.boneMuted,
+  "--c-text-hi": colours.textHi,
+  "--c-text": colours.text,
+  "--c-text-mute": colours.textMute,
+  "--c-ink": colours.ink,
+  "--c-plate": colours.plate,
+  "--c-plate-hi": colours.plateHi,
+  "--c-plate-lo": colours.plateLo,
+  "--c-map-red": colours.mapRed,
+  "--c-ecg": colours.ecg,
+  "--c-ecg-caution": colours.ecgCaution,
+  "--c-ecg-orange": colours.ecgOrange,
+  "--line": lines.line,
+  "--line-soft": lines.lineSoft,
+  "--line-warm": lines.lineWarm,
+  "--line-tick": lines.tick,
+  "--scene-dim": surfaces.sceneDim,
+  "--vignette": surfaces.vignette,
+  "--glow-select": surfaces.glowSelect,
+  "--glow-combine": surfaces.glowCombine,
+  "--shadow-item": surfaces.shadowItem,
+  "--shadow-prop": surfaces.shadowProp,
   "--font-ui": typography.fontFamily.ui,
+  "--font-display": typography.fontFamily.display,
   "--font-doc": typography.fontFamily.doc,
   "--font-award": typography.fontFamily.award,
   "--tracking-ui": typography.uiLetterSpacing,
+  "--tracking-caps": typography.capsLetterSpacing,
+  "--tracking-title": typography.titleLetterSpacing,
+  "--tracking-menu": typography.menuLetterSpacing,
   "--text-micro": typography.scalePx.micro + "px",
   "--text-small": typography.scalePx.small + "px",
   "--text-body": typography.scalePx.body + "px",

@@ -1,6 +1,5 @@
 import type { VoicePlaybackHandle } from "../audio/types";
 import { getVHSHealthProfile, type VHSHealthProfile } from "../fx";
-import { itemIds } from "../items";
 import { getPinById, pins } from "../pins";
 import { motion } from "../tokens";
 import type { GameState, HostVoiceId, Pin, ZoneId } from "../types";
@@ -29,10 +28,10 @@ const SCARE_AUDIO_CUES = {
 
 export const PHASE2_VOICE_CUES_BY_PIN: Readonly<Partial<Record<number, HostVoiceId>>> = {
   1: "cold-open",
-  12: "tape",
-  23: "draught",
-  26: "trophy",
-  28: "present",
+  8: "tape",
+  13: "draught",
+  18: "present",
+  19: "trophy",
 };
 
 export const SAVE_WRITTEN_AUDIO_CUE = "write";
@@ -103,10 +102,10 @@ export function phase2ArRouteForPin(pinId: number): Phase2ArRoute {
 }
 
 export function canResolveRoomAr(
-  state: Pick<GameState, "inventory">,
+  _state: Pick<GameState, "inventory">,
   shotFired: boolean,
 ): boolean {
-  return shotFired && state.inventory.includes(itemIds.pistol);
+  return shotFired;
 }
 
 export function phase2AudioCuesForResolution(

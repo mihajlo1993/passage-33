@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CABINET_DIAL_CODE } from "@/src/pins";
 import { colours } from "@/src/tokens";
 import { useAudio } from "@/src/audio/useAudio";
 import { useHaptics } from "@/src/device";
@@ -14,6 +13,15 @@ const REFOG_INTERVAL_MS = 900;
 const BRUSH_RADIUS_FRACTION = 0.09;
 
 export interface MirrorWipeProps {
+  eyebrow: string;
+  title: string;
+  /** What the cleared glass shows, split on newlines. */
+  revealText: string;
+  /** Render the reveal mirror-written, so the real mirror reads it. */
+  mirrored?: boolean;
+  unsolvedCopy: string;
+  solvedCopy: string;
+  confirmLabel: string;
   onSolved: () => void;
   onCancel: () => void;
 }
@@ -23,7 +31,17 @@ export interface MirrorWipeProps {
  * Rubbing the screen clears the condensation and the three figures the mirror
  * has been keeping come through where her finger has been.
  */
-export function MirrorWipe({ onSolved, onCancel }: MirrorWipeProps) {
+export function MirrorWipe({
+  eyebrow,
+  title,
+  revealText,
+  mirrored = false,
+  unsolvedCopy,
+  solvedCopy,
+  confirmLabel,
+  onSolved,
+  onCancel,
+}: MirrorWipeProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const [settled, setSettled] = useState(false);
@@ -119,25 +137,23 @@ export function MirrorWipe({ onSolved, onCancel }: MirrorWipeProps) {
     }
   };
 
-  const digits = CABINET_DIAL_CODE.split("");
-
   return (
     <section className="mirror-wipe" aria-labelledby="mirror-title">
       <header className="lock-screen__heading">
-        <p className="eyebrow">THE MIRROR // BREATHE AND WIPE</p>
-        <h1 id="mirror-title">Fogged Glass</h1>
+        <p className="eyebrow">{eyebrow}</p>
+        <h1 id="mirror-title">{title}</h1>
       </header>
       <p className="host-copy" aria-live="polite">
-        {settled
-          ? "There they are. Three figures, in the order the glass remembers them. Do not write them down. You will not forget."
-          : "Rub the glass. The mirror only repeats itself for warm hands."}
+        {settled ? solvedCopy : unsolvedCopy}
       </p>
       <div className="mirror-wipe__glass" data-settled={settled}>
-        <div className="mirror-wipe__figures" aria-hidden={!settled}>
-          {digits.map((digit, index) => (
-            <span key={index} style={{ transform: `rotate(${(index - 1) * 2.5}deg)` }}>
-              {digit}
-            </span>
+        <div
+          className="mirror-wipe__figures mirror-wipe__figures--lines"
+          data-mirrored={mirrored}
+          aria-hidden={!settled}
+        >
+          {revealText.split("\n").map((line, index) => (
+            <span key={index}>{line}</span>
           ))}
         </div>
         <canvas
@@ -157,9 +173,9 @@ export function MirrorWipe({ onSolved, onCancel }: MirrorWipeProps) {
           disabled={!settled}
           onClick={onSolved}
         >
-          {settled ? "COMMIT THEM TO MEMORY" : "THE GLASS IS STILL FOGGED"}
+          {settled ? confirmLabel : "The glass is still fogged"}
         </button>
-        <button className="text-control" onClick={onCancel}>STEP AWAY</button>
+        <button className="text-control" onClick={onCancel}>Step away</button>
       </div>
     </section>
   );

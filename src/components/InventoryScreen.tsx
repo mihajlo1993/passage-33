@@ -3,27 +3,37 @@
 import { useEffect, useMemo, useState } from "react";
 import { colours } from "@/src/tokens";
 import { itemById } from "@/src/items";
+import { MEDIA_ASSETS } from "@/src/media";
 import { getItemModel } from "@/src/models/manifest";
 import type { GameState, Item } from "@/src/types";
+import { EcgPanel } from "./EcgPanel";
 import { ExamineModel } from "./ExamineModel";
 import { GameIcon } from "./GameIcon";
 
-function healthWord(health: number): "STEADY" | "HURT" | "BAD" | "CRITICAL" {
-  if (health < 40) return "CRITICAL";
-  if (health < 60) return "BAD";
-  if (health < 80) return "HURT";
-  return "STEADY";
+function thumbUrl(item: Item): string | null {
+  if (!item.thumb) return null;
+  const record = (MEDIA_ASSETS as Record<string, { webp?: { url: string } | null } | undefined>)[
+    item.thumb
+  ];
+  return record?.webp?.url ?? null;
 }
+
+/**
+ * The custody grid. Four columns of plates on a true-black slab; filled
+ * plates are warm grey with the item render sitting on them, the selected
+ * plate inverts to bone with a glow. Twelve slots because the file has
+ * twelve entries worth keeping at once.
+ */
+const GRID_SLOTS = 12;
 
 export interface InventoryScreenProps {
   state: GameState;
   onUseFirstAid: () => boolean;
 }
 
-export function InventoryScreen({ state, onUseFirstAid }: InventoryScreenProps) {
+export function InventoryScreen({ state }: InventoryScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [inspecting3d, setInspecting3d] = useState(false);
-  // A model that fails to load falls back to the icon panel for the session.
   const [brokenModels, setBrokenModels] = useState<ReadonlySet<string>>(new Set());
   const heldItems = useMemo(
     () => state.inventory.map((id) => itemById[id]).filter((item): item is Item => Boolean(item)),
@@ -55,63 +65,65 @@ export function InventoryScreen({ state, onUseFirstAid }: InventoryScreenProps) 
     );
   }
 
+  const emptySlots = Math.max(0, GRID_SLOTS - heldItems.length);
+
   return (
     <section className="screen inventory-screen" aria-labelledby="inventory-title">
       <header className="screen-heading inventory-heading">
         <div>
-          <p className="eyebrow">FIELD CASE</p>
-          <h1 id="inventory-title">INVENTORY</h1>
-        </div>
-        <div className="condition-word" data-critical={state.health < 40}>
-          <span>CONDITION</span>
-          <strong>{healthWord(state.health)}</strong>
+          <p className="eyebrow">Custody of the terminal</p>
+          <h1 id="inventory-title">Items</h1>
         </div>
       </header>
-      {heldItems.length > 0 ? (
-        <div className="inventory-grid" aria-label="Held items">
-          {heldItems.map((item) => (
+
+      <div className="re-inventory-grid re-frame" aria-label="Held items">
+        {heldItems.map((item) => {
+          const thumb = thumbUrl(item);
+          return (
             <button
               key={item.id}
-              className="inventory-cell"
+              className="re-cell"
               data-selected={selectedId === item.id}
               onClick={() => setSelectedId(item.id)}
               aria-label={"Inspect " + item.name}
             >
-              <GameIcon name={item.icon} className="inventory-cell__icon" color={colours[item.tint ?? "bone"]} />
-              <span>{item.name}</span>
-              {item.consumable && <small>ONE USE</small>}
+              {thumb ? (
+                <img className="re-cell__render" src={thumb} alt="" aria-hidden="true" />
+              ) : (
+                <GameIcon
+                  name={item.icon}
+                  className="re-cell__icon"
+                  color={selectedId === item.id ? colours.ink : colours.ink}
+                />
+              )}
             </button>
-          ))}
-        </div>
-      ) : (
-        <div className="empty-case">
-          <p>THE CASE IS EMPTY.</p>
-          <span>Keep moving. The Host has not finished giving.</span>
-        </div>
-      )}
-      {selected && (
-        <aside className="examine-panel" aria-live="polite">
-          <div className="examine-panel__object">
-            <GameIcon name={selected.icon} className="examine-panel__icon" color={colours[selected.tint ?? "bone"]} />
-            <div><p className="eyebrow">EXAMINE</p><h2>{selected.name}</h2></div>
+          );
+        })}
+        {Array.from({ length: emptySlots }, (_, index) => (
+          <span key={"empty-" + index} className="re-cell re-cell--empty" aria-hidden="true" />
+        ))}
+      </div>
+
+      {selected ? (
+        <aside className="re-detail" aria-live="polite">
+          <h2 className="re-detail__name">{selected.name}</h2>
+          <p className="re-detail__body">{selected.examine}</p>
+          <div className="re-verbs" role="group" aria-label="Item actions">
+            {selectedModel && (
+              <button className="re-verb" onClick={() => setInspecting3d(true)}>
+                Examine
+              </button>
+            )}
+            <button className="re-verb" onClick={() => setSelectedId(null)}>
+              Close
+            </button>
           </div>
-          <p className="document-copy">{selected.examine}</p>
-          {selectedModel && (
-            <button
-              className="mechanical-button mechanical-button--primary"
-              onClick={() => setInspecting3d(true)}
-            >
-              TURN IT OVER
-            </button>
-          )}
-          {selected.id === "firstAid" && (
-            <button className="mechanical-button mechanical-button--bile" onClick={() => { if (onUseFirstAid()) setSelectedId(null); }}>
-              USE FIRST AID
-            </button>
-          )}
-          <button className="text-control" onClick={() => setSelectedId(null)}>CLOSE</button>
         </aside>
+      ) : (
+        <p className="re-detail__hint">Select an item to inspect it.</p>
       )}
+
+      <EcgPanel health={state.health} />
     </section>
   );
 }

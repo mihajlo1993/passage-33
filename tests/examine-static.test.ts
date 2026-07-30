@@ -13,7 +13,7 @@ test("every examine model belongs to a real item and a local glb path", () => {
     assert.ok(knownItemIds.has(itemId), `unknown item id in modelByItem: ${itemId}`);
     assert.match(
       model!.src,
-      /^\/models\/[A-Za-z]+\.glb$/,
+      /^\/models\/[A-Za-z0-9]+\.glb$/,
       `model src must be a local /models path: ${model!.src}`,
     );
     assert.ok(model!.alt.length > 0, `model alt text required: ${itemId}`);

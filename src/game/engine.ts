@@ -5,17 +5,17 @@ export const CRITICAL_HEALTH_THRESHOLD = 40;
 
 export const refusalHints = {
   unknownPin:
-    "That mark is not one of mine. The house only answers to arrangements I made personally, and I would remember making that one.",
+    "That mark is not in the file. The Division numbered every mark it left, and it did not leave that one.",
   alreadyResolved:
-    "We have already enjoyed that little moment, and it went beautifully. Forward, not back. Another room is waiting on you.",
+    "That entry is closed. The terminal does not reopen what it has signed. The next entry is waiting.",
   outOfAct:
-    "Eager. I do like that. But that part of the house has not finished being arranged, and no good party shows the guest its kitchen early.",
+    "Out of order. The survey resumes its entries in the sequence they were opened. The house insists on it.",
   missingItems:
-    "You have arrived without something the arrangement needs. Look again behind you. I never hide a thing without leaving its handle showing.",
+    "The entry cannot proceed. Something the survey catalogued is not yet in the terminal's custody. Retrace.",
   missingPins:
-    "Not yet. One of my earlier arrangements is still sitting untouched, and I refuse to let you skip a single course of your own celebration.",
+    "An earlier entry stands open. The Division closes nothing out of order, and neither will you.",
   interactionRequired:
-    "The printed square has done its part. What happens next happens with your hands, on the mechanism I prepared. Paper cannot do everything.",
+    "The mark has done its work. What follows happens on the terminal, with your hands. Paper cannot finish an entry.",
 } as const;
 
 export type PinRefusalReason =
@@ -197,8 +197,7 @@ export function attemptResolvePin(
     (requiredPin) => !state.resolvedPins.includes(requiredPin),
   );
   const canRefuseSealedScan =
-    pin.kind === "sealed"
-    && pin.scannableFromAct !== undefined
+    pin.scannableFromAct !== undefined
     && state.act >= pin.scannableFromAct
     && method === "scan"
     && earlyMissingPins.length > 0;

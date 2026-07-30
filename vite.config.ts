@@ -39,6 +39,8 @@ const INCLUDED_GAME_ICONS = [
   "health-potion",
   "herbs-bundle",
   "key-card",
+  "locked-chest",
+  "folded-paper",
   "pistol-gun",
   "secret-book",
   "soda-can",

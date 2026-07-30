@@ -14,6 +14,7 @@ import { HomeScreen } from "./HomeScreen";
 import { MapScreen } from "./MapScreen";
 import { InventoryScreen } from "./InventoryScreen";
 import { ScanScreen } from "./ScanScreen";
+import { ScenePlate } from "./ScenePlate";
 import { NotesScreen } from "./NotesScreen";
 import { SaveScreen } from "./SaveScreen";
 import { TrophyScreen } from "./TrophyScreen";
@@ -67,6 +68,29 @@ function elapsedTimecode(startedAt: number): string {
     .join(":");
 }
 
+function useRouteShroud(route: string): { displayedRoute: string; phase: "idle" | "out" | "hold" | "in" } {
+  const [displayedRoute, setDisplayedRoute] = useState(route);
+  const [phase, setPhase] = useState<"idle" | "out" | "hold" | "in">("idle");
+
+  useEffect(() => {
+    if (route === displayedRoute) return;
+    setPhase("out");
+    const toHold = window.setTimeout(() => {
+      setPhase("hold");
+      setDisplayedRoute(route);
+      const toIn = window.setTimeout(() => {
+        setPhase("in");
+        const toIdle = window.setTimeout(() => setPhase("idle"), 420);
+        return () => window.clearTimeout(toIdle);
+      }, 180);
+      return () => window.clearTimeout(toIn);
+    }, 320);
+    return () => window.clearTimeout(toHold);
+  }, [route, displayedRoute]);
+
+  return { displayedRoute, phase };
+}
+
 function useHouseRouter() {
   const [route, setRoute] = useState("/");
 
@@ -98,15 +122,16 @@ function useHouseRouter() {
 }
 
 const NAV_ITEMS = [
-  { path: "/map", label: "MAP" },
-  { path: "/inventory", label: "CASE" },
-  { path: "/scan", label: "SCAN" },
-  { path: "/notes", label: "NOTES" },
+  { path: "/map", label: "Map" },
+  { path: "/inventory", label: "Items" },
+  { path: "/scan", label: "Lens" },
+  { path: "/notes", label: "Files" },
 ] as const;
 
 export function GameApp() {
   const store = useGameStore();
-  const { route, navigate } = useHouseRouter();
+  const { route: targetRoute, navigate } = useHouseRouter();
+  const { displayedRoute: route, phase: shroudPhase } = useRouteShroud(targetRoute);
   const [coldOpen, setColdOpen] = useState(true);
   const [seenArrival, setSeenArrival] = useState<unknown>(null);
   const state = useMemo(
@@ -239,6 +264,12 @@ export function GameApp() {
     && resolutionModeForPin(store.lastResolution.pin) === "ar"
       ? store.lastResolution
       : null;
+
+  const latestResolvedPin = [...store.resolvedPins]
+    .reverse()
+    .map((pinId) => getPinById(pinId))
+    .find((pin) => pin !== undefined);
+  const currentZone = latestResolvedPin?.zone ?? "corridor";
 
   const begin = () => {
     const unlock = audio.master.unlock();
@@ -389,12 +420,17 @@ export function GameApp() {
 
   return (
     <main className="game-shell" data-route={route}>
+      <ScenePlate route={route} zone={currentZone} coldOpen={route === "/" && coldOpen} />
+      <div className="screen-grain" aria-hidden="true" />
+      {shroudPhase !== "idle" && (
+        <div className="route-shroud" data-phase={shroudPhase} aria-hidden="true" />
+      )}
       {!hideChrome && (
         <header className="app-header">
           <button className="app-header__brand" onClick={() => navigate("/")}>
-            <span>BH</span><strong>SEVEN</strong>
+            <span>CD</span><strong>FILE 33</strong>
           </button>
-          <div className="app-header__status"><span>ACT {store.act}</span><small>MEMORY HELD</small></div>
+          <div className="app-header__status"><span>Chapter {store.act}</span><small>Survey open</small></div>
         </header>
       )}
       <div className="screen-slot">{page}</div>

@@ -47,12 +47,9 @@ test("build order keys the incoming creature and precaches WebP without general 
   assert.doesNotMatch(processor, /https?:\/\/|\bfetch\s*\(/);
 });
 
-test("pin 12 is previewed and routed to tape without resolving early", () => {
+test("the tape route is retired but stays typed and dormant", () => {
   const home = readFileSync("src/components/HomeScreen.tsx", "utf8");
-  const gate = home.indexOf('nextPin.id === TAPE_PLAYBACK_PIN_ID');
-  assert.ok(gate >= 0, "the home driver must own the tape handoff");
-  assert.match(home, /previewPin\(nextPin\.id, mode\)/);
-  assert.match(home, /"\/tape"/);
+  assert.ok(!home.includes("/tape"), "the home driver no longer routes to tape");
 });
 
 test("app shell owns the tape route and resolves pin 12 only after playback", () => {

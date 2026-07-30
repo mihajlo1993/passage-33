@@ -9,8 +9,8 @@ import { TOTAL_PIN_COUNT } from "@/src/pins";
 import { motion } from "@/src/tokens";
 import type { GameState } from "@/src/types";
 
-const VERDICT_FRONT = ["L", "O", "S", "E", "R", ""] as const;
-const VERDICT_BACK = ["W", "I", "N", "N", "E", "R"] as const;
+const VERDICT_FRONT = ["S", "E", "A", "L", "E", "D"] as const;
+const VERDICT_BACK = ["Y", "O", "U", "R", "S", "."] as const;
 const VERDICT_FLIP_DELAY_MS = 1_400;
 
 /**
@@ -33,7 +33,7 @@ function PadlockVerdict() {
     <div
       className="padlock-verdict"
       role="img"
-      aria-label={flipped ? "The padlock reads WINNER" : "The padlock reads LOSER"}
+      aria-label={flipped ? "The file is yours" : "The file is sealed"}
     >
       {VERDICT_BACK.map((back, index) => (
         <span
@@ -113,9 +113,9 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   if (!trophyUnlocked) {
     return (
       <section className="screen trophy-locked" aria-labelledby="trophy-title">
-        <p className="eyebrow">THE ALTAR</p>
-        <h1 id="trophy-title">NOT YET.</h1>
-        <p className="host-copy">I did bake the ending. You still have to carry the flame to it.</p>
+        <p className="eyebrow">The file</p>
+        <h1 id="trophy-title">Still open.</h1>
+        <p className="host-copy">Entries remain. The Division closes nothing out of order.</p>
         <button className="mechanical-button mechanical-button--primary" onClick={() => navigate("/scan")}>
           RETURN TO THE HUNT
         </button>
@@ -130,12 +130,13 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   if (finalPresentsOpened) {
     return (
       <section className="screen trophy-locked" aria-labelledby="trophy-title">
-        <p className="eyebrow">THE PADLOCK READS</p>
-        <h1 id="trophy-title">WINNER.</h1>
+        <p className="eyebrow">Entry 105 of 105</p>
+        <h1 id="trophy-title">Classification: Birthday</h1>
         <p className="host-copy">
-          Both presents are open. The letter is in your notes, signed by the only
-          person who was ever here with you. The water can sparkle whenever you
-          ask it to. Happy birthday, Melissa. The house is yours.
+          The survey is closed. Thirty-three years of counting, resolved in one
+          evening, by the specimen herself. The property is released to the
+          occupant. Everything the house counted, it counted for you. Happy
+          birthday, Melissa.
         </p>
       </section>
     );
@@ -166,8 +167,8 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
       </div>
       <div className="trophy-card">
         <PadlockVerdict />
-        <p className="eyebrow">BIRTHDAY RECORD // 33</p>
-        <h1 id="trophy-title">THIRTY-THREE CANDLES</h1>
+        <p className="eyebrow">Survey record 33</p>
+        <h1 id="trophy-title">The Count Is Complete</h1>
         <p className="trophy-card__message">{remainingMessage}</p>
         <dl className="trophy-stats">
           <div><dt>CONTACTS</dt><dd>{String(state.resolvedPins.length).padStart(2, "0")} / {TOTAL_PIN_COUNT}</dd></div>

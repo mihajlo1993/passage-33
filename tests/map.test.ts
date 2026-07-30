@@ -206,11 +206,9 @@ test("fixed furniture records include every surveyed object and profile", () => 
 
 test("room status is semantic: corridor starts entered, pins enter, clears override", () => {
   const initial = createDefaultGameState(1_000);
-  assert.equal(roomState(initial, "corridor").status, "unresolved");
   assert.equal(roomState(initial, "bathroom").status, "unentered");
-  assert.equal(roomState(initial, "entry").status, "unentered");
 
-  const enteredBathroom: GameState = { ...initial, resolvedPins: [4] };
+  const enteredBathroom: GameState = { ...initial, resolvedPins: [15] };
   assert.equal(roomState(enteredBathroom, "bathroom").status, "unresolved");
 
   const clearedWithoutPins: GameState = {
