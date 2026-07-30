@@ -30,7 +30,7 @@ export const HIDING = {
 /** The number lock on stage three: yearBorn + dayOfNight + locks. */
 export const NUMBER_LOCK = {
   yearBorn: 1993,
-  dayOfNight: 31,
+  dayOfNight: 2,
   locks: 4,
 } as const;
 
@@ -72,7 +72,7 @@ export const LETTER_CODA = [
 export type WitnessPuzzle =
   | { readonly kind: 'clicks'; readonly pattern: readonly ('L' | 'W' | 'R')[] }
   | { readonly kind: 'sum' }
-  | { readonly kind: 'stars'; readonly count: number };
+  | { readonly kind: 'testimony' };
 
 export interface RiddleConfig {
   readonly model: string;
@@ -121,31 +121,31 @@ export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> 
     model: '/models/witnessWager.glb',
     benchNote: 'Three numbers ride this witness. The wheels below take their sum.',
     riddle:
-      'The Keeper cut three numbers into this witness, one to a face: the year you were born, the day of this very night, and the count of his locks. Turn it, take all three, and set their sum on the brass wheels.',
+      'The Keeper cut three numbers into this witness, one to a face: the year you were born, the day you were born returning as the day of this very night, and the count of his locks. Turn it, take all three, and set their sum on the brass wheels.',
     answers: [],
     numeric: true,
     puzzle: { kind: 'sum' },
     hints: [
-      'Turn the witness face by face. Each face wears one number; the clockmaker writes four as IIII.',
-      'The year is 1993. Tonight is the 31st. The Keeper built four locks. Add them.',
-      'Set the wheels to 2 0 2 8 and turn the lock.',
+      'Turn the witness face by face. It wears your birth year, the day your birthday returns tonight, and IIII for the Keeper\'s four locks.',
+      'The year is 1993. You were born on the 2nd, and tonight is the 2nd again. The Keeper built four locks. Add them.',
+      '1993 + 2 + 4 = 1999. Set the wheels to 1 9 9 9 and turn the lock.',
     ],
   },
   8: {
     model: '/models/witnessSparkle.glb',
-    benchNote: 'Seven stars, one breath. Touch them in the order they rose.',
+    benchNote: 'A silver vessel gives its evidence in three parts: what it takes, what it breathes, what it returns.',
     riddle:
-      'The last gift breathes in silver and breathes out stars. Seven of them left its mouth the night the letter was sealed, and the lock counted every one. Touch the stars in the order they rose: the lowest first, then upward, one by one.',
+      'The last witness is under oath. Turn its IN, GAS, and OUT shutters until it can say, truthfully: I take ____. I breathe ____. I return ____. Test the statement, then name the apparatus. The Keeper has already wrapped one. Naturally.',
     answers: [
       'carbonator', 'aarke', 'sodastream', 'sparklingwater', 'sodamaker',
       'gaziranavoda', 'soda', 'fizzywater', 'watercarbonator',
       'sparklingwatermaker', 'sodawater',
     ],
-    puzzle: { kind: 'stars', count: 7 },
+    puzzle: { kind: 'testimony' },
     hints: [
-      'The stars hang above the vessel. They rose one at a time, from its mouth upward.',
-      'Start with the lowest star, closest to the silver. Then the next lowest, all the way to the top.',
-      'Touch the lowest unlit star. It glows now to show you the way.',
+      'The witness speaks in order: what goes in, what charges it, what comes back out. The seven points above its mouth are evidence.',
+      'It takes something still. The metal breath is CO2. What returns is fit for a birthday glass.',
+      'Set STILL WATER, SILVER BREATH, STARS. Press TEST THE WITNESS. Then press CARBONATOR. The next correct control now glows.',
     ],
   },
 };

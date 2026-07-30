@@ -2,9 +2,8 @@
 
 /**
  * The Keeper's voice: plain HTMLAudio, outside the engine graph, so a clip
- * can never be blocked by engine state. One user gesture (Begin) blesses
- * every element; failures degrade silently because every line also exists
- * as on-screen text.
+ * can never be blocked by engine state. Begin primes the local elements, and
+ * later gesture-bound calls can report whether playback actually started.
  */
 const CLIPS = {
   intro: "/audio/keeper/keeper-intro.mp3",
@@ -18,8 +17,25 @@ const CLIPS = {
 
 export type KeeperClipId = keyof typeof CLIPS;
 
+export interface KeeperPlaybackResult {
+  readonly started: boolean;
+  readonly startedAt: number | null;
+}
+
+export interface KeeperPlayOptions {
+  readonly restart?: boolean;
+}
+
+const BLOCKED_PLAYBACK: KeeperPlaybackResult = {
+  started: false,
+  startedAt: null,
+};
+
 const players = new Map<KeeperClipId, HTMLAudioElement>();
 let unlocked = false;
+let activeId: KeeperClipId | null = null;
+let activeStartedAt: number | null = null;
+let activeAttempt: Promise<KeeperPlaybackResult> | null = null;
 
 function ensurePlayers(): void {
   if (players.size > 0 || typeof window === "undefined") return;
@@ -30,52 +46,107 @@ function ensurePlayers(): void {
   }
 }
 
-/** Call from the Begin tap: blesses every element for later play(). */
+function playbackClock(): number {
+  return typeof performance === "undefined" ? Date.now() : performance.now();
+}
+
+/** Call from Begin so later local voice clips are ready to play. */
 export function unlockKeeper(): void {
+  if (unlocked) return;
   ensurePlayers();
   unlocked = true;
-  for (const element of players.values()) {
+  for (const [id, element] of players) {
     try {
       element.muted = true;
       const attempt = element.play();
-      if (attempt?.then) {
-        attempt
-          .then(() => {
-            element.pause();
-            element.currentTime = 0;
-            element.muted = false;
-          })
-          .catch(() => {
-            element.muted = false;
-          });
-      }
+      void Promise.resolve(attempt).then(
+        () => {
+          if (activeId === id) return;
+          element.pause();
+          element.currentTime = 0;
+          element.muted = false;
+        },
+        () => {
+          if (activeId !== id) element.muted = false;
+        },
+      );
     } catch {
-      element.muted = false;
+      if (activeId !== id) element.muted = false;
     }
   }
 }
 
-export function playKeeper(id: KeeperClipId): void {
-  if (!unlocked) return;
+/**
+ * Start a local Keeper clip and report whether the browser accepted it.
+ * Passing restart false reuses an already-running clip, preserving its clock.
+ */
+export function playKeeper(
+  id: KeeperClipId,
+  options: KeeperPlayOptions = {},
+): Promise<KeeperPlaybackResult> {
+  if (!unlocked) return Promise.resolve(BLOCKED_PLAYBACK);
   ensurePlayers();
-  stopKeeper();
   const element = players.get(id);
-  if (!element) return;
+  if (!element) return Promise.resolve(BLOCKED_PLAYBACK);
+
+  if (options.restart === false && activeId === id) {
+    if (activeAttempt) return activeAttempt;
+    if (activeStartedAt !== null && !element.paused && !element.ended) {
+      return Promise.resolve({ started: true, startedAt: activeStartedAt });
+    }
+  }
+
+  stopKeeper();
+  element.currentTime = 0;
+  element.muted = false;
+  activeId = id;
+  activeStartedAt = null;
+
   try {
-    element.currentTime = 0;
-    void element.play().catch(() => undefined);
+    const attempt = element.play();
+    const confirmation = Promise.resolve(attempt).then<KeeperPlaybackResult, KeeperPlaybackResult>(
+      () => {
+        if (activeId !== id) return BLOCKED_PLAYBACK;
+        const mediaElapsedMs = Number.isFinite(element.currentTime)
+          ? Math.max(0, element.currentTime * 1_000)
+          : 0;
+        const startedAt = playbackClock() - mediaElapsedMs;
+        activeStartedAt = startedAt;
+        return { started: true, startedAt };
+      },
+      () => {
+        if (activeId === id) {
+          activeId = null;
+          activeStartedAt = null;
+          activeAttempt = null;
+        }
+        return BLOCKED_PLAYBACK;
+      },
+    );
+    activeAttempt = confirmation;
+    void confirmation.then(() => {
+      if (activeAttempt === confirmation) activeAttempt = null;
+    });
+    return confirmation;
   } catch {
-    // Voice is garnish; the text is always on screen.
+    activeId = null;
+    activeStartedAt = null;
+    activeAttempt = null;
+    return Promise.resolve(BLOCKED_PLAYBACK);
   }
 }
 
 export function stopKeeper(): void {
+  activeId = null;
+  activeStartedAt = null;
+  activeAttempt = null;
   for (const element of players.values()) {
     try {
       element.pause();
       element.currentTime = 0;
+      element.muted = false;
     } catch {
-      // fine
+      // The on-screen copy remains available if media teardown fails.
     }
   }
 }

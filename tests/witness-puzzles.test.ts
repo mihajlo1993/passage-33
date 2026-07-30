@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { numberLockAnswer, riddleConfigByPin } from "../src/pins";
-import { starAnchor } from "../src/components/WitnessPuzzles";
+import {
+  SPARKLE_NAMEPLATES,
+  SPARKLE_SHUTTERS,
+  sparkleStatementIsTrue,
+} from "../src/components/WitnessPuzzles";
 
 const root = new URL("..", import.meta.url);
 
@@ -17,7 +21,7 @@ test("lock I is a typed riddle; locks II, III, IV are witness puzzles", () => {
   assert.equal(riddleConfigByPin[1]!.puzzle, undefined);
   assert.equal(riddleConfigByPin[3]!.puzzle?.kind, "clicks");
   assert.equal(riddleConfigByPin[5]!.puzzle?.kind, "sum");
-  assert.equal(riddleConfigByPin[8]!.puzzle?.kind, "stars");
+  assert.equal(riddleConfigByPin[8]!.puzzle?.kind, "testimony");
 });
 
 test("the runner's click pattern is playable and matches its own story", () => {
@@ -34,31 +38,40 @@ test("the runner's click pattern is playable and matches its own story", () => {
 });
 
 test("the wager's wheels take exactly the engraved sum", () => {
-  assert.equal(numberLockAnswer(), 2028);
+  assert.equal(numberLockAnswer(), 1999);
   const config = riddleConfigByPin[5]!;
   assert.ok(config.numeric, "typed fallback data stays numeric");
-  assert.match(config.hints[2], /2 0 2 8/);
+  assert.match(config.hints[2], /1 9 9 9/);
 });
 
-test("the star ladder counts exactly the stars the witness carries", () => {
+test("the sparkle witness must testify truthfully before it can be named", () => {
   const puzzle = riddleConfigByPin[8]!.puzzle;
-  assert.ok(puzzle?.kind === "stars");
-  assert.equal(puzzle.count, 7, "scripts/build-witnesses.mjs casts seven rising stars");
-  // anchors rise strictly with index, from the vessel's mouth upward
-  let previous = -Infinity;
-  for (let index = 0; index < puzzle.count; index += 1) {
-    const anchor = starAnchor(index);
-    assert.ok(anchor.y > previous, `star ${index} must sit higher than the one before`);
-    previous = anchor.y;
+  assert.ok(puzzle?.kind === "testimony");
+  assert.deepEqual(
+    SPARKLE_SHUTTERS.map((shutter) => shutter.answer),
+    ["STILL WATER", "SILVER BREATH", "STARS"],
+  );
+  for (const shutter of SPARKLE_SHUTTERS) {
+    assert.equal(shutter.options[shutter.correctIndex], shutter.answer);
   }
+  const truthful = SPARKLE_SHUTTERS.map((shutter) => shutter.correctIndex);
+  assert.equal(sparkleStatementIsTrue(truthful), true);
+  assert.equal(sparkleStatementIsTrue([0, 0, 0]), false);
+  assert.ok(SPARKLE_NAMEPLATES.includes("CARBONATOR"));
+  const config = riddleConfigByPin[8]!;
+  assert.match(config.riddle, /under oath/i);
+  assert.match(config.hints[2], /STILL WATER.*SILVER BREATH.*STARS.*CARBONATOR/i);
 });
 
 test("puzzles never watch the camera and never hard-stall", () => {
   const source = readFileSync(new URL("src/components/WitnessPuzzles.tsx", root), "utf8");
   assert.doesNotMatch(source, /camera-change/, "no camera watching");
   assert.doesNotMatch(source, /getCameraOrbit/, "no orbit-angle gating");
+  assert.doesNotMatch(source, /pointermove|touchmove/, "no gesture math");
   assert.match(source, /puzzle-fallback/, "a lost model degrades to plain buttons");
+  assert.match(source, /addEventListener\("error", handleModelError\)/, "model failure uses a native listener");
   assert.match(source, /is-next/, "the third hint glows the next correct touch");
+  assert.match(source, /statementAccepted/, "the last witness must pass before it can be named");
   for (const pinId of [3, 5, 8] as const) {
     assert.equal(riddleConfigByPin[pinId]!.hints.length, 3);
   }

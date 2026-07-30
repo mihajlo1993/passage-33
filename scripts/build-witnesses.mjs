@@ -3,7 +3,7 @@
 // catalogue base and carries content that genuinely serves its riddle:
 //   witnessField.glb   - a woven field with the runner resting on it (lock I)
 //   witnessRunner.glb  - the runner itself, wheel and beaded tail (lock II)
-//   witnessWager.glb   - a three-sided obelisk wearing 1993 / 31 / IIII (lock III)
+//   witnessWager.glb   - a three-sided obelisk wearing 1993 / 2 / IIII (lock III)
 //   witnessSparkle.glb - the carbonator breathing out stars (lock IV)
 // Undersides are mirror-safe (tick ring + tally notches, no words), because
 // bottom-cap text orientation depends on the viewer. Deterministic output.
@@ -619,7 +619,7 @@ function buildWager() {
   const FACE_ASPECT_FIX = (0.057 / 0.082) / (341 / 336);
   const faces = [
     { region: { x: 0, y: 256, w: 341, h: 336 }, text: "1993" },
-    { region: { x: 341, y: 256, w: 341, h: 336 }, text: "31" },
+    { region: { x: 341, y: 256, w: 341, h: 336 }, text: "2" },
     { region: { x: 682, y: 256, w: 341, h: 336 }, text: "IIII" },
   ];
   for (const face of faces) {
@@ -711,10 +711,8 @@ function buildSparkle() {
     null,
     null,
   );
-  // Stars rising out of the mouth. Generously spaced: they are tap targets
-  // in the last lock, so each must stay a clean touch on a phone screen.
-  // The star-ladder anchors in src/components/WitnessPuzzles.tsx mirror
-  // this formula exactly; change them together.
+  // Stars rising out of the mouth. They remain physical evidence for the
+  // last witness while the testimony controls stay explicit and separate.
   for (let i = 0; i < 7; i += 1) {
     const t = i / 6;
     const r = 0.0032 + 0.0009 * ((i * 7) % 3);

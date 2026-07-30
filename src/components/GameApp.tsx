@@ -4,7 +4,7 @@ import {
   Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState,
 } from "react";
 import { Phase2IntegrationCoordinator, useGameStore } from "@/src/game";
-import { resolutionModeForPin } from "@/src/game/engine";
+import { areFinalPresentsResolved, resolutionModeForPin } from "@/src/game/engine";
 import { TAPE_PLAYBACK_PIN_ID, getPinById } from "@/src/pins";
 import { playKeeper, unlockKeeper } from "@/src/audio/keeper";
 import { useHaptics, useWakeLock } from "@/src/device";
@@ -104,6 +104,13 @@ function useHouseRouter() {
 
   const navigate = useCallback((path: string) => {
     const next = path.split("?")[0] || "/";
+    if (
+      next === "/trophy"
+      && areFinalPresentsResolved(useGameStore.getState().resolvedPins)
+    ) {
+      unlockKeeper();
+      void playKeeper("lock4", { restart: false });
+    }
     if (next === "/save") {
       const pin = useGameStore.getState().lastSavePin;
       if (pin !== null) sessionStorage.setItem("bh7-save-ticket", String(pin));
@@ -419,7 +426,7 @@ export function GameApp() {
     }
   })();
 
-  const hideChrome = route === "/ar" || route === "/tape"
+  const hideChrome = route === "/ar" || route === "/tape" || route === "/trophy"
     || (route === "/" && coldOpen);
 
   return (

@@ -121,11 +121,11 @@
   },
   "witnessWager": {
     "file": "/models/witnessWager.glb",
-    "name": "The third witness (lock III, 1993 + 31 + IIII)",
+    "name": "The third witness (lock III, 1993 + 2 + IIII)",
     "author": "built in repo",
     "license": "original",
     "source": "scripts/build-witnesses.mjs",
-    "bytes": 181908
+    "bytes": 179188
   },
   "witnessSparkle": {
     "file": "/models/witnessSparkle.glb",

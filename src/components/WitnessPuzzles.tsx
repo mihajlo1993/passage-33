@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { REFUSAL_LINES, numberLockAnswer, type RiddleConfig } from "@/src/pins";
 import type { Pin } from "@/src/types";
 import type { ModelViewerElement } from "@/src/model-viewer";
@@ -33,17 +33,52 @@ const RUNNER_SPOTS = {
   W: { position: "0 0.0635 0.0195", normal: "0 1 0.25", label: "W" },
 } as const;
 
-export function starAnchor(index: number): { x: number; y: number; z: number } {
-  return {
-    x: 0.012 * Math.sin(index * 2.1),
-    y: 0.028 + 0.084 + (index / 6) * 0.09,
-    z: 0.012 * Math.cos(index * 1.7),
-  };
+/** Three shutters make the last witness give a complete, truthful statement. */
+export const SPARKLE_SHUTTERS = [
+  {
+    id: "intake",
+    lead: "I TAKE",
+    hotspot: "IN",
+    position: "0 0.055 0.02",
+    normal: "0 0 1",
+    options: ["BIRTHDAY WINE", "STILL WATER", "RAIN"],
+    answer: "STILL WATER",
+    correctIndex: 1,
+  },
+  {
+    id: "charge",
+    lead: "I BREATHE",
+    hotspot: "GAS",
+    position: "0.024 0.09 0",
+    normal: "1 0.25 0",
+    options: ["HOT AIR", "GOOD INTENTIONS", "SILVER BREATH"],
+    answer: "SILVER BREATH",
+    correctIndex: 2,
+  },
+  {
+    id: "return",
+    lead: "I RETURN",
+    hotspot: "OUT",
+    position: "0 0.16 0.012",
+    normal: "0 0 1",
+    options: ["STEAM", "STARS", "APOLOGIES"],
+    answer: "STARS",
+    correctIndex: 1,
+  },
+] as const;
+
+export const SPARKLE_NAMEPLATES = ["KETTLE", "CARBONATOR", "DECANTER"] as const;
+
+export function sparkleStatementIsTrue(selections: readonly number[]): boolean {
+  return selections.length === SPARKLE_SHUTTERS.length
+    && SPARKLE_SHUTTERS.every(
+      (shutter, index) => selections[index] === shutter.correctIndex,
+    );
 }
 
 /** Camera azimuths that square each obelisk face to the viewer. */
 const WAGER_FACE_THETA = [0, -120, -240] as const;
-const WAGER_OPERANDS = ["1993", "31", "IIII"] as const;
+const WAGER_OPERANDS = ["1993", "2", "IIII"] as const;
 
 /** Shared refusal/feedback state for a lock: rotate lines, shake, damage. */
 function useLockFeedback(onWrongAttempt: () => void) {
@@ -88,13 +123,38 @@ interface BenchProps {
   children?: React.ReactNode;
 }
 
+function assignViewerRef(
+  ref: React.Ref<ModelViewerElement> | undefined,
+  value: ModelViewerElement | null,
+): void {
+  if (typeof ref === "function") {
+    ref(value);
+    return;
+  }
+  if (ref) ref.current = value;
+}
+
 /** The lit bench with the witness and its tappable hotspots. */
 function WitnessBench({ config, lost, onLost, cameraOrbit, cameraTarget, viewerRef, children }: BenchProps) {
+  const onLostRef = useRef(onLost);
+  const attachedViewerRef = useRef<ModelViewerElement | null>(null);
+  onLostRef.current = onLost;
+
+  const handleModelError = useCallback(() => {
+    onLostRef.current();
+  }, []);
+  const attachViewer = useCallback((viewer: ModelViewerElement | null) => {
+    attachedViewerRef.current?.removeEventListener("error", handleModelError);
+    attachedViewerRef.current = viewer;
+    assignViewerRef(viewerRef, viewer);
+    viewer?.addEventListener("error", handleModelError);
+  }, [handleModelError, viewerRef]);
+
   return (
     <div className="riddle-bench riddle-bench--puzzle">
       {!lost && (
         <model-viewer
-          ref={viewerRef}
+          ref={attachViewer}
           className="riddle-bench__viewer"
           src={config.model}
           alt="The Keeper's witness for this lock"
@@ -329,7 +389,7 @@ export function WagerSum({ pin, config, onSolved, onCancel, onWrongAttempt }: Wi
           ))}
         </div>
         {allSeen && (
-          <p className="puzzle-sum" aria-live="polite">1993 + 31 + IIII. The wheels take the sum.</p>
+          <p className="puzzle-sum" aria-live="polite">1993 + 2 + IIII. The wheels take the sum.</p>
         )}
 
         <div className="dial-row" aria-label="Four brass wheels">
@@ -368,47 +428,66 @@ export function WagerSum({ pin, config, onSolved, onCancel, onWrongAttempt }: Wi
   );
 }
 
-/* ============= LOCK IV: touch the stars in the order they rose ============= */
+/* =========== LOCK IV: make the witness testify, then name it =========== */
 
 export function StarLadder({ pin, config, onSolved, onCancel, onWrongAttempt }: WitnessPuzzleProps) {
-  const count = config.puzzle?.kind === "stars" ? config.puzzle.count : 7;
-  const [progress, setProgress] = useState(0);
+  const [selections, setSelections] = useState<[number, number, number]>([0, 0, 0]);
+  const [statementAccepted, setStatementAccepted] = useState(false);
   const [hintCount, setHintCount] = useState(0);
   const [lost, setLost] = useState(false);
   const [wordsShown, setWordsShown] = useState(true);
   const feedback = useLockFeedback(onWrongAttempt);
-  const glowing = hintCount >= 3;
+  const guideOn = hintCount >= 3;
+  const nextWrongShutter = SPARKLE_SHUTTERS.findIndex(
+    (shutter, index) => selections[index] !== shutter.correctIndex,
+  );
 
-  const tap = (index: number) => {
-    if (progress >= count) return;
-    if (index === progress) {
+  const turnShutter = (index: number) => {
+    if (statementAccepted) return;
+    feedback.step();
+    setSelections((current) => {
+      const shutter = SPARKLE_SHUTTERS[index];
+      if (!shutter) return current;
+      const next = [...current] as [number, number, number];
+      next[index] = (next[index] + 1) % shutter.options.length;
+      return next;
+    });
+  };
+
+  const testStatement = () => {
+    if (sparkleStatementIsTrue(selections)) {
       feedback.step();
-      const next = progress + 1;
-      setProgress(next);
-      if (next === count) feedback.solved(onSolved);
+      setStatementAccepted(true);
       return;
     }
-    setProgress(0);
     feedback.wrong(2);
   };
 
-  const stars = Array.from({ length: count }, (_, index) => {
-    const anchor = starAnchor(index);
+  const nameWitness = (name: typeof SPARKLE_NAMEPLATES[number]) => {
+    if (name === "CARBONATOR") {
+      feedback.solved(onSolved);
+      return;
+    }
+    feedback.wrong(2);
+  };
+
+  const shutters = SPARKLE_SHUTTERS.map((shutter, index) => {
+    const selected = shutter.options[selections[index] ?? 0];
+    const guided = guideOn && nextWrongShutter === index;
     return (
       <button
-        key={index}
-        slot={`hotspot-star-${index}`}
-        data-position={`${anchor.x} ${anchor.y} ${anchor.z}`}
-        data-normal="0 0 1"
+        key={shutter.id}
+        slot={`hotspot-sparkle-${shutter.id}`}
+        data-position={shutter.position}
+        data-normal={shutter.normal}
         className={
-          "witness-hotspot witness-hotspot--star"
-          + (index < progress ? " is-lit" : "")
-          + (glowing && index === progress ? " is-next" : "")
+          "witness-hotspot witness-hotspot--shutter"
+          + (guided ? " is-next" : "")
         }
-        aria-label={`Star ${index + 1} of ${count}, counting from the lowest`}
-        onClick={() => tap(index)}
+        aria-label={`${shutter.lead}: ${selected}. Tap to turn the shutter.`}
+        onClick={() => turnShutter(index)}
       >
-        <i aria-hidden="true" />
+        {shutter.hotspot}
       </button>
     );
   });
@@ -423,27 +502,75 @@ export function StarLadder({ pin, config, onSolved, onCancel, onWrongAttempt }: 
         cameraOrbit="0deg 85deg 0.32m"
         cameraTarget="0m 0.15m 0m"
       >
-        {stars}
+        {!statementAccepted && shutters}
       </WitnessBench>
 
       <div className={"riddle-box re-frame" + (feedback.shaking ? " riddle-box--shake" : "")}>
         <WordsToggle shown={wordsShown} onToggle={() => setWordsShown(!wordsShown)} />
         {wordsShown && <p className="riddle-box__riddle">{config.riddle}</p>}
-        <p className="puzzle-sum" aria-live="polite">
-          {progress} of {count} stars caught{progress > 0 && progress < count ? ". Keep rising." : "."}
-        </p>
-        {lost && (
-          <div className="puzzle-fallback">
-            {Array.from({ length: count }, (_, index) => (
+
+        <div className="sparkle-statement" aria-label="The witness statement">
+          {SPARKLE_SHUTTERS.map((shutter, index) => (
+            <p className="sparkle-clause" key={shutter.id}>
+              <span>{shutter.lead}</span>
+              <strong className={statementAccepted ? "is-sworn" : ""}>
+                {shutter.options[selections[index] ?? 0]}
+              </strong>
+            </p>
+          ))}
+        </div>
+
+        {!statementAccepted && (
+          <>
+            {lost && (
+              <div className="puzzle-fallback sparkle-fallback" aria-label="Plain shutter controls">
+                {SPARKLE_SHUTTERS.map((shutter, index) => {
+                  const selected = shutter.options[selections[index] ?? 0];
+                  const guided = guideOn && nextWrongShutter === index;
+                  return (
+                    <button
+                      key={shutter.id}
+                      className={"mechanical-button sparkle-shutter" + (guided ? " is-next" : "")}
+                      onClick={() => turnShutter(index)}
+                    >
+                      {shutter.lead}: {selected}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <button
+              className={
+                "mechanical-button mechanical-button--primary mechanical-button--full sparkle-test"
+                + (guideOn && nextWrongShutter === -1 ? " is-next" : "")
+              }
+              onClick={testStatement}
+            >
+              Test the witness
+            </button>
+          </>
+        )}
+
+        {statementAccepted && (
+          <>
+            <p className="puzzle-sum" aria-live="polite">
+              The statement is true. Name the apparatus.
+            </p>
+            <div className="sparkle-nameplates" aria-label="Name the apparatus">
+              {SPARKLE_NAMEPLATES.map((name) => (
               <button
-                key={index}
-                className={"mechanical-button" + (index < progress ? " is-lit" : "")}
-                onClick={() => tap(index)}
+                  key={name}
+                  className={
+                    "mechanical-button sparkle-nameplate"
+                    + (guideOn && name === "CARBONATOR" ? " is-next" : "")
+                  }
+                  onClick={() => nameWitness(name)}
               >
-                {index + 1}
+                  {name}
               </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
         <p className="riddle-box__feedback" aria-live="polite">{feedback.feedback}</p>
         {wordsShown && (

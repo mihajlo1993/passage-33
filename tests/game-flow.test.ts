@@ -93,10 +93,11 @@ test("the riddle matcher is forgiving and exact where it must be", () => {
   assert.ok(!riddleAnswerMatches(runner, "rat"));
 
   const wager = riddleConfigByPin[5]!;
+  assert.equal(numberLockAnswer(), 1999);
   assert.equal(numberLockAnswer(), NUMBER_LOCK.yearBorn + NUMBER_LOCK.dayOfNight + NUMBER_LOCK.locks);
   assert.ok(riddleAnswerMatches(wager, String(numberLockAnswer())));
-  assert.ok(riddleAnswerMatches(wager, " 2,028 "));
-  assert.ok(!riddleAnswerMatches(wager, "2027"));
+  assert.ok(riddleAnswerMatches(wager, " 1,999 "));
+  assert.ok(!riddleAnswerMatches(wager, "1998"));
 
   const sparkle = riddleConfigByPin[8]!;
   assert.ok(riddleAnswerMatches(sparkle, "AARKE"));
@@ -123,7 +124,7 @@ test("story data is complete and clean", () => {
     assert.ok(["intro", "lock1", "lock2", "lock3", "lock4", "dark", "refuse"].includes(clip as string));
   }
   const source = readFileSync(new URL("../src/pins.ts", import.meta.url), "utf8");
-  assert.ok(!source.includes("—"), "no em dashes");
+  assert.ok(!source.includes(String.fromCodePoint(0x2014)), "no em dashes");
 });
 
 test("setbacks sting, floor at zero, and never block progress", () => {

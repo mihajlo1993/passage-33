@@ -19,9 +19,9 @@ A held-dark heartbeat beat guards the last lock. Finale: the whole letter
 read aloud in the Keeper's voice over the music box + 33 CSS candles +
 "Happy birthday, Melissa."
 
-Deployed: pushed to main -> Vercel auto-deploys. Latest deployed commit:
-64f6d74. SERVICE WORKER IS REMOVED and boot code evicts any old worker and
-caches, so a plain refresh always shows the newest build.
+GitHub main is the release source. Miha deploys through v0 from main. Do not
+touch Vercel from this repository. SERVICE WORKER IS REMOVED and boot code
+evicts any old worker and caches, so a plain refresh shows the newest build.
 
 ## Answers and flow (for the operator, i.e. Miha)
 
@@ -35,12 +35,15 @@ witness itself (2026-07-30 late rework, per Miha: "not only riddles").
   L, R, R, R, W (one left for the open lock, a right for each of the three
   waiting, the wheel last). Mistap resets the pattern gently.
 - Stage 3 THE WAGER (EuroMillions slips): COMBINATION PUZZLE: "Turn the
-  witness" button spins the obelisk face to face (1993 / 31 / IIII revealed
-  as chips), then four brass dial wheels take the sum: set 2 0 2 8 and
+  witness" button spins the obelisk face to face (1993 / 2 / IIII revealed
+  as chips). The 2 is both her birthday date and the date of the game. Four
+  brass dial wheels take the sum: 1993 + 2 + 4 = 1999, so set 1 9 9 9 and
   press "Turn the lock".
-- Stage 4 THE SPARKLE (carbonator): STAR LADDER: the seven star-beads above
-  the vessel are tap targets; touch them lowest to highest. Mistap resets.
-  Preceded by pin 7 "The Dark" (lights out, 14 s hold, heartbeat, 25 dmg).
+- Stage 4 THE SPARKLE (carbonator): TESTIMONY PUZZLE: turn the IN, GAS, and
+  OUT shutters until the witness says STILL WATER / SILVER BREATH / STARS,
+  press "Test the witness", then name it CARBONATOR from three plates. The
+  seven cast stars remain visible evidence. Preceded by pin 7 "The Dark"
+  (lights out, 14 s hold, heartbeat, 25 dmg).
 - All puzzles: 3 free hints; the THIRD hint makes the next correct touch
   GLOW (no hard-stall possible); wrong actions rotate refusal lines and
   tick health; a witness model that fails to load degrades to plain
@@ -61,15 +64,16 @@ witness itself (2026-07-30 late rework, per Miha: "not only riddles").
 ## Where everything lives
 
 - src/pins.ts: THE SETUP BLOCK at the top: HIDING (four hiding-place
-  sentences: EDIT THESE FOR THE REAL FLAT), NUMBER_LOCK {1993, 31, 4},
+  sentences: EDIT THESE FOR THE REAL FLAT), NUMBER_LOCK {1993, 2, 4},
   FRAGMENTS (the four letter quarters), riddleConfigByPin (riddles,
   accepted answers, hints), REFUSAL_LINES, KEEPER_VOICE_BY_PIN.
   Graph: 9 pins (1..9), acts 1-4, win = pin 9.
 - src/components/RiddleLock.tsx: the lock screen (bench + input + hints).
 - src/components/ActionBeat.tsx: collect steps + the dark beat (threshold).
-- src/audio/keeper.ts: Keeper voice player (plain HTMLAudio, unlocked by
-  the Begin tap). Clips: public/audio/keeper/keeper-{intro,lock1,lock2,
-  lock3,lock4,dark,refuse}.mp3 (Callum, ElevenLabs).
+- src/audio/keeper.ts: Keeper voice player (plain HTMLAudio, primed by the
+  Begin tap). The tap that opens /trophy starts lock4 directly and reports
+  refusal so the letter can show a visible retry. Clips:
+  public/audio/keeper/keeper-{intro,lock1,lock2,lock3,lock4,dark,refuse}.mp3.
 - Finale: src/components/TrophyScreen.tsx. The letter is read aloud WORD BY
   WORD (LetterReading component): FRAGMENTS as the formal quarters, then
   LETTER_CODA (src/pins.ts) where the mask comes off: proud of her, deep
@@ -81,6 +85,8 @@ witness itself (2026-07-30 late rework, per Miha: "not only riddles").
   scroll always wins, candles + "Happy birthday, Melissa." light after the
   last word, and the house goes quiet ONLY via the "Put the letter down"
   button (an auto-quiet timer once ate the letter after 2 s; never again).
+  The letter is a full-screen document with app chrome hidden. If Chrome
+  refuses playback, "READ THE LETTER ALOUD" retries from a visible control.
   The coda never leaks early: the Letter tab shows fragments only.
 - Lock screens: the bench flex-grows; "Give the witness room" tucks the
   instruction + hints away so the 3D canvas dominates ("Show the words"
@@ -102,7 +108,7 @@ witness itself (2026-07-30 late rework, per Miha: "not only riddles").
   tests/witness-models.test.ts locks the contract: bench model === granted
   item model, benchNote required, underside secrets required, bench never
   reads camera angles.
-- Tests: npm test (162 green). New test files must be added to
+- Tests: npm test (168 green). New test files must be added to
   the explicit list in package.json "test".
 - Build: npm run build (tsc -b + vite; tsconfig lib ES2023). No PWA.
 
@@ -122,7 +128,7 @@ anywhere and the pending relabel became moot.
 - Subagents can inherit a stuck plan mode; do downloads inline.
 - ElevenLabs: key in ~/.elevenlabs_key (TTS+SFX+music scopes), voice
   Callum N2lVS1w4EtoT3dr4eOWO; edge-tts + ffmpeg exist as local fallback.
-- Vercel auto-deploys on push to main.
+- Miha deploys through v0 from GitHub main. Do not touch Vercel here.
 
 ## Sibling project
 

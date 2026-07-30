@@ -122,6 +122,33 @@ test("visibility handling resumes only when visible and never cuts hidden audio"
   assert.doesNotMatch(providerSource, /visibilityState\s*===\s*["']hidden["'][\s\S]{0,120}(?:mute|suspend|silence)/);
 });
 
+test("finale narration preserves the opening tap and exposes refusal recovery", () => {
+  const keeperSource = source("src/audio/keeper.ts");
+  const appSource = source("src/components/GameApp.tsx");
+  const trophySource = source("src/components/TrophyScreen.tsx");
+
+  assert.match(keeperSource, /Promise<KeeperPlaybackResult>/);
+  assert.match(keeperSource, /startedAt: number \| null/);
+  assert.match(keeperSource, /options\.restart === false/);
+  assert.match(keeperSource, /playbackClock\(\) - mediaElapsedMs/);
+  assert.match(
+    appSource,
+    /next === "\/trophy"[\s\S]{0,300}unlockKeeper\(\)[\s\S]{0,120}playKeeper\("lock4", \{ restart: false \}\)/,
+  );
+  assert.match(trophySource, /LETTER_READ_MS = 93_600/);
+  assert.match(trophySource, /startedAt=\{voiceStartedAt\}/);
+  assert.match(trophySource, /voiceState === "blocked"/);
+  assert.match(trophySource, /READ THE LETTER ALOUD/);
+  assert.match(trophySource, /musicRef\.current\?\.pause\(\)/);
+  assert.match(trophySource, /stopKeeper\(\)/);
+  assert.doesNotMatch(trophySource, /reduceMotion\s*\?\s*totalWords/);
+  assert.match(trophySource, /voiceAttemptRef\.current \+= 1;\s*stopKeeper\(\)/);
+  assert.doesNotMatch(
+    trophySource,
+    /setTimeout\(\(\) => playKeeper\("lock4"\)/,
+  );
+});
+
 test("audio-owned files contain no unresolved merge markers", () => {
   const ownedFiles = [
     ...sourceFiles("src/audio"),

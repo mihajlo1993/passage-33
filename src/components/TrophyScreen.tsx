@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MEDIA_ASSETS } from "@/src/media";
 import { ENDING_MUSIC_PATH } from "@/src/audio/manifest";
 import { useAudio } from "@/src/audio/useAudio";
 import { areFinalPresentsResolved } from "@/src/game/engine";
 import { FRAGMENTS, LETTER_CODA, TOTAL_PIN_COUNT } from "@/src/pins";
-import { playKeeper } from "@/src/audio/keeper";
+import {
+  playKeeper, stopKeeper, unlockKeeper, type KeeperPlaybackResult,
+} from "@/src/audio/keeper";
 import type { GameState } from "@/src/types";
 
 /** Duration of the recorded reading in keeper-lock4.mp3 (ffprobe, ms). */
 const LETTER_READ_MS = 93_600;
-/** The voice starts this long after the letter screen appears. */
-const LETTER_VOICE_DELAY_MS = 1_000;
 
 const VERDICT_FRONT = ["S", "E", "A", "L", "E", "D"] as const;
 const VERDICT_BACK = ["Y", "O", "U", "R", "S", "."] as const;
@@ -69,7 +69,13 @@ interface LetterParagraph {
  * screen follows the voice unless she takes over the scroll herself, and
  * nothing ends until she chooses to put the letter down.
  */
-function LetterReading({ onFinished }: { onFinished: () => void }) {
+function LetterReading({
+  onFinished,
+  startedAt,
+}: {
+  onFinished: () => void;
+  startedAt: number | null;
+}) {
   const paragraphs = useMemo<LetterParagraph[]>(
     () => [
       { coda: false, words: FRAGMENTS.join(" ").split(" ") },
@@ -82,35 +88,51 @@ function LetterReading({ onFinished }: { onFinished: () => void }) {
     [paragraphs],
   );
 
-  const reduceMotion =
-    typeof window !== "undefined"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const [revealed, setRevealed] = useState(reduceMotion ? totalWords : 0);
+  const [revealed, setRevealed] = useState(0);
   const followRef = useRef(true);
   const finishedRef = useRef(false);
   const frontierRef = useRef<HTMLSpanElement | null>(null);
+  const onFinishedRef = useRef(onFinished);
 
   useEffect(() => {
-    if (reduceMotion) {
-      onFinished();
-      return;
-    }
-    const startedAt = performance.now() + LETTER_VOICE_DELAY_MS;
-    const timer = window.setInterval(() => {
+    onFinishedRef.current = onFinished;
+  }, [onFinished]);
+
+  useEffect(() => {
+    if (startedAt === null) return;
+    finishedRef.current = false;
+
+    setRevealed(0);
+    let timer: number | null = null;
+    let finishTimer: number | null = null;
+    const revealNextWords = () => {
       const elapsed = performance.now() - startedAt;
-      const count = Math.max(0, Math.min(totalWords, Math.ceil((elapsed / LETTER_READ_MS) * totalWords)));
+      const count = Math.max(
+        0,
+        Math.min(totalWords, Math.ceil((elapsed / LETTER_READ_MS) * totalWords)),
+      );
       setRevealed(count);
       if (followRef.current) {
         frontierRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
       }
       if (count >= totalWords && !finishedRef.current) {
         finishedRef.current = true;
-        window.clearInterval(timer);
-        onFinished();
+        if (timer !== null) window.clearInterval(timer);
+        finishTimer = window.setTimeout(() => {
+          onFinishedRef.current();
+        }, 600);
       }
-    }, 240);
-    return () => window.clearInterval(timer);
-  }, [onFinished, reduceMotion, totalWords]);
+    };
+
+    revealNextWords();
+    if (!finishedRef.current) {
+      timer = window.setInterval(revealNextWords, 240);
+    }
+    return () => {
+      if (timer !== null) window.clearInterval(timer);
+      if (finishTimer !== null) window.clearTimeout(finishTimer);
+    };
+  }, [startedAt, totalWords]);
 
   // Her scroll wins over the voice's scroll, permanently and silently.
   const takeOver = () => {
@@ -137,7 +159,11 @@ function LetterReading({ onFinished }: { onFinished: () => void }) {
             return (
               <span
                 key={index}
-                ref={index === Math.min(revealed, totalWords - 1) ? frontierRef : undefined}
+                ref={
+                  index === Math.max(0, Math.min(revealed - 1, totalWords - 1))
+                    ? frontierRef
+                    : undefined
+                }
                 className={"letter-word" + (shown ? " is-read" : "")}
                 aria-hidden={!shown}
               >
@@ -172,9 +198,37 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   const finalPresentsOpened = areFinalPresentsResolved(state.resolvedPins);
   const [quiet, setQuiet] = useState(false);
   const [letterDone, setLetterDone] = useState(false);
+  const [voiceState, setVoiceState] =
+    useState<"starting" | "playing" | "blocked">("starting");
+  const [voiceStartedAt, setVoiceStartedAt] = useState<number | null>(null);
   const trophy = MEDIA_ASSETS.trophy;
   const audio = useAudio();
   const musicRef = useRef<HTMLAudioElement | null>(null);
+  const voiceAttemptRef = useRef(0);
+
+  const startKeeperReading = useCallback((restart: boolean) => {
+    const attemptId = voiceAttemptRef.current + 1;
+    voiceAttemptRef.current = attemptId;
+    setVoiceState("starting");
+    void playKeeper("lock4", { restart }).then((result: KeeperPlaybackResult) => {
+      if (attemptId !== voiceAttemptRef.current) return;
+      if (!result.started || result.startedAt === null) {
+        setVoiceState("blocked");
+        return;
+      }
+      setVoiceStartedAt(result.startedAt);
+      setVoiceState("playing");
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!finalPresentsOpened) return;
+    startKeeperReading(false);
+    return () => {
+      voiceAttemptRef.current += 1;
+      stopKeeper();
+    };
+  }, [finalPresentsOpened, startKeeperReading]);
 
   // The mask-off piece: a dusty music box that starts as WINNER settles and
   // keeps the room warm through the letter. Local file, precached, looped.
@@ -186,11 +240,9 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
     musicRef.current = element;
     const start = () => void element.play().catch(() => undefined);
     const timer = window.setTimeout(start, 2_400);
-    const voiceTimer = window.setTimeout(() => playKeeper("lock4"), 1_000);
     window.addEventListener("pointerdown", start, { once: true });
     return () => {
       window.clearTimeout(timer);
-      window.clearTimeout(voiceTimer);
       window.removeEventListener("pointerdown", start);
       element.pause();
       element.removeAttribute("src");
@@ -202,6 +254,8 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   // timer here once stole the letter two seconds in. Never again.
   const putTheLetterDown = () => {
     audio.ambient(null);
+    musicRef.current?.pause();
+    stopKeeper();
     setQuiet(true);
   };
 
@@ -225,11 +279,32 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   if (finalPresentsOpened) {
     return (
       <section className="screen letter-screen" aria-labelledby="trophy-title">
-        <p className="eyebrow">Thirty-three years to the night</p>
-        <h1 id="trophy-title">The letter, whole</h1>
-        <blockquote className="letter-whole re-frame">
-          <LetterReading onFinished={() => setLetterDone(true)} />
-        </blockquote>
+        <header className="letter-screen__heading">
+          <p className="eyebrow">Thirty-three years to the night</p>
+          <h1 id="trophy-title">The letter, whole</h1>
+        </header>
+        <div className="letter-document">
+          <blockquote className="letter-whole re-frame">
+            <LetterReading
+              startedAt={voiceStartedAt}
+              onFinished={() => setLetterDone(true)}
+            />
+          </blockquote>
+          {voiceState === "blocked" && (
+            <div className="letter-audio-fallback" role="status">
+              <p className="eyebrow">The Keeper is waiting for your hand.</p>
+              <button
+                className="mechanical-button mechanical-button--primary"
+                onClick={() => {
+                  unlockKeeper();
+                  startKeeperReading(true);
+                }}
+              >
+                READ THE LETTER ALOUD
+              </button>
+            </div>
+          )}
+        </div>
         <div className={"letter-finale" + (letterDone ? " is-lit" : "")} aria-hidden={!letterDone}>
           <div className="candles" aria-label="Thirty-three candles">
             {Array.from({ length: 33 }, (_, index) => (

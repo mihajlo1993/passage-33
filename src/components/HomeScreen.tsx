@@ -164,7 +164,7 @@ export function HomeScreen({
             return <RunnerClicks {...lockProps} />;
           case "sum":
             return <WagerSum {...lockProps} />;
-          case "stars":
+          case "testimony":
             return <StarLadder {...lockProps} />;
           default:
             return <RiddleLock {...lockProps} />;
