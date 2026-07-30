@@ -8,8 +8,14 @@ import type { ItemId } from "../types";
 export interface ModelSecret {
   /** Shown while unrevealed, as a nudge to keep rotating. */
   readonly hint: string;
-  /** Shown once the underside has been held in view. */
+  /** Shown once the detail has genuinely been looked at. */
   readonly revealText: string;
+  /**
+   * Where the detail lives: 'under' needs the object rolled over; 'edge'
+   * needs an edge-on grazing view. Both need a real zoom-in: the detail
+   * only gives itself up close, never from across the bench.
+   */
+  readonly view?: "under" | "edge";
 }
 
 export interface ItemModel {
@@ -34,6 +40,7 @@ export const modelByItem: Readonly<Partial<Record<ItemId, ItemModel>>> = {
       hint: "THE EDGE CARRIES SOMETHING RAISED",
       revealText:
         "Embossed along the rim, felt before seen: 1 9 9 3. The year the survey began.",
+      view: "edge",
     },
   },
   specimenJar: {

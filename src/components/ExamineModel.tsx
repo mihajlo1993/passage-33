@@ -9,10 +9,14 @@ import { useHaptics } from "@/src/device";
 /**
  * Orbit polar angle is measured down from straight above the object, so
  * anything past ~149 degrees means she has rolled the object over and is
- * looking at its underside.
+ * looking at its underside; ~90 degrees means an edge-on grazing view.
  */
 const UNDERSIDE_PHI_RADIANS = 2.6;
-/** The underside must be held, not passed through, before it gives anything up. */
+const EDGE_PHI_CENTER = Math.PI / 2;
+const EDGE_PHI_TOLERANCE = 0.35;
+/** The detail must also be CLOSE: zoomed to this fraction of the framing. */
+const REVEAL_ZOOM_FRACTION = 0.72;
+/** The detail must be held, not passed through, before it gives anything up. */
 const UNDERSIDE_DWELL_MS = 700;
 
 export interface ExamineModelProps {
@@ -50,12 +54,24 @@ export function ExamineModel({ itemName, model, onClose, onUnavailable }: Examin
       }
     };
 
+    let framingRadius: number | null = null;
+    const handleLoad = () => {
+      framingRadius = viewer.getCameraOrbit().radius;
+    };
+
     const handleCameraChange = (event: Event) => {
       if (!model.secret || revealedRef.current) return;
       const detail = (event as CustomEvent<{ source?: string }>).detail;
       if (detail?.source !== "user-interaction") return;
       const orbit = viewer.getCameraOrbit();
-      if (orbit.phi >= UNDERSIDE_PHI_RADIANS) {
+      if (framingRadius === null || orbit.radius > framingRadius) {
+        framingRadius = orbit.radius;
+      }
+      const angleOk = model.secret.view === "edge"
+        ? Math.abs(orbit.phi - EDGE_PHI_CENTER) <= EDGE_PHI_TOLERANCE
+        : orbit.phi >= UNDERSIDE_PHI_RADIANS;
+      const closeEnough = orbit.radius <= framingRadius * REVEAL_ZOOM_FRACTION;
+      if (angleOk && closeEnough) {
         if (dwellTimerRef.current === null) {
           dwellTimerRef.current = window.setTimeout(() => {
             dwellTimerRef.current = null;
@@ -69,10 +85,12 @@ export function ExamineModel({ itemName, model, onClose, onUnavailable }: Examin
 
     const handleError = () => onUnavailable();
 
+    viewer.addEventListener("load", handleLoad);
     viewer.addEventListener("camera-change", handleCameraChange);
     viewer.addEventListener("error", handleError);
     return () => {
       clearDwell();
+      viewer.removeEventListener("load", handleLoad);
       viewer.removeEventListener("camera-change", handleCameraChange);
       viewer.removeEventListener("error", handleError);
     };
