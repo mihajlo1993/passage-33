@@ -22,35 +22,35 @@ export const itemIds = {
 export const items: readonly Item[] = [
   {
     id: itemIds.sealArtifact,
-    name: 'The Keeper\'s seal',
+    name: 'The first witness',
     icon: 'combination-lock',
     tint: 'amber',
     examine:
-      'A bronze seal from the first lock. Five rooms and one blank face. The bronze is warm, which the Keeper asks you not to think about.',
+      'Cast in bronze for the first lock: a woven field, and the runner asleep upon it. The bronze is warm, which the Keeper asks you not to think about.',
   },
   {
     id: itemIds.jarArtifact,
-    name: 'Specimen jar',
+    name: 'The second witness',
     icon: 'chemical-drop',
     tint: 'bile',
     examine:
-      'From the second lock: a jar the Keeper kept beside the door. Something small was studied here, catalogued kindly, and let go.',
+      'Cast for the second lock: the small grey tenant itself, wheel on its back and a beaded tail behind. Catalogued kindly, and let go.',
   },
   {
     id: itemIds.reliquaryArtifact,
-    name: 'Reliquary',
+    name: 'The third witness',
     icon: 'locked-chest',
     tint: 'amber',
     examine:
-      'From the third lock: a box for keeping wagers. Lighter than it looks and colder than it should be.',
+      'Cast for the third lock: an obelisk wearing three numbers, one to a face. The Keeper did the arithmetic thirty-three years early.',
   },
   {
     id: itemIds.candleArtifact,
-    name: 'The Keeper\'s candle',
+    name: 'The last witness',
     icon: 'candle-flame',
     tint: 'amber',
     examine:
-      'From the last lock: the candle the Keeper lit the night the letter was sealed. It has thirty-two brothers waiting.',
+      'Cast for the last lock: the sparkle itself, lever cocked, breathing out a ladder of stars. The Keeper chose this gift himself.',
   },
   {
     id: itemIds.giftMat,

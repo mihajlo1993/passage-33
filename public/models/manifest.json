@@ -102,5 +102,37 @@
     "license": "CC-BY",
     "source": "https://poly.pizza/m/eNL1vYa4P6b",
     "bytes": 16436
+  },
+  "witnessField": {
+    "file": "/models/witnessField.glb",
+    "name": "The first witness (lock I, the field)",
+    "author": "built in repo",
+    "license": "original",
+    "source": "scripts/build-witnesses.mjs",
+    "bytes": 216876
+  },
+  "witnessRunner": {
+    "file": "/models/witnessRunner.glb",
+    "name": "The second witness (lock II, the runner)",
+    "author": "built in repo",
+    "license": "original",
+    "source": "scripts/build-witnesses.mjs",
+    "bytes": 222116
+  },
+  "witnessWager": {
+    "file": "/models/witnessWager.glb",
+    "name": "The third witness (lock III, 1993 + 31 + IIII)",
+    "author": "built in repo",
+    "license": "original",
+    "source": "scripts/build-witnesses.mjs",
+    "bytes": 181908
+  },
+  "witnessSparkle": {
+    "file": "/models/witnessSparkle.glb",
+    "name": "The last witness (lock IV, the sparkle)",
+    "author": "built in repo",
+    "license": "original",
+    "source": "scripts/build-witnesses.mjs",
+    "bytes": 224964
   }
 }

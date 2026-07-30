@@ -34,24 +34,40 @@ export interface ItemModel {
  */
 export const modelByItem: Readonly<Partial<Record<ItemId, ItemModel>>> = {
   sealArtifact: {
-    src: "/models/sealcube.glb",
-    alt: "The Keeper's bronze seal",
+    src: "/models/witnessField.glb",
+    alt: "The first witness: a bronze field with the runner resting on it",
+    secret: {
+      hint: "THE UNDERSIDE IS MARKED",
+      revealText:
+        "Thirty-three ticks around the rim, one for every year it waited. A single notch: the first lock.",
+    },
   },
   jarArtifact: {
-    src: "/models/jar.glb",
-    alt: "The Keeper's specimen jar",
+    src: "/models/witnessRunner.glb",
+    alt: "The second witness: the runner cast in bronze, tail and all",
+    secret: {
+      hint: "THE UNDERSIDE IS MARKED",
+      revealText:
+        "Thirty-three ticks, two notches. The Keeper catalogued it kindly: one tail, no bones, no bad intentions.",
+    },
   },
   reliquaryArtifact: {
-    src: "/models/reliquary.glb",
-    alt: "The Keeper's reliquary",
+    src: "/models/witnessWager.glb",
+    alt: "The third witness: an obelisk wearing three numbers",
     secret: {
-      hint: "THE LID IS ENGRAVED",
-      revealText: "Held in trust. Thirty-three years. Signed, the Keeper.",
+      hint: "THE UNDERSIDE IS MARKED",
+      revealText:
+        "Thirty-three ticks, three notches. The sum was never the treasure; the thirty-three chances are.",
     },
   },
   candleArtifact: {
-    src: "/models/candleLit.glb",
-    alt: "The Keeper's candle",
+    src: "/models/witnessSparkle.glb",
+    alt: "The last witness: the sparkle, breathing out stars",
+    secret: {
+      hint: "THE UNDERSIDE IS MARKED",
+      revealText:
+        "Thirty-three ticks, four notches. Held in trust from the night she was born. Signed, the Keeper.",
+    },
   },
 } as const;
 

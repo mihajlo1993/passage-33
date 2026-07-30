@@ -11,8 +11,10 @@ import type { ItemId, Pin } from './types';
  * its gift waits in the real flat. The fourth opens on the whole letter,
  * read aloud, and thirty-three candles.
  *
- * Four stages, one per gift. Riddles are the locks. The 3D artifacts are
- * flavor on the bench and never gate anything.
+ * Four stages, one per gift. Riddles are the locks. On every bench stands a
+ * WITNESS: a bronze artifact the Keeper cast for that lock. Witnesses carry
+ * true engravings (the wager obelisk wears all three numbers of its sum) and
+ * genuinely help, but they NEVER gate: the typed answer alone opens a lock.
  */
 
 /* ====================== MIHA'S SETUP BLOCK ====================== */
@@ -48,6 +50,8 @@ export const FRAGMENTS = [
 
 export interface RiddleConfig {
   readonly model: string;
+  /** One line under the bench telling her what this witness truly shows. */
+  readonly benchNote: string;
   readonly riddle: string;
   /** Normalised acceptable answers; empty when numeric. */
   readonly answers: readonly string[];
@@ -57,41 +61,45 @@ export interface RiddleConfig {
 
 export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> = {
   1: {
-    model: '/models/sealcube.glb',
+    model: '/models/witnessField.glb',
+    benchNote: 'The Keeper cast a witness for every lock. This one shows a field, and what rests upon it.',
     riddle:
       'My whole life is spent under a runner who never leaves home. Storms of clicking pass over me and I keep every journey but show none. Cities get maps. Desks get me. What am I?',
     answers: ['mat', 'mousemat', 'mousepad', 'pad', 'podloga', 'deskmat', 'matt'],
     hints: [
-      'It lies flat, and something small travels across it all day.',
+      'Look at the witness on the bench: the flat piece, not the sleeper on top of it. The lock wants the flat piece.',
       'You would find one next to every keyboard in the world.',
       'A mouse runs on it. Tell the lock what it runs on.',
     ],
   },
   3: {
-    model: '/models/jar.glb',
+    model: '/models/witnessRunner.glb',
+    benchNote: 'The second witness is the tenant itself, tail and all. Turn it.',
     riddle:
       'I have a tail but no bones. I run all day and never leave your side. I speak only in clicks, and I am happiest under your hand. What am I?',
     answers: ['mouse', 'miska', 'computermouse', 'amouse', 'themouse', 'mis'],
     hints: [
-      'It is an animal only by name.',
+      'It is an animal only by name. The witness on the bench is its portrait in bronze.',
       'Its tail is a cable, or nothing at all these days.',
       'It moves the little arrow on every screen you have ever used.',
     ],
   },
   5: {
-    model: '/models/reliquary.glb',
+    model: '/models/witnessWager.glb',
+    benchNote: 'Three numbers ride this witness. Turn it until you have all three.',
     riddle:
       'Take the year you were born. Add the day of this very night. Add the number of locks the Keeper built. Give the lock the sum.',
     answers: [],
     numeric: true,
     hints: [
-      'Three numbers: a year, a day of the month, and a very small count of locks.',
+      'All three numbers are engraved on the witness, one to a face. The clockmaker writes four as IIII.',
       'The year is 1993. Tonight is the 31st. How many locks did the Keeper build?',
       'It is 1993 plus 31 plus 4.',
     ],
   },
   8: {
-    model: '/models/candleLit.glb',
+    model: '/models/witnessSparkle.glb',
+    benchNote: 'The last witness breathes out stars. The lock wants its name.',
     riddle:
       'I am still until you press me. I take the plainest drink there is and teach it to dance. I breathe in silver and breathe out stars. What am I?',
     answers: [

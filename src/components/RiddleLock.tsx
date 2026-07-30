@@ -20,9 +20,12 @@ export interface RiddleLockProps {
 }
 
 /**
- * A lock is a riddle. The artifact turns on the bench above for atmosphere;
- * the typed answer below opens the lock. Three hints on demand, free, the
- * third one practically answers. Nothing here can hard-stall.
+ * A lock is a riddle. On the bench above stands the Keeper's witness: a cast
+ * bronze artifact whose engravings genuinely speak to the riddle (the wager
+ * obelisk wears all three numbers of its sum). She can orbit it fully, under
+ * side included; the typed answer below is still the only thing that opens
+ * the lock. Three hints on demand, free, the third one practically answers.
+ * Nothing here can hard-stall and the witness never gates.
  */
 export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: RiddleLockProps) {
   const [draft, setDraft] = useState("");
@@ -68,7 +71,7 @@ export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: 
           <model-viewer
             className="riddle-bench__viewer"
             src={config.model}
-            alt="An artifact left by the Keeper"
+            alt="The Keeper's witness for this lock"
             camera-controls
             disable-pan
             disable-tap
@@ -80,13 +83,16 @@ export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: 
             exposure="1.0"
             shadow-intensity="0.9"
             tone-mapping="aces"
+            camera-orbit="25deg 72deg 105%"
+            min-camera-orbit="-Infinity 0deg auto"
+            max-camera-orbit="Infinity 180deg auto"
             onError={() => setBenchLost(true)}
           />
         )}
         {benchLost && (
-          <p className="riddle-bench__lost">The artifact refuses the light. The lock does not mind.</p>
+          <p className="riddle-bench__lost">The witness refuses the light. The lock does not mind.</p>
         )}
-        <p className="riddle-bench__note">Turn it. The Keeper kept nothing plain.</p>
+        <p className="riddle-bench__note">{config.benchNote}</p>
       </div>
 
       <div className={"riddle-box re-frame" + (shaking ? " riddle-box--shake" : "")}>
