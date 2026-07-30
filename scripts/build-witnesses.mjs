@@ -711,13 +711,16 @@ function buildSparkle() {
     null,
     null,
   );
-  // Stars rising out of the mouth.
+  // Stars rising out of the mouth. Generously spaced: they are tap targets
+  // in the last lock, so each must stay a clean touch on a phone screen.
+  // The star-ladder anchors in src/components/WitnessPuzzles.tsx mirror
+  // this formula exactly; change them together.
   for (let i = 0; i < 7; i += 1) {
     const t = i / 6;
-    const r = 0.0026 + 0.0009 * ((i * 7) % 3);
-    const x = 0.007 * Math.sin(i * 2.1);
-    const z = 0.007 * Math.cos(i * 1.7);
-    ellipsoid(b, { t: [x, y + 0.082 + t * 0.05, z] }, [r, r, r], 6, 8, null);
+    const r = 0.0032 + 0.0009 * ((i * 7) % 3);
+    const x = 0.012 * Math.sin(i * 2.1);
+    const z = 0.012 * Math.cos(i * 1.7);
+    ellipsoid(b, { t: [x, y + 0.084 + t * 0.09, z] }, [r, r, r], 6, 8, null);
   }
   return writeGlb("witnessSparkle", b, canvas);
 }

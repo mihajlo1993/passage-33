@@ -48,6 +48,17 @@ export const FRAGMENTS = [
 
 /* ====================== RIDDLE LOCKS ====================== */
 
+/**
+ * The interactive puzzle a lock plays ON its witness. All of them are
+ * explicit deterministic taps tracked by the app: hotspots anchored to the
+ * 3D model, dial wheels, a spin button. NEVER camera-angle detection or
+ * gesture math; those are banned after real field failures.
+ */
+export type WitnessPuzzle =
+  | { readonly kind: 'clicks'; readonly pattern: readonly ('L' | 'W' | 'R')[] }
+  | { readonly kind: 'sum' }
+  | { readonly kind: 'stars'; readonly count: number };
+
 export interface RiddleConfig {
   readonly model: string;
   /** One line under the bench telling her what this witness truly shows. */
@@ -57,6 +68,12 @@ export interface RiddleConfig {
   readonly answers: readonly string[];
   readonly numeric?: boolean;
   readonly hints: readonly [string, string, string];
+  /**
+   * When set, the lock is played on the witness itself instead of typed:
+   * the riddle text becomes the Keeper's instruction. The answers above
+   * stay as dormant data (and as the matcher's contract for tests).
+   */
+  readonly puzzle?: WitnessPuzzle;
 }
 
 export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> = {
@@ -74,43 +91,46 @@ export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> 
   },
   3: {
     model: '/models/witnessRunner.glb',
-    benchNote: 'The second witness is the tenant itself, tail and all. Turn it.',
+    benchNote: 'Its shoulders and its wheel still click. The lock is listening.',
     riddle:
-      'I have a tail but no bones. I run all day and never leave your side. I speak only in clicks, and I am happiest under your hand. What am I?',
+      'It had a tail but no bones, and it spoke only in clicks. Speak its language back to it: one click on its left shoulder for the lock already open, one on its right shoulder for every lock still waiting, and last, roll the wheel on its back, the one that counted the years.',
     answers: ['mouse', 'miska', 'computermouse', 'amouse', 'themouse', 'mis'],
+    puzzle: { kind: 'clicks', pattern: ['L', 'R', 'R', 'R', 'W'] },
     hints: [
-      'It is an animal only by name. The witness on the bench is its portrait in bronze.',
-      'Its tail is a cable, or nothing at all these days.',
-      'It moves the little arrow on every screen you have ever used.',
+      'Touch the runner itself: it has a left shoulder, a right shoulder, and a wheel on its back.',
+      'One lock is open behind you; three still wait; the wheel comes last. Left, then right three times, then the wheel.',
+      'Tap: left, right, right, right, wheel. The next touch now glows for you.',
     ],
   },
   5: {
     model: '/models/witnessWager.glb',
-    benchNote: 'Three numbers ride this witness. Turn it until you have all three.',
+    benchNote: 'Three numbers ride this witness. The wheels below take their sum.',
     riddle:
-      'Take the year you were born. Add the day of this very night. Add the number of locks the Keeper built. Give the lock the sum.',
+      'The Keeper cut three numbers into this witness, one to a face: the year you were born, the day of this very night, and the count of his locks. Turn it, take all three, and set their sum on the brass wheels.',
     answers: [],
     numeric: true,
+    puzzle: { kind: 'sum' },
     hints: [
-      'All three numbers are engraved on the witness, one to a face. The clockmaker writes four as IIII.',
-      'The year is 1993. Tonight is the 31st. How many locks did the Keeper build?',
-      'It is 1993 plus 31 plus 4.',
+      'Turn the witness face by face. Each face wears one number; the clockmaker writes four as IIII.',
+      'The year is 1993. Tonight is the 31st. The Keeper built four locks. Add them.',
+      'Set the wheels to 2 0 2 8 and turn the lock.',
     ],
   },
   8: {
     model: '/models/witnessSparkle.glb',
-    benchNote: 'The last witness breathes out stars. The lock wants its name.',
+    benchNote: 'Seven stars, one breath. Touch them in the order they rose.',
     riddle:
-      'I am still until you press me. I take the plainest drink there is and teach it to dance. I breathe in silver and breathe out stars. What am I?',
+      'The last gift breathes in silver and breathes out stars. Seven of them left its mouth the night the letter was sealed, and the lock counted every one. Touch the stars in the order they rose: the lowest first, then upward, one by one.',
     answers: [
       'carbonator', 'aarke', 'sodastream', 'sparklingwater', 'sodamaker',
       'gaziranavoda', 'soda', 'fizzywater', 'watercarbonator',
       'sparklingwatermaker', 'sodawater',
     ],
+    puzzle: { kind: 'stars', count: 7 },
     hints: [
-      'It stands on a kitchen counter and hisses politely when used.',
-      'It turns still water into sparkling water.',
-      'A carbonator. Tell the lock so.',
+      'The stars hang above the vessel. They rose one at a time, from its mouth upward.',
+      'Start with the lowest star, closest to the silver. Then the next lowest, all the way to the top.',
+      'Touch the lowest unlit star. It glows now to show you the way.',
     ],
   },
 };

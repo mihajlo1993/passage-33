@@ -25,17 +25,28 @@ caches, so a plain refresh always shows the newest build.
 
 ## Answers and flow (for the operator, i.e. Miha)
 
-- Stage 1 THE FIELD (mouse mat): riddle answer mat / mouse mat / mousepad /
-  pad / podloga. Witness: a bronze woven field with the runner asleep on it.
-- Stage 2 THE RUNNER (mouse): mouse / miska / computer mouse. Witness: the
-  mouse itself in bronze, scroll wheel and beaded tail.
-- Stage 3 THE WAGER (EuroMillions slips): number lock 1993 + 31 + 4 = 2028.
-  Witness: a three-sided obelisk engraved 1993 / 31 / IIII, a "+" above
-  each: she can literally read the operands off the artifact.
-- Stage 4 THE SPARKLE (carbonator): carbonator / aarke / sodastream /
-  sparkling water / gazirana voda / soda. Witness: the carbonator in bronze,
-  lever down the side, breathing out a rising trail of star-beads. Preceded
-  by pin 7 "The Dark" (lights out, 14 s hold, heartbeat, 25 damage).
+Lock 1 is a typed riddle; locks 2-4 are INTERACTIVE PUZZLES played on the
+witness itself (2026-07-30 late rework, per Miha: "not only riddles").
+
+- Stage 1 THE FIELD (mouse mat): typed riddle, answer mat / mouse mat /
+  mousepad / pad / podloga. Witness: bronze woven field + sleeping runner.
+- Stage 2 THE RUNNER (mouse): TAP PUZZLE on the witness: three hotspots on
+  the bronze mouse (Left shoulder, Right shoulder, Wheel). Pattern:
+  L, R, R, R, W (one left for the open lock, a right for each of the three
+  waiting, the wheel last). Mistap resets the pattern gently.
+- Stage 3 THE WAGER (EuroMillions slips): COMBINATION PUZZLE: "Turn the
+  witness" button spins the obelisk face to face (1993 / 31 / IIII revealed
+  as chips), then four brass dial wheels take the sum: set 2 0 2 8 and
+  press "Turn the lock".
+- Stage 4 THE SPARKLE (carbonator): STAR LADDER: the seven star-beads above
+  the vessel are tap targets; touch them lowest to highest. Mistap resets.
+  Preceded by pin 7 "The Dark" (lights out, 14 s hold, heartbeat, 25 dmg).
+- All puzzles: 3 free hints; the THIRD hint makes the next correct touch
+  GLOW (no hard-stall possible); wrong actions rotate refusal lines and
+  tick health; a witness model that fails to load degrades to plain
+  buttons so the lock is always solvable. NO camera-angle detection
+  anywhere; hotspots are explicit taps (src/components/WitnessPuzzles.tsx,
+  anchors mirror scripts/build-witnesses.mjs geometry; change together).
 - Every witness stands on the same engraved catalogue base (front: LOCK
   numeral + stage name; back: THE KEEPER · MCMXCIII; sides: HELD IN TRUST /
   THIRTY THREE YEARS) and its underside carries 33 rim ticks + one tally

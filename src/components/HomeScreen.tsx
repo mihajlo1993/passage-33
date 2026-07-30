@@ -17,6 +17,7 @@ import { useVHS } from "@/src/fx";
 import { ActionBeat } from "./ActionBeat";
 import { ArrivalPanel } from "./ArrivalPanel";
 import { RiddleLock } from "./RiddleLock";
+import { RunnerClicks, StarLadder, WagerSum } from "./WitnessPuzzles";
 
 const APPROACH_LABELS: Record<string, string> = {
   riddle: "Face the lock",
@@ -151,15 +152,23 @@ export function HomeScreen({
     if (mode === "riddle") {
       const config = riddleConfigByPin[nextPin.id];
       if (config) {
-        return (
-          <RiddleLock
-            pin={nextPin}
-            config={config}
-            onSolved={() => resolveNow(nextPin)}
-            onCancel={cancel}
-            onWrongAttempt={wrongTurn}
-          />
-        );
+        const lockProps = {
+          pin: nextPin,
+          config,
+          onSolved: () => resolveNow(nextPin),
+          onCancel: cancel,
+          onWrongAttempt: wrongTurn,
+        };
+        switch (config.puzzle?.kind) {
+          case "clicks":
+            return <RunnerClicks {...lockProps} />;
+          case "sum":
+            return <WagerSum {...lockProps} />;
+          case "stars":
+            return <StarLadder {...lockProps} />;
+          default:
+            return <RiddleLock {...lockProps} />;
+        }
       }
     }
     if (mode === "action") {
