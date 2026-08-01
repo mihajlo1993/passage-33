@@ -47,7 +47,7 @@ export const SPARKLE_NAME_CLUES = {
 } as const;
 
 /**
- * The stations hang on the panel in a jumbled order (never left-to-right),
+ * The stations are jumbled (never the giveaway pour/charge/release order),
  * so the ARRANGEMENT gives nothing away: only the machine's own logic
  * says what comes first. The press order stays pour, charge, release.
  */
@@ -66,6 +66,42 @@ export function shuffledStationOrder(
   return order.map((_, index) => (index + 1) % order.length);
 }
 
+/** Where the floating stations may hang, in model space (metres). */
+export const SPARKLE_FLOAT_RADIUS_M = 0.095;
+export const SPARKLE_FLOAT_HEIGHTS_M = [0.06, 0.125, 0.19] as const;
+
+export interface FloatingStationPlacement {
+  readonly position: string;
+  readonly normal: string;
+}
+
+/**
+ * The three hold-stations float AROUND the witness, one per verb: three
+ * spokes 120 degrees apart at three different heights, the whole ring
+ * spun by a random offset and the verbs dealt onto the spokes in a
+ * jumbled order. Every visit hangs the ring differently; the centerpiece
+ * stays untouched in the middle.
+ */
+export function floatingStationPlacements(
+  random: () => number,
+): readonly FloatingStationPlacement[] {
+  const spokeOffsetDeg = Math.min(Math.max(random(), 0), 0.999999) * 360;
+  const slotForVerb = shuffledStationOrder(random);
+  return SPARKLE_VERBS.map((_, verbIndex) => {
+    const slot = slotForVerb[verbIndex];
+    const azimuthRad = ((spokeOffsetDeg + slot * 120) * Math.PI) / 180;
+    const x = SPARKLE_FLOAT_RADIUS_M * Math.sin(azimuthRad);
+    const z = SPARKLE_FLOAT_RADIUS_M * Math.cos(azimuthRad);
+    const y = SPARKLE_FLOAT_HEIGHTS_M[slot];
+    const round = (value: number) => Number(value.toFixed(4));
+    return {
+      position: `${round(x)} ${round(y)} ${round(z)}`,
+      // Outward and slightly up, so a station shows when its side faces her.
+      normal: `${round(x / SPARKLE_FLOAT_RADIUS_M)} 0.2 ${round(z / SPARKLE_FLOAT_RADIUS_M)}`,
+    };
+  });
+}
+
 interface StationHoldState {
   verbIndex: number;
   progress: number;
@@ -73,7 +109,11 @@ interface StationHoldState {
 
 export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }: WitnessPuzzleProps) {
   const [doneVerbs, setDoneVerbs] = useState(0);
-  // The panel arrangement is drawn once per visit, never left-to-right.
+  // The ring around the witness is hung once per visit, never the same way.
+  const [placements] = useState<readonly FloatingStationPlacement[]>(
+    () => floatingStationPlacements(Math.random),
+  );
+  // The plain fallback panel is jumbled too, never left-to-right.
   const [stationOrder] = useState<readonly number[]>(
     () => shuffledStationOrder(Math.random),
   );
@@ -184,16 +224,6 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
     setHold(null);
   };
 
-  const tapVerb = (index: number) => {
-    const verb = SPARKLE_VERBS[index];
-    if (!verb || verb.kind !== "tap") return;
-    if (index !== doneVerbsRef.current) {
-      explainOrder(index);
-      return;
-    }
-    completeVerb(index);
-  };
-
   const submitName = () => {
     if (riddleAnswerMatches(config, draft)) {
       feedback.solved(onSolved);
@@ -212,8 +242,45 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
           lost={lost}
           onLost={() => setLost(true)}
           cameraOrbit="25deg 78deg 105%"
-          autoRotate
-        />
+        >
+          {/* The three hold-stations float around the centerpiece, hung
+              differently every visit. All must be held to completion
+              before the name may be spoken. */}
+          {!naming && SPARKLE_VERBS.map((verb, index) => {
+            const placement = placements[index];
+            const done = index < doneVerbs;
+            const active = index === doneVerbs;
+            const holding = hold?.verbIndex === index;
+            const progress = done ? 1 : holding ? hold.progress : 0;
+            return (
+              <button
+                key={verb.id}
+                slot={`hotspot-float-${verb.id}`}
+                data-position={placement.position}
+                data-normal={placement.normal}
+                className={
+                  "sparkle-float"
+                  + (done ? " is-done" : "")
+                  + (holding ? " is-holding" : "")
+                  + (guideOn && active ? " is-next" : "")
+                }
+                disabled={done}
+                aria-label={`${verb.verb}: ${verb.instruction}`}
+                onPointerDown={() => beginHold(index)}
+                onPointerUp={releaseHold}
+                onPointerLeave={releaseHold}
+                onPointerCancel={releaseHold}
+                onContextMenu={(event) => event.preventDefault()}
+              >
+                <span className="sparkle-float__tag">{verb.tag}</span>
+                <strong className="sparkle-float__verb">{done ? verb.reveals : verb.verb}</strong>
+                <span className="sparkle-float__gauge" aria-hidden="true">
+                  <i style={{ width: `${Math.round(progress * 100)}%` }} />
+                </span>
+              </button>
+            );
+          })}
+        </WitnessBench>
         {starsFlying && (
           <div className="sparkle-stars" aria-hidden="true">
             {Array.from({ length: SPARKLE_STAR_COUNT }, (_, index) => (
@@ -248,46 +315,52 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
 
         {!naming && (
           <>
-            {/* The apparatus panel: three stations, always all visible,
-                hung in a jumbled order. Only the logic says what is first. */}
-            <div className="apparatus-panel" aria-label="The apparatus controls">
-              {stationOrder.map((index) => {
-                const verb = SPARKLE_VERBS[index];
-                const done = index < doneVerbs;
-                const active = index === doneVerbs;
-                const holding = hold?.verbIndex === index;
-                const progress = done ? 1 : holding ? hold.progress : 0;
-                return (
-                  <button
-                    key={verb.id}
-                    className={
-                      "apparatus-station"
-                      + (done ? " is-done" : "")
-                      + (holding ? " is-holding" : "")
-                      + (guideOn && active ? " is-next" : "")
-                    }
-                    disabled={done}
-                    aria-label={`${verb.verb}: ${verb.instruction}`}
-                    onPointerDown={verb.kind === "hold" ? () => beginHold(index) : undefined}
-                    onPointerUp={verb.kind === "hold" ? releaseHold : undefined}
-                    onPointerLeave={verb.kind === "hold" ? releaseHold : undefined}
-                    onPointerCancel={verb.kind === "hold" ? releaseHold : undefined}
-                    onClick={verb.kind === "tap" ? () => tapVerb(index) : undefined}
-                    onContextMenu={(event) => event.preventDefault()}
-                  >
-                    <span className="apparatus-station__tag">{verb.tag}</span>
-                    <strong className="apparatus-station__verb">{verb.verb}</strong>
-                    <span className="apparatus-station__how">
-                      {done ? verb.reveals : verb.kind === "hold" ? "HOLD" : "TAP"}
-                    </span>
-                    <span className="apparatus-station__gauge" aria-hidden="true">
-                      <i style={{ width: `${Math.round(progress * 100)}%` }} />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {/* The machine explains itself when touched out of order. */}
+            {/* Plain-panel fallback when the witness cannot load: the same
+                three holds, jumbled, as ordinary buttons. */}
+            {lost && (
+              <div className="apparatus-panel puzzle-fallback" aria-label="The apparatus controls">
+                {stationOrder.map((index) => {
+                  const verb = SPARKLE_VERBS[index];
+                  const done = index < doneVerbs;
+                  const active = index === doneVerbs;
+                  const holding = hold?.verbIndex === index;
+                  const progress = done ? 1 : holding ? hold.progress : 0;
+                  return (
+                    <button
+                      key={verb.id}
+                      className={
+                        "apparatus-station"
+                        + (done ? " is-done" : "")
+                        + (holding ? " is-holding" : "")
+                        + (guideOn && active ? " is-next" : "")
+                      }
+                      disabled={done}
+                      aria-label={`${verb.verb}: ${verb.instruction}`}
+                      onPointerDown={() => beginHold(index)}
+                      onPointerUp={releaseHold}
+                      onPointerLeave={releaseHold}
+                      onPointerCancel={releaseHold}
+                      onContextMenu={(event) => event.preventDefault()}
+                    >
+                      <span className="apparatus-station__tag">{verb.tag}</span>
+                      <strong className="apparatus-station__verb">{verb.verb}</strong>
+                      <span className="apparatus-station__how">
+                        {done ? verb.reveals : "HOLD"}
+                      </span>
+                      <span className="apparatus-station__gauge" aria-hidden="true">
+                        <i style={{ width: `${Math.round(progress * 100)}%` }} />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {/* The active instruction and the machine's own explanations. */}
+            <p className="puzzle-sum" aria-live="polite">
+              {SPARKLE_VERBS[doneVerbs]
+                ? `${SPARKLE_VERBS[doneVerbs].verb}: ${SPARKLE_VERBS[doneVerbs].instruction}.`
+                : ""}
+            </p>
             <p className="riddle-box__feedback apparatus-reason" aria-live="polite">
               {orderLine}
             </p>

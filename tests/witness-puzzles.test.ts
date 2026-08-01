@@ -9,7 +9,12 @@ import {
   SPARKLE_VERBS,
   sparkleStatementComplete,
 } from "../src/components/WitnessPuzzles";
-import { shuffledStationOrder } from "../src/components/SparkleVerbs";
+import {
+  SPARKLE_FLOAT_HEIGHTS_M,
+  SPARKLE_FLOAT_RADIUS_M,
+  floatingStationPlacements,
+  shuffledStationOrder,
+} from "../src/components/SparkleVerbs";
 
 const root = new URL("..", import.meta.url);
 
@@ -97,11 +102,11 @@ test("the three verbs run POUR, CHARGE, RELEASE and discover the statement", () 
     SPARKLE_VERBS.map((verb) => verb.reveals),
     ["STILL WATER", "SILVER BREATH", "STARS"],
   );
-  // POUR fills over two seconds; CHARGE builds for two and a half; RELEASE
-  // is a single tap.
+  // All three are holds of a few seconds: POUR two, CHARGE two and a
+  // half, RELEASE two. Only when all three complete does the name appear.
   assert.deepEqual(
     SPARKLE_VERBS.map((verb) => [verb.kind, verb.holdMs]),
-    [["hold", 2_000], ["hold", 2_500], ["tap", 0]],
+    [["hold", 2_000], ["hold", 2_500], ["hold", 2_000]],
   );
   // Thirty-three stars rise for three seconds. Of course thirty-three.
   assert.equal(SPARKLE_STAR_COUNT, 33);
@@ -140,13 +145,18 @@ test("puzzles never watch the camera and never hard-stall", () => {
   }
 });
 
-test("lock IV is a legible panel, never hotspots hunted on the model", () => {
+test("lock IV hangs its hold-stations around the centerpiece, never ON it", () => {
   const verbs = readFileSync(new URL("src/components/SparkleVerbs.tsx", root), "utf8");
-  // The witness is a clean centerpiece; the work happens on the panel.
-  assert.match(verbs, /apparatus-panel/);
-  assert.match(verbs, /autoRotate/);
-  assert.doesNotMatch(verbs, /slot=|data-position|witness-hotspot/, "no 3D hotspots on lock IV");
-  // Every station is always visible and out-of-order touches explain WHY.
+  // Floating stations anchored around the witness, hung fresh per visit.
+  assert.match(verbs, /floatingStationPlacements\(Math\.random\)/);
+  assert.match(verbs, /sparkle-float/);
+  assert.match(verbs, /slot=\{`hotspot-float-/);
+  // Nothing hides ON the model itself for this lock.
+  assert.doesNotMatch(verbs, /witness-hotspot/, "the floats are their own control, not model hotspots");
+  // The plain jumbled panel survives as the lost-model fallback.
+  assert.match(verbs, /puzzle-fallback/);
+  assert.match(verbs, /shuffledStationOrder\(Math\.random\)/);
+  // Out-of-order touches explain WHY; only completion reveals the name.
   assert.match(verbs, /SPARKLE_ORDER_LINES/);
   assert.match(verbs, /chargeBeforePour/);
   assert.match(verbs, /releaseBeforePour/);
@@ -155,6 +165,39 @@ test("lock IV is a legible panel, never hotspots hunted on the model", () => {
   assert.match(verbs, /nameAttempts >= 2/);
   assert.match(verbs, /nameAttempts >= 3/);
   assert.match(verbs, /It makes your bottle sparkle\./);
+});
+
+test("the floating ring is a fair permutation clear of the witness", () => {
+  let seed = 7;
+  const lcg = () => {
+    seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
+    return seed / 4_294_967_296;
+  };
+  for (let round = 0; round < 25; round += 1) {
+    const placements = floatingStationPlacements(lcg);
+    assert.equal(placements.length, 3);
+    const heights = placements.map((p) => Number(p.position.split(" ")[1]));
+    // Each station takes a distinct slot height: a full permutation.
+    assert.deepEqual(
+      [...heights].sort((a, b) => a - b),
+      [...SPARKLE_FLOAT_HEIGHTS_M],
+    );
+    const azimuths: number[] = [];
+    for (const p of placements) {
+      const [x, , z] = p.position.split(" ").map(Number);
+      // Every station floats on the ring, clear of the bronze.
+      assert.ok(Math.abs(Math.hypot(x, z) - SPARKLE_FLOAT_RADIUS_M) < 0.001);
+      azimuths.push(((Math.atan2(x, z) * 180) / Math.PI + 360) % 360);
+    }
+    // The spokes stand 120 degrees apart, whatever the random spin.
+    const sorted = azimuths.slice().sort((a, b) => a - b);
+    const gaps = [
+      sorted[1] - sorted[0],
+      sorted[2] - sorted[1],
+      360 - sorted[2] + sorted[0],
+    ];
+    for (const gap of gaps) assert.ok(Math.abs(gap - 120) < 1.5, String(gap));
+  }
 });
 
 test("the apparatus answers to the plain names too", () => {

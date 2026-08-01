@@ -167,7 +167,7 @@ export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> 
     model: '/models/witnessSparkle.glb',
     benchNote: 'A silver vessel gives its evidence in three parts: what it takes, what it breathes, what it returns.',
     riddle:
-      'The last witness is under oath, and words alone will not do. Its panel carries three controls: what it takes, what it breathes, what it returns. Work them in the only order such a machine allows, and when all three truths are said, name the apparatus. The Keeper has already wrapped one. Naturally.',
+      'The last witness is under oath, and words alone will not do. Three brass stations hang about it: what it takes, what it breathes, what it returns. Hold each until it is sure, in the only order such a machine allows, and when all three truths are said, name the apparatus. The Keeper has already wrapped one. Naturally.',
     answers: [
       'carbonator', 'aarke', 'sodastream', 'sparklingwater', 'sodamaker',
       'gaziranavoda', 'soda', 'fizzywater', 'watercarbonator',
@@ -178,8 +178,8 @@ export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> 
     ],
     puzzle: { kind: 'verbs' },
     hints: [
-      'The panel works the way every such machine works: something still goes in, something silver charges it, then it can speak. Begin with the pour; the machine will tell you if you rush it.',
-      'Hold POUR until the vessel fills. Hold CHARGE until the hiss peaks. Then one tap on RELEASE sets the stars out. What drinks still water and breathes out a celebration?',
+      'Walk around the witness: three stations hang about it. The machine works the way every such machine works: something still goes in, something silver charges it, then it can speak. It will tell you if you rush it.',
+      'Turn the bench until a station faces you, then hold it: POUR until the vessel fills, CHARGE until the hiss peaks, RELEASE until the stars come. What drinks still water and breathes out a celebration?',
       'POUR, CHARGE, RELEASE, then type CARBONATOR. The next correct control now glows.',
     ],
     refusals: [

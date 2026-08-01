@@ -388,7 +388,76 @@
   100% { transform: translateY(-34dvh) scale(1.1); opacity: 0; }
 }
 
-/* ---- The apparatus panel: three stations, IN / GAS / OUT ---- */
+/* ---- The floating hold-stations, hung around the witness ---- */
+
+.sparkle-float {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  width: 74px;
+  padding: var(--space-xs) var(--space-xs) var(--space-sm);
+  border: var(--hairline) solid rgba(228, 219, 210, 0.75);
+  border-radius: 0;
+  background: rgba(10, 8, 6, 0.72);
+  color: var(--c-bone);
+  cursor: pointer;
+  touch-action: none;
+  transition: border-color 160ms ease, background 160ms ease, opacity 220ms ease;
+}
+
+/* Facing away: model-viewer marks it hidden; it dims and cannot be held,
+   so she genuinely walks the ring around the centerpiece. */
+.sparkle-float.hide {
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.sparkle-float__tag {
+  color: var(--c-bone-dim);
+  font-family: var(--font-doc);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-caps);
+}
+
+.sparkle-float__verb {
+  font-family: var(--font-ui);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+}
+
+.sparkle-float__gauge {
+  width: 100%;
+  height: calc(var(--hairline) * 5);
+  border: var(--hairline) solid var(--c-hairline);
+  background: var(--c-void);
+  overflow: hidden;
+}
+
+.sparkle-float__gauge i {
+  display: block;
+  height: 100%;
+  background: var(--c-amber);
+}
+
+.sparkle-float.is-holding {
+  border-color: var(--c-amber);
+  background: rgba(232, 165, 75, 0.22);
+}
+
+.sparkle-float.is-done {
+  border-color: var(--c-amber);
+  color: var(--c-bone-bright);
+  cursor: default;
+  opacity: 0.85;
+}
+
+.sparkle-float.is-next {
+  animation: hotspot-pulse 1.1s ease-in-out infinite;
+  border-color: var(--c-amber);
+}
+
+/* ---- The apparatus panel: the plain fallback, IN / GAS / OUT ---- */
 
 .apparatus-panel {
   display: grid;

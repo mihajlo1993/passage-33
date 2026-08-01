@@ -38,11 +38,11 @@ const RUNNER_SPOTS = {
 } as const;
 
 /**
- * THE THREE VERBS, played on the apparatus panel below the bench (the
- * witness itself stays a clean centerpiece; nothing hides on the model).
- * POUR and CHARGE are holds with visible gauges; RELEASE is a single tap
- * that sets thirty-three stars out of the mouth. Then she names the
- * apparatus by typing, on lock I's contract.
+ * THE THREE VERBS, played on hold-stations floating AROUND the witness
+ * (the centerpiece itself stays clean; nothing hides on the model). All
+ * three are held for a few seconds, gauges filling; the last one sets
+ * thirty-three stars out of the mouth. Only when all three are done does
+ * the typed name appear, on lock I's contract.
  */
 export const SPARKLE_VERBS = [
   {
@@ -63,17 +63,17 @@ export const SPARKLE_VERBS = [
     tag: "GAS",
     lead: "I BREATHE",
     reveals: "SILVER BREATH",
-    instruction: "Hold the lever until the hiss peaks",
+    instruction: "Hold until the hiss peaks",
   },
   {
     id: "release",
     verb: "RELEASE",
-    kind: "tap",
-    holdMs: 0,
+    kind: "hold",
+    holdMs: 2_000,
     tag: "OUT",
     lead: "I RETURN",
     reveals: "STARS",
-    instruction: "One tap. Let it speak",
+    instruction: "Hold, and let it speak",
   },
 ] as const;
 
