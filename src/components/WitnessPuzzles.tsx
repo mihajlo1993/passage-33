@@ -26,12 +26,15 @@ export interface WitnessPuzzleProps {
   onWrongAttempt: () => void;
 }
 
-/* Hotspot anchors in model space (metres). These mirror the deterministic
- * geometry in scripts/build-witnesses.mjs; rebuild both together. */
+/* Hotspot anchors in model space (metres). The shoulders mirror the
+ * deterministic geometry in scripts/build-witnesses.mjs; rebuild both
+ * together. The WHEEL is the discovery: its control hides on the
+ * UNDERSIDE of the base (downward normal), so model-viewer only shows
+ * it while she has genuinely rolled the runner over to look beneath. */
 const RUNNER_SPOTS = {
   L: { position: "-0.013 0.056 0.013", normal: "-0.35 0.85 0.4", label: "L" },
   R: { position: "0.013 0.056 0.013", normal: "0.35 0.85 0.4", label: "R" },
-  W: { position: "0 0.0635 0.0195", normal: "0 1 0.25", label: "W" },
+  W: { position: "0 -0.002 0", normal: "0 -1 0", label: "W" },
 } as const;
 
 /**
@@ -284,12 +287,16 @@ export function RunnerClicks({ pin, config, onSolved, onCancel, onWrongAttempt }
       slot={`hotspot-${id.toLowerCase()}`}
       data-position={RUNNER_SPOTS[id].position}
       data-normal={RUNNER_SPOTS[id].normal}
+      // model-viewer stamps data-visible while the anchor faces the camera;
+      // the underside wheel is styled invisible and untappable without it.
+      data-visibility-attribute={id === "W" ? "visible" : undefined}
       className={
         "witness-hotspot"
+        + (id === "W" ? " witness-hotspot--under" : "")
         + (glowing && pattern[progress] === id ? " is-next" : "")
         + (hitSpot === id ? " is-hit" : "")
       }
-      aria-label={id === "L" ? "Left shoulder" : id === "R" ? "Right shoulder" : "The wheel"}
+      aria-label={id === "L" ? "Left shoulder" : id === "R" ? "Right shoulder" : "The wheel, hidden beneath"}
       onClick={() => tap(id)}
     >
       {RUNNER_SPOTS[id].label}

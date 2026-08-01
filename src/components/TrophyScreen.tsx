@@ -221,12 +221,13 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   }, [finalPresentsOpened, startKeeperReading]);
 
   // The mask-off piece: a dusty music box that starts as the letter settles
-  // and keeps the room warm through the reading. Local file, looped.
+  // and keeps the room warm through the reading. Local file, looped. It
+  // sits UNDER the narration: quiet enough that every word stays clear.
   useEffect(() => {
     if (!trophyUnlocked || typeof window === "undefined") return;
     const element = new window.Audio(ENDING_MUSIC_PATH);
     element.loop = true;
-    element.volume = 0.5;
+    element.volume = 0.38;
     musicRef.current = element;
     const start = () => void element.play().catch(() => undefined);
     const timer = window.setTimeout(start, 2_400);

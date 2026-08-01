@@ -179,7 +179,7 @@ test("fixed furniture records include every surveyed object and profile", () => 
     mapFurniture.map((item) => [item.id, footprintBounds(item.footprint)]),
     [
       ["living-table", { x: 70, y: 186, width: 58, height: 32 }],
-      ["living-kallax", { x: 136, y: 182, width: 100, height: 26 }],
+      ["living-kallax", { x: 170, y: 176, width: 66, height: 66 }],
       ["living-sectional", { x: 85, y: 265, width: 145, height: 62 }],
       ["living-tv", { x: 95, y: 386, width: 120, height: 24 }],
       ["entry-clothes-hanger", { x: 300, y: 176, width: 120, height: 14 }],

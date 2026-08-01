@@ -239,6 +239,14 @@
   border-color: var(--c-amber);
 }
 
+/* The wheel hides on the runner's underside: model-viewer stamps
+   data-visible only while its downward anchor faces the camera, so the
+   control exists only when she has genuinely rolled the witness over. */
+.witness-hotspot--under:not([data-visible]) {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @keyframes hotspot-pulse {
   0% { box-shadow: 0 0 0 0 rgba(232, 165, 75, 0.6); }
   70% { box-shadow: 0 0 0 12px rgba(232, 165, 75, 0); }

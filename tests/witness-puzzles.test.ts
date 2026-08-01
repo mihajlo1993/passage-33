@@ -9,6 +9,7 @@ import {
   SPARKLE_VERBS,
   sparkleStatementComplete,
 } from "../src/components/WitnessPuzzles";
+import { shuffledStationOrder } from "../src/components/SparkleVerbs";
 
 const root = new URL("..", import.meta.url);
 
@@ -37,6 +38,45 @@ test("the runner's click pattern is playable and matches its own story", () => {
   const instruction = riddleConfigByPin[3]!.riddle;
   assert.match(instruction, /left shoulder/i);
   assert.match(instruction, /wheel/i);
+  // The wheel is the discovery: the story says it hides beneath.
+  assert.match(instruction, /beneath/i);
+});
+
+test("the wheel control hides on the runner's underside until she looks", () => {
+  const shared = readFileSync(new URL("src/components/WitnessPuzzles.tsx", root), "utf8");
+  const css = readFileSync(new URL("src/styles/puzzles.css", root), "utf8");
+  // Downward anchor under the base; model-viewer stamps data-visible only
+  // while that faces the camera. No camera-angle reads anywhere.
+  assert.match(shared, /W: \{ position: "0 -0\.002 0", normal: "0 -1 0"/);
+  assert.match(shared, /data-visibility-attribute=\{id === "W" \? "visible" : undefined\}/);
+  assert.match(css, /\.witness-hotspot--under:not\(\[data-visible\]\)\s*\{[^}]*opacity:\s*0[^}]*pointer-events:\s*none/);
+  // The third hint sends her underneath, so no hard-stall is possible.
+  assert.match(riddleConfigByPin[3]!.hints[2], /over[\s\S]*underside/i);
+});
+
+test("the apparatus stations hang jumbled, never in the giveaway order", () => {
+  // Deterministic RNGs cover the corner cases; identity is impossible.
+  const identityLeaning = shuffledStationOrder(() => 0.999999);
+  assert.deepEqual([...identityLeaning].sort(), [0, 1, 2]);
+  assert.ok(!identityLeaning.every((value, index) => value === index));
+
+  const lowRng = shuffledStationOrder(() => 0);
+  assert.deepEqual([...lowRng].sort(), [0, 1, 2]);
+  assert.ok(!lowRng.every((value, index) => value === index));
+
+  let seed = 42;
+  const lcg = () => {
+    seed = (seed * 1_664_525 + 1_013_904_223) % 4_294_967_296;
+    return seed / 4_294_967_296;
+  };
+  for (let round = 0; round < 50; round += 1) {
+    const order = shuffledStationOrder(lcg);
+    assert.deepEqual([...order].sort(), [0, 1, 2], "always a full permutation");
+    assert.ok(
+      !order.every((value, index) => value === index),
+      "never pour/charge/release left to right",
+    );
+  }
 });
 
 test("the wager's wheels take exactly the engraved sum", () => {

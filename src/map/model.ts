@@ -200,21 +200,25 @@ export const mapFurniture: readonly FurnitureRecord[] = [
     ],
   },
   {
+    // A real KALLAX 4x4: a square of sixteen mouths against the wall.
     id: "living-kallax",
     room: "living",
     kind: "kallax",
     label: "KALLAX",
     footprint: [
-      { x: 136, y: 182 },
-      { x: 236, y: 182 },
-      { x: 236, y: 208 },
-      { x: 136, y: 208 },
+      { x: 170, y: 176 },
+      { x: 236, y: 176 },
+      { x: 236, y: 242 },
+      { x: 170, y: 242 },
     ],
-    labelPoint: { x: 186, y: 199 },
+    labelPoint: { x: 203, y: 254 },
     detailSegments: [
-      { start: { x: 161, y: 182 }, end: { x: 161, y: 208 } },
-      { start: { x: 186, y: 182 }, end: { x: 186, y: 208 } },
-      { start: { x: 211, y: 182 }, end: { x: 211, y: 208 } },
+      { start: { x: 186.5, y: 176 }, end: { x: 186.5, y: 242 } },
+      { start: { x: 203, y: 176 }, end: { x: 203, y: 242 } },
+      { start: { x: 219.5, y: 176 }, end: { x: 219.5, y: 242 } },
+      { start: { x: 170, y: 192.5 }, end: { x: 236, y: 192.5 } },
+      { start: { x: 170, y: 209 }, end: { x: 236, y: 209 } },
+      { start: { x: 170, y: 225.5 }, end: { x: 236, y: 225.5 } },
     ],
   },
   {

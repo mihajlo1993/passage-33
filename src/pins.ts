@@ -118,15 +118,15 @@ export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> 
   },
   3: {
     model: '/models/witnessRunner.glb',
-    benchNote: 'Its shoulders and its wheel still click. The lock is listening.',
+    benchNote: 'Its shoulders click plainly. What else clicks, it keeps underneath.',
     riddle:
-      'It had a tail but no bones, and it spoke only in clicks. Speak its language back to it: one click on its left shoulder for the lock already open, one on its right shoulder for every lock still waiting, and last, roll the wheel on its back, the one that counted the years.',
+      'It had a tail but no bones, and it spoke only in clicks. Speak its language back to it: one click on its left shoulder for the lock already open, one on its right shoulder for every lock still waiting, and last, the wheel that counted the years. It kept that one hidden beneath itself, the way counters keep their counting private.',
     answers: ['mouse', 'miska', 'computermouse', 'amouse', 'themouse', 'mis'],
     puzzle: { kind: 'clicks', pattern: ['L', 'R', 'R', 'R', 'W'] },
     hints: [
-      'Touch the runner itself. It has a left shoulder, a right shoulder, and a wheel on its back. The lock hears every click.',
-      'One lock stands open behind you; three still wait; the wheel comes last. Left once, then right three times, then the wheel.',
-      'Tap: left, right, right, right, wheel. The next correct touch now glows for you.',
+      'Touch the runner itself. It has a left shoulder and a right shoulder in plain view. The wheel it hides; things held underneath are still things held.',
+      'One lock stands open behind you; three still wait; the wheel comes last. Left once, right three times, then roll the runner over and look beneath it.',
+      'Tap: left, right, right, right. Then turn the witness fully over: the wheel waits on its underside, and the next correct touch now glows for you.',
     ],
     refusals: [
       'The runner flicks an ear. Not its language.',

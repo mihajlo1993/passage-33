@@ -46,6 +46,26 @@ export const SPARKLE_NAME_CLUES = {
     "It makes your bottle sparkle.",
 } as const;
 
+/**
+ * The stations hang on the panel in a jumbled order (never left-to-right),
+ * so the ARRANGEMENT gives nothing away: only the machine's own logic
+ * says what comes first. The press order stays pour, charge, release.
+ */
+export function shuffledStationOrder(
+  random: () => number,
+): readonly number[] {
+  const order = SPARKLE_VERBS.map((_, index) => index);
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    for (let i = order.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.min(Math.max(random(), 0), 0.999999) * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    if (!order.every((value, index) => value === index)) return order;
+  }
+  // A degenerate random source still never yields the giveaway order.
+  return order.map((_, index) => (index + 1) % order.length);
+}
+
 interface StationHoldState {
   verbIndex: number;
   progress: number;
@@ -53,6 +73,10 @@ interface StationHoldState {
 
 export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }: WitnessPuzzleProps) {
   const [doneVerbs, setDoneVerbs] = useState(0);
+  // The panel arrangement is drawn once per visit, never left-to-right.
+  const [stationOrder] = useState<readonly number[]>(
+    () => shuffledStationOrder(Math.random),
+  );
   const [hold, setHold] = useState<StationHoldState | null>(null);
   const [starsFlying, setStarsFlying] = useState(false);
   const [orderLine, setOrderLine] = useState("");
@@ -224,9 +248,11 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
 
         {!naming && (
           <>
-            {/* The apparatus panel: three stations, always all visible. */}
+            {/* The apparatus panel: three stations, always all visible,
+                hung in a jumbled order. Only the logic says what is first. */}
             <div className="apparatus-panel" aria-label="The apparatus controls">
-              {SPARKLE_VERBS.map((verb, index) => {
+              {stationOrder.map((index) => {
+                const verb = SPARKLE_VERBS[index];
                 const done = index < doneVerbs;
                 const active = index === doneVerbs;
                 const holding = hold?.verbIndex === index;
