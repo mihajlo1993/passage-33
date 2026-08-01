@@ -171,6 +171,14 @@ export function GameApp() {
 
   useWakeLock();
   useEffect(() => {
+    // The finale is a film, not the terminal: no VHS treatment may ride
+    // it. The stepped grain and canvas jitter read as shaking over the
+    // held final frame, so the letter route runs perfectly still.
+    if (route === "/trophy") {
+      vhs.setIntensity(0);
+      vhs.setTimecode(null);
+      return () => vhs.setTimecode(null);
+    }
     const profile = getVHSHealthProfile(store.health);
     vhs.setIntensity(profile.intensity);
 
@@ -198,7 +206,7 @@ export function GameApp() {
       if (dropTimer !== null) window.clearInterval(dropTimer);
       vhs.setTimecode(null);
     };
-  }, [store.health, store.startedAt, vhs]);
+  }, [route, store.health, store.startedAt, vhs]);
 
   useEffect(() => {
     const resolution = store.lastResolution;

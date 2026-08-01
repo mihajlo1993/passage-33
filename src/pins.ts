@@ -167,16 +167,19 @@ export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> 
     model: '/models/witnessSparkle.glb',
     benchNote: 'A silver vessel gives its evidence in three parts: what it takes, what it breathes, what it returns.',
     riddle:
-      'The last witness is under oath, and words alone will not do. Operate it: hold its mouth and pour it something still, hold its lever until it draws a silver breath, then one tap, and let it speak. When all three truths are said, name the apparatus. The Keeper has already wrapped one. Naturally.',
+      'The last witness is under oath, and words alone will not do. Its panel carries three controls: what it takes, what it breathes, what it returns. Work them in the only order such a machine allows, and when all three truths are said, name the apparatus. The Keeper has already wrapped one. Naturally.',
     answers: [
       'carbonator', 'aarke', 'sodastream', 'sparklingwater', 'sodamaker',
       'gaziranavoda', 'soda', 'fizzywater', 'watercarbonator',
-      'sparklingwatermaker', 'sodawater',
+      'sparklingwatermaker', 'sodawater', 'bubbles', 'bubbly', 'bubblywater',
+      'bubblewater', 'fizzy', 'fizzymaker', 'sparkle', 'sparkles',
+      'sparklewater', 'sodamachine', 'sparklingwatermachine', 'sodamaster',
+      'mehurcki', 'gazirka', 'sifon', 'sodasifon',
     ],
     puzzle: { kind: 'verbs' },
     hints: [
-      'The witness works in order: its mouth takes, its lever charges, its mouth returns. Begin at the mouth, and be unhurried. The seven cast stars above it are evidence.',
-      'Hold the mouth until the pour fills. Hold the lever until the hiss peaks. Then one tap sets the stars out. What drinks still water and breathes out a celebration?',
+      'The panel works the way every such machine works: something still goes in, something silver charges it, then it can speak. Begin with the pour; the machine will tell you if you rush it.',
+      'Hold POUR until the vessel fills. Hold CHARGE until the hiss peaks. Then one tap on RELEASE sets the stars out. What drinks still water and breathes out a celebration?',
       'POUR, CHARGE, RELEASE, then type CARBONATOR. The next correct control now glows.',
     ],
     refusals: [

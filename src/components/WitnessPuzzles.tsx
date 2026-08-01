@@ -35,10 +35,11 @@ const RUNNER_SPOTS = {
 } as const;
 
 /**
- * THE THREE VERBS: she operates the last witness once, in order, and its
- * statement discovers itself. POUR and CHARGE are holds on the artifact;
- * RELEASE is a single tap that sets thirty-three stars out of the mouth.
- * Then she names the apparatus by typing, on lock I's contract.
+ * THE THREE VERBS, played on the apparatus panel below the bench (the
+ * witness itself stays a clean centerpiece; nothing hides on the model).
+ * POUR and CHARGE are holds with visible gauges; RELEASE is a single tap
+ * that sets thirty-three stars out of the mouth. Then she names the
+ * apparatus by typing, on lock I's contract.
  */
 export const SPARKLE_VERBS = [
   {
@@ -46,23 +47,17 @@ export const SPARKLE_VERBS = [
     verb: "POUR",
     kind: "hold",
     holdMs: 2_000,
-    hotspot: "IN",
-    // The vessel's mouth, at the top of the flask.
-    position: "0 0.16 0.012",
-    normal: "0 0 1",
+    tag: "IN",
     lead: "I TAKE",
     reveals: "STILL WATER",
-    instruction: "Hold the mouth and pour",
+    instruction: "Hold until the vessel fills",
   },
   {
     id: "charge",
     verb: "CHARGE",
     kind: "hold",
     holdMs: 2_500,
-    hotspot: "GAS",
-    // The lever on the vessel's flank.
-    position: "0.024 0.09 0",
-    normal: "1 0.25 0",
+    tag: "GAS",
     lead: "I BREATHE",
     reveals: "SILVER BREATH",
     instruction: "Hold the lever until the hiss peaks",
@@ -72,9 +67,7 @@ export const SPARKLE_VERBS = [
     verb: "RELEASE",
     kind: "tap",
     holdMs: 0,
-    hotspot: "OUT",
-    position: "0 0.16 0.012",
-    normal: "0 0 1",
+    tag: "OUT",
     lead: "I RETURN",
     reveals: "STARS",
     instruction: "One tap. Let it speak",
@@ -137,6 +130,8 @@ interface BenchProps {
   onLost: () => void;
   cameraOrbit: string;
   cameraTarget?: string;
+  /** A slow idle turn for benches that are pure centerpiece. */
+  autoRotate?: boolean;
   viewerRef?: React.Ref<ModelViewerElement>;
   children?: React.ReactNode;
 }
@@ -153,7 +148,9 @@ function assignViewerRef(
 }
 
 /** The lit bench with the witness and its tappable hotspots. */
-export function WitnessBench({ config, lost, onLost, cameraOrbit, cameraTarget, viewerRef, children }: BenchProps) {
+export function WitnessBench({
+  config, lost, onLost, cameraOrbit, cameraTarget, autoRotate, viewerRef, children,
+}: BenchProps) {
   const onLostRef = useRef(onLost);
   const attachedViewerRef = useRef<ModelViewerElement | null>(null);
   onLostRef.current = onLost;
@@ -188,6 +185,9 @@ export function WitnessBench({ config, lost, onLost, cameraOrbit, cameraTarget, 
           camera-target={cameraTarget}
           min-camera-orbit="-Infinity 0deg auto"
           max-camera-orbit="Infinity 180deg auto"
+          auto-rotate={autoRotate ? "" : undefined}
+          auto-rotate-delay={autoRotate ? "2500" : undefined}
+          rotation-per-second={autoRotate ? "12deg" : undefined}
           onError={onLost}
         >
           {children}

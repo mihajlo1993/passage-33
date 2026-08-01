@@ -17,18 +17,47 @@ import {
   type WitnessPuzzleProps,
 } from "./WitnessPuzzles";
 
-/* ====== LOCK IV: operate the witness, then name it (THE THREE VERBS) ====== */
+/*
+ * LOCK IV: THE APPARATUS PANEL. The witness stands clean on the bench (a
+ * centerpiece to admire, full orbit, nothing to hunt for on the model).
+ * The work happens on a clear brass panel below it: three stations, IN /
+ * GAS / OUT, always visible. Only the order every such machine obeys will
+ * work; an out-of-order touch answers with the REASON, so the puzzle
+ * teaches itself. When the statement is complete she types the name.
+ */
 
-interface VerbHoldState {
+/** Why an out-of-order touch refuses: the machine explains itself. */
+export const SPARKLE_ORDER_LINES = {
+  chargeBeforePour:
+    "It will not breathe into an empty vessel. Something still must go in first.",
+  releaseBeforePour:
+    "Nothing to release. The vessel stands empty.",
+  releaseBeforeCharge:
+    "Still water alone does not sparkle. It wants its silver breath first.",
+  alreadyDone:
+    "That part of the work is done. The apparatus remembers.",
+} as const;
+
+/** The clue ladder under the name input: after two misses, then three. */
+export const SPARKLE_NAME_CLUES = {
+  afterTwo:
+    "It answers to plainer names too: a soda maker, a sparkling water machine, the bubbly water thing on the counter.",
+  afterThree:
+    "It makes your bottle sparkle.",
+} as const;
+
+interface StationHoldState {
   verbIndex: number;
   progress: number;
 }
 
 export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }: WitnessPuzzleProps) {
   const [doneVerbs, setDoneVerbs] = useState(0);
-  const [hold, setHold] = useState<VerbHoldState | null>(null);
+  const [hold, setHold] = useState<StationHoldState | null>(null);
   const [starsFlying, setStarsFlying] = useState(false);
+  const [orderLine, setOrderLine] = useState("");
   const [draft, setDraft] = useState("");
+  const [nameAttempts, setNameAttempts] = useState(0);
   const [hintCount, setHintCount] = useState(0);
   const [lost, setLost] = useState(false);
   const [wordsShown, setWordsShown] = useState(true);
@@ -62,13 +91,31 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
     }
   };
 
+  /**
+   * An out-of-order touch answers with its reason: no damage, no shake.
+   * Curiosity is how she learns the machine; only wrong NAMES cost.
+   */
+  const explainOrder = (index: number) => {
+    const done = doneVerbsRef.current;
+    if (index < done) {
+      setOrderLine(SPARKLE_ORDER_LINES.alreadyDone);
+    } else if (SPARKLE_VERBS[index]?.id === "charge") {
+      setOrderLine(SPARKLE_ORDER_LINES.chargeBeforePour);
+    } else if (done === 0) {
+      setOrderLine(SPARKLE_ORDER_LINES.releaseBeforePour);
+    } else {
+      setOrderLine(SPARKLE_ORDER_LINES.releaseBeforeCharge);
+    }
+    haptics.stutter();
+  };
+
   const completeVerb = (index: number) => {
     clearHoldTimers();
     setHold(null);
+    setOrderLine("");
     haptics.found();
     void audio.play("released");
-    const next = index + 1;
-    setDoneVerbs(next);
+    setDoneVerbs(index + 1);
     feedback.step();
     if (SPARKLE_VERBS[index]?.id === "release") {
       // Thirty-three stars rise out of the mouth, over the witness.
@@ -82,7 +129,11 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
 
   const beginHold = (index: number) => {
     const verb = SPARKLE_VERBS[index];
-    if (!verb || index !== doneVerbsRef.current || verb.kind !== "hold") return;
+    if (!verb || verb.kind !== "hold") return;
+    if (index !== doneVerbsRef.current) {
+      explainOrder(index);
+      return;
+    }
     clearHoldTimers();
     // The pour rises; the charge hisses and pulses in rhythm.
     void audio.play(verb.id === "pour" ? "drag" : "write");
@@ -113,19 +164,10 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
     const verb = SPARKLE_VERBS[index];
     if (!verb || verb.kind !== "tap") return;
     if (index !== doneVerbsRef.current) {
-      feedback.wrong(2);
+      explainOrder(index);
       return;
     }
     completeVerb(index);
-  };
-
-  const pressVerb = (index: number) => {
-    // A hold started out of order is a gentle refusal, once, on press.
-    if (index !== doneVerbsRef.current) {
-      feedback.wrong(2);
-      return;
-    }
-    beginHold(index);
   };
 
   const submitName = () => {
@@ -133,42 +175,9 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
       feedback.solved(onSolved);
       return;
     }
+    setNameAttempts((count) => count + 1);
     feedback.wrong(1);
   };
-
-  const activeVerb = SPARKLE_VERBS[doneVerbs];
-
-  const hotspots = SPARKLE_VERBS.map((verb, index) => {
-    if (naming) return null;
-    // The mouth serves POUR and RELEASE from the same point; draw only the
-    // verb whose turn it is there, so the two never stack.
-    if (verb.position === activeVerb?.position && verb.id !== activeVerb.id) return null;
-    const isActive = index === doneVerbs;
-    const holding = hold?.verbIndex === index;
-    return (
-      <button
-        key={verb.id}
-        slot={`hotspot-verb-${verb.id}`}
-        data-position={verb.position}
-        data-normal={verb.normal}
-        className={
-          "witness-hotspot witness-hotspot--verb"
-          + (holding ? " is-holding" : "")
-          + (guideOn && isActive ? " is-next" : "")
-          + (index < doneVerbs ? " is-lit" : "")
-        }
-        aria-label={`${verb.verb}: ${verb.instruction}`}
-        onPointerDown={verb.kind === "hold" ? () => pressVerb(index) : undefined}
-        onPointerUp={verb.kind === "hold" ? releaseHold : undefined}
-        onPointerLeave={verb.kind === "hold" ? releaseHold : undefined}
-        onPointerCancel={verb.kind === "hold" ? releaseHold : undefined}
-        onClick={verb.kind === "tap" ? () => tapVerb(index) : undefined}
-        onContextMenu={(event) => event.preventDefault()}
-      >
-        {verb.hotspot}
-      </button>
-    );
-  });
 
   return (
     <section className="riddle-lock" aria-labelledby="witness-title">
@@ -178,11 +187,9 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
           config={config}
           lost={lost}
           onLost={() => setLost(true)}
-          cameraOrbit="0deg 85deg 0.32m"
-          cameraTarget="0m 0.15m 0m"
-        >
-          {!lost && hotspots}
-        </WitnessBench>
+          cameraOrbit="25deg 78deg 105%"
+          autoRotate
+        />
         {starsFlying && (
           <div className="sparkle-stars" aria-hidden="true">
             {Array.from({ length: SPARKLE_STAR_COUNT }, (_, index) => (
@@ -215,38 +222,49 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
           ))}
         </div>
 
-        {!naming && activeVerb && (
+        {!naming && (
           <>
-            <p className="puzzle-sum" aria-live="polite">
-              {activeVerb.verb}: {activeVerb.instruction}.
-            </p>
-            {hold?.verbIndex === doneVerbs && (
-              <div className="hold-control__track sparkle-gauge" aria-hidden="true">
-                <i style={{ width: `${Math.round(hold.progress * 100)}%` }} />
-              </div>
-            )}
-            {lost && (
-              <div className="puzzle-fallback sparkle-fallback" aria-label="Plain verb controls">
-                {SPARKLE_VERBS.map((verb, index) => (
+            {/* The apparatus panel: three stations, always all visible. */}
+            <div className="apparatus-panel" aria-label="The apparatus controls">
+              {SPARKLE_VERBS.map((verb, index) => {
+                const done = index < doneVerbs;
+                const active = index === doneVerbs;
+                const holding = hold?.verbIndex === index;
+                const progress = done ? 1 : holding ? hold.progress : 0;
+                return (
                   <button
                     key={verb.id}
                     className={
-                      "mechanical-button"
-                      + (guideOn && index === doneVerbs ? " is-next" : "")
-                      + (index < doneVerbs ? " is-lit" : "")
+                      "apparatus-station"
+                      + (done ? " is-done" : "")
+                      + (holding ? " is-holding" : "")
+                      + (guideOn && active ? " is-next" : "")
                     }
-                    disabled={index < doneVerbs}
-                    onPointerDown={verb.kind === "hold" ? () => pressVerb(index) : undefined}
+                    disabled={done}
+                    aria-label={`${verb.verb}: ${verb.instruction}`}
+                    onPointerDown={verb.kind === "hold" ? () => beginHold(index) : undefined}
                     onPointerUp={verb.kind === "hold" ? releaseHold : undefined}
                     onPointerLeave={verb.kind === "hold" ? releaseHold : undefined}
                     onPointerCancel={verb.kind === "hold" ? releaseHold : undefined}
                     onClick={verb.kind === "tap" ? () => tapVerb(index) : undefined}
+                    onContextMenu={(event) => event.preventDefault()}
                   >
-                    {verb.verb}{verb.kind === "hold" ? " (HOLD)" : " (TAP)"}
+                    <span className="apparatus-station__tag">{verb.tag}</span>
+                    <strong className="apparatus-station__verb">{verb.verb}</strong>
+                    <span className="apparatus-station__how">
+                      {done ? verb.reveals : verb.kind === "hold" ? "HOLD" : "TAP"}
+                    </span>
+                    <span className="apparatus-station__gauge" aria-hidden="true">
+                      <i style={{ width: `${Math.round(progress * 100)}%` }} />
+                    </span>
                   </button>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
+            {/* The machine explains itself when touched out of order. */}
+            <p className="riddle-box__feedback apparatus-reason" aria-live="polite">
+              {orderLine}
+            </p>
           </>
         )}
 
@@ -279,6 +297,14 @@ export function SparkleVerbs({ pin, config, onSolved, onCancel, onWrongAttempt }
                 Speak
               </button>
             </div>
+            {/* After two misses the Keeper starts helping; after three he
+                all but says it. Wrong names never lock anything. */}
+            {nameAttempts >= 2 && (
+              <p className="riddle-box__hint">{SPARKLE_NAME_CLUES.afterTwo}</p>
+            )}
+            {nameAttempts >= 3 && (
+              <p className="riddle-box__hint">{SPARKLE_NAME_CLUES.afterThree}</p>
+            )}
           </>
         )}
 

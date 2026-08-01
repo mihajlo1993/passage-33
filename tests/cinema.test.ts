@@ -63,6 +63,18 @@ test("the narration clock stays the master; the video carries no timing", () => 
   assert.match(trophy, /putTheLetterDown/);
 });
 
+test("the film runs perfectly still: no grain, no VHS composite over it", () => {
+  const app = readFileSync("src/components/GameApp.tsx", "utf8");
+  // The stepped grain and VHS canvas read as the video shaking over the
+  // held final frame; the letter route zeroes the treatment entirely.
+  assert.match(app, /route === "\/trophy"[\s\S]{0,200}vhs\.setIntensity\(0\)/);
+  assert.match(puzzlesCss, /data-route="\/trophy"\] \.screen-grain \{\n  display: none;/);
+  assert.match(
+    puzzlesCss,
+    /\.vhs-stage:has\(\.letter-screen--film\)\s*\{[\s\S]*?transform:\s*none !important[\s\S]*?filter:\s*none !important/,
+  );
+});
+
 test("the letter rides a lower-third band on a gradient scrim, never a box", () => {
   assert.match(trophy, /letter-band/);
   assert.match(puzzlesCss, /\.letter-band__scrim[\s\S]*?linear-gradient/);

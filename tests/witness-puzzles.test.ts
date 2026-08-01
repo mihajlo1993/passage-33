@@ -88,9 +88,9 @@ test("puzzles never watch the camera and never hard-stall", () => {
     assert.doesNotMatch(source, /camera-change/, "no camera watching");
     assert.doesNotMatch(source, /getCameraOrbit/, "no orbit-angle gating");
     assert.doesNotMatch(source, /pointermove|touchmove/, "no gesture math");
-    assert.match(source, /puzzle-fallback/, "a lost model degrades to plain buttons");
     assert.match(source, /is-next/, "the third hint glows the next correct touch");
   }
+  assert.match(shared, /puzzle-fallback/, "a lost model degrades to plain buttons");
   assert.match(shared, /addEventListener\("error", handleModelError\)/, "model failure uses a native listener");
   assert.match(verbs, /releaseHold/, "releasing a held verb early resets silently");
   assert.match(verbs, /sparkleStatementComplete/, "the statement must complete before naming");
@@ -98,4 +98,34 @@ test("puzzles never watch the camera and never hard-stall", () => {
   for (const pinId of [3, 5, 8] as const) {
     assert.equal(riddleConfigByPin[pinId]!.hints.length, 3);
   }
+});
+
+test("lock IV is a legible panel, never hotspots hunted on the model", () => {
+  const verbs = readFileSync(new URL("src/components/SparkleVerbs.tsx", root), "utf8");
+  // The witness is a clean centerpiece; the work happens on the panel.
+  assert.match(verbs, /apparatus-panel/);
+  assert.match(verbs, /autoRotate/);
+  assert.doesNotMatch(verbs, /slot=|data-position|witness-hotspot/, "no 3D hotspots on lock IV");
+  // Every station is always visible and out-of-order touches explain WHY.
+  assert.match(verbs, /SPARKLE_ORDER_LINES/);
+  assert.match(verbs, /chargeBeforePour/);
+  assert.match(verbs, /releaseBeforePour/);
+  assert.match(verbs, /releaseBeforeCharge/);
+  // The name clue ladder: suggestions after two misses, near-answer after three.
+  assert.match(verbs, /nameAttempts >= 2/);
+  assert.match(verbs, /nameAttempts >= 3/);
+  assert.match(verbs, /It makes your bottle sparkle\./);
+});
+
+test("the apparatus answers to the plain names too", () => {
+  const config = riddleConfigByPin[8]!;
+  for (const accepted of [
+    "carbonator", "soda", "sodastream", "bubbles", "fizzy", "bubbly",
+    "sparkle", "sparkles", "sparkling water", "soda machine", "fizzy water",
+    "mehurcki", "gazirana voda",
+  ]) {
+    assert.ok(riddleAnswerMatches(config, accepted), accepted);
+  }
+  assert.ok(!riddleAnswerMatches(config, "kettle"));
+  assert.ok(!riddleAnswerMatches(config, "decanter"));
 });
