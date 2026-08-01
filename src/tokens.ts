@@ -54,7 +54,7 @@ export const surfaces = {
   sceneDim:
     'linear-gradient(180deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.48) 45%, rgba(0,0,0,0.86) 100%)',
   vignette:
-    'radial-gradient(ellipse 120% 120% at 50% 45%, transparent 28%, rgba(0,0,0,0.50) 74%, rgba(0,0,0,0.94) 100%)',
+    'radial-gradient(ellipse 115% 115% at 50% 44%, transparent 22%, rgba(0,0,0,0.62) 70%, rgba(0,0,0,0.97) 100%)',
   glowSelect: '0 0 18px 4px rgba(255, 248, 236, 0.45)',
   glowCombine: '0 0 20px 5px rgba(232, 192, 96, 0.55)',
   shadowItem: '2px 4px 5px rgba(0, 0, 0, 0.45)',
@@ -73,6 +73,8 @@ export const typography = {
     display: '"Archivo Narrow", "Arial Narrow", sans-serif',
     doc: '"Courier Prime", "Courier New", monospace',
     award: '"Special Elite", "Courier New", serif',
+    // The Keeper's own hand: chapter titles and the letter's coda.
+    serif: '"IM Fell English", "Georgia", serif',
   },
   // RE tracking scale: body 0, labels 0.005, caps 0.08, titles 0.12, menu 0.18.
   uiLetterSpacing: '0.005em',

@@ -10,7 +10,6 @@ import type { ZoneId } from "@/src/types";
  */
 const PLATE_BY_ROUTE: Readonly<Partial<Record<string, MediaAssetId>>> = {
   "/notes": "plateDocument" as MediaAssetId,
-  "/save": "plateSave" as MediaAssetId,
   "/trophy": "plateCredits" as MediaAssetId,
 };
 
@@ -36,7 +35,7 @@ export interface ScenePlateProps {
 }
 
 export function ScenePlate({ route, zone, coldOpen = false }: ScenePlateProps) {
-  if (route === "/ar" || route === "/tape" || route === "/scan") return null;
+  if (route === "/scan") return null;
   const assetId = coldOpen
     ? ("plateTitle" as MediaAssetId)
     : PLATE_BY_ROUTE[route] ?? PLATE_BY_ZONE[zone];

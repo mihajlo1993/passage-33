@@ -69,19 +69,29 @@ function doorPath(door: DoorGeometry): string {
   ].join(" ");
 }
 
+function polygonCentroid(points: readonly MapPoint[]): MapPoint {
+  const sum = points.reduce(
+    (acc, point) => ({ x: acc.x + point.x, y: acc.y + point.y }),
+    { x: 0, y: 0 },
+  );
+  return { x: sum.x / points.length, y: sum.y / points.length };
+}
+
 function roomAriaLabel(
   name: string,
   statusLabel: RoomStatusLabel,
   outlineOnly: boolean,
 ): string {
+  const stateDescription = statusLabel === "" ? "not yet reached" : statusLabel.toLowerCase();
   const lockDescription = outlineOnly ? ", balcony access padlocked" : "";
-  return `${name}, ${statusLabel.toLowerCase()}${lockDescription}`;
+  return `${name}, ${stateDescription}${lockDescription}`;
 }
 
 /**
  * Where each named gift waits on the sheet. lockPin names it (the letter
  * quarter reveals the spot), collectPin settles it. Points sit on the
- * hiding furniture; keep in step with HIDING in src/pins.ts.
+ * hiding furniture; keep in step with HIDING in src/pins.ts. A gift never
+ * appears before its lock has opened: no spoilers ahead of the stage.
  */
 const GIFT_MARKS = [
   { id: "gift-mat", lockPin: 1, collectPin: 2, label: "GIFT I", point: { x: 78, y: 402 } },
@@ -95,6 +105,10 @@ export function SurveyMapArt({ state }: { state: GameState }) {
   const map = deriveSurveyMap(state);
   const balconyOutlineOnly =
     map.rooms.find((room) => room.id === "balcony")?.outlineLocked ?? true;
+  const objectiveRoom = map.rooms.find((room) => room.id === map.objectiveZone);
+  const objectivePoint = objectiveRoom
+    ? polygonCentroid(objectiveRoom.geometry.polygon)
+    : null;
   const viewBox = [
     map.viewBox.x,
     map.viewBox.y,
@@ -112,75 +126,43 @@ export function SurveyMapArt({ state }: { state: GameState }) {
       >
         <title id="survey-map-title">Flat 33 architectural survey</title>
         <desc id="survey-map-description">
-          Entry is the hub. The sealed front door is in the entry. The starting
-          point is at the far end of the corridor. Room shading records search
-          state; no individual locations are shown.
+          Entry is the hub. The sealed front door is in the entry. The terminal
+          is at the far end of the corridor. Room shading records the search:
+          crimson where the lock holds, slate where it released.
         </desc>
 
         <defs>
+          {/* The blueprint ground: a faint drafting grid on near-black. */}
           <pattern
-            id="survey-wall-hatch"
-            width="8"
-            height="8"
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(18)"
-          >
-            <line
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="8"
-              stroke="var(--c-bone-dim)"
-              strokeWidth="2"
-            />
-          </pattern>
-          <pattern
-            id="survey-paper-fiber"
-            width="48"
-            height="40"
+            id="survey-grid"
+            width="20"
+            height="20"
             patternUnits="userSpaceOnUse"
           >
             <path
-              d="M 2 7 C 13 5 22 10 34 7 M 9 28 C 18 25 31 31 45 27"
+              className="survey-grid-line"
+              d="M 20 0 L 0 0 0 20"
               fill="none"
-              stroke="var(--c-bone-dim)"
-              strokeWidth="1"
-              opacity="0.12"
             />
-            <circle cx="39" cy="15" r="1" fill="var(--c-hairline)" />
-            <circle cx="17" cy="36" r="1" fill="var(--c-bone-dim)" />
           </pattern>
         </defs>
 
         <rect
+          className="survey-ground"
           x={map.viewBox.x}
           y={map.viewBox.y}
           width={map.viewBox.width}
           height={map.viewBox.height}
-          fill="var(--c-surface)"
         />
-        <g aria-hidden="true">
         <rect
-          className="survey-paper-fiber"
+          className="survey-ground-grid"
           x={map.viewBox.x}
           y={map.viewBox.y}
           width={map.viewBox.width}
           height={map.viewBox.height}
-          fill="url(#survey-paper-fiber)"
+          fill="url(#survey-grid)"
           aria-hidden="true"
         />
-          <circle className="survey-coffee" cx="112" cy="84" r="52" />
-          <circle
-            className="survey-coffee survey-coffee--light"
-            cx="112"
-            cy="84"
-            r="45"
-          />
-          <path
-            className="survey-coffee survey-coffee--light"
-            d="M 490 300 C 516 289 544 302 550 328 C 557 353 534 370 507 361"
-          />
-        </g>
 
         {map.rooms.map((room) => {
           const { labelPoint, labelRotation, polygon } = room.geometry;
@@ -206,14 +188,7 @@ export function SurveyMapArt({ state }: { state: GameState }) {
               )}
             >
               <polygon className="survey-room__fill" points={polygonPoints} />
-              <polygon className="survey-room__hatch" points={polygonPoints} />
               <polygon className="survey-room__line" points={polygonPoints} />
-              <polygon
-                className="survey-room__line survey-ink-echo"
-                points={polygonPoints}
-                transform="translate(0.8 0.45)"
-                aria-hidden="true"
-              />
               <text
                 className="survey-room__name"
                 x={labelPoint.x}
@@ -223,15 +198,17 @@ export function SurveyMapArt({ state }: { state: GameState }) {
               >
                 {room.label}
               </text>
-              <text
-                className="survey-room__state"
-                x={labelPoint.x}
-                y={stateY}
-                textAnchor="middle"
-                transform={labelTransform}
-              >
-                {room.statusLabel}
-              </text>
+              {room.statusLabel !== "" && (
+                <text
+                  className="survey-room__state"
+                  x={labelPoint.x}
+                  y={stateY}
+                  textAnchor="middle"
+                  transform={labelTransform}
+                >
+                  {room.statusLabel}
+                </text>
+              )}
             </g>
           );
         })}
@@ -250,28 +227,12 @@ export function SurveyMapArt({ state }: { state: GameState }) {
                   {...openingProps(connection.opening)}
                 />
                 {connection.passage === "open" ? (
-                  <>
-                    <path
-                      className="survey-open-passage"
-                      d={passageTickPath(centerline)}
-                    />
-                    <path
-                      className="survey-open-passage survey-ink-echo"
-                      d={passageTickPath(centerline)}
-                      transform="translate(0.8 0.45)"
-                      aria-hidden="true"
-                    />
-                  </>
+                  <path
+                    className="survey-open-passage"
+                    d={passageTickPath(centerline)}
+                  />
                 ) : connection.door ? (
-                  <>
-                    <path className={doorClassName} d={doorPath(connection.door)} />
-                    <path
-                      className={`${doorClassName} survey-ink-echo`}
-                      d={doorPath(connection.door)}
-                      transform="translate(0.8 0.45)"
-                      aria-hidden="true"
-                    />
-                  </>
+                  <path className={doorClassName} d={doorPath(connection.door)} />
                 ) : null}
               </g>
             );
@@ -284,12 +245,6 @@ export function SurveyMapArt({ state }: { state: GameState }) {
             return (
               <g key={item.id}>
                 <polygon className="survey-furniture__fill" points={footprint} />
-                <polygon
-                  className="survey-furniture survey-ink-echo"
-                  points={footprint}
-                  transform="translate(0.8 0.45)"
-                  aria-hidden="true"
-                />
                 {item.detailSegments?.map((segment, index) => (
                   <line
                     className="survey-furniture"
@@ -310,17 +265,15 @@ export function SurveyMapArt({ state }: { state: GameState }) {
           })}
         </g>
 
-        {/* Labels come from the tested model: START // FAR END; FRONT DOOR // SEALED. */}
+        {/* The terminal (you are here) and the sealed front door. */}
         {map.landmarks.map((landmark) => {
           if (landmark.kind === "start") {
-            const { crossHalfSpan, labelPoint, point, radius } = landmark;
+            const { labelPoint, point, radius } = landmark;
             return (
-              <g key={landmark.id} aria-label="Starting point at the far corridor end">
-                <circle className="survey-start" cx={point.x} cy={point.y} r={radius} />
-                <path
-                  className="survey-start"
-                  d={`M ${point.x - crossHalfSpan} ${point.y} L ${point.x + crossHalfSpan} ${point.y} M ${point.x} ${point.y - crossHalfSpan} L ${point.x} ${point.y + crossHalfSpan}`}
-                />
+              <g key={landmark.id} className="survey-terminal" aria-label="The terminal: you are here">
+                <circle className="survey-terminal__ring" cx={point.x} cy={point.y} r={radius} />
+                <circle className="survey-terminal__ring survey-terminal__ring--outer" cx={point.x} cy={point.y} r={radius + 6} />
+                <circle className="survey-terminal__core" cx={point.x} cy={point.y} r={3} />
                 <text
                   className="survey-annotation"
                   x={labelPoint.x}
@@ -328,6 +281,14 @@ export function SurveyMapArt({ state }: { state: GameState }) {
                   textAnchor="middle"
                 >
                   {landmark.label}
+                </text>
+                <text
+                  className="survey-annotation survey-annotation--dim"
+                  x={labelPoint.x}
+                  y={labelPoint.y + 12}
+                  textAnchor="middle"
+                >
+                  YOU ARE HERE
                 </text>
               </g>
             );
@@ -343,12 +304,6 @@ export function SurveyMapArt({ state }: { state: GameState }) {
               <polygon
                 className="survey-door survey-door--sealed"
                 points={outline}
-              />
-              <polygon
-                className="survey-door survey-door--sealed survey-ink-echo"
-                points={outline}
-                transform="translate(0.8 0.45)"
-                aria-hidden="true"
               />
               {landmark.sealBars.map((segment, index) => (
                 <line
@@ -370,8 +325,7 @@ export function SurveyMapArt({ state }: { state: GameState }) {
         })}
 
         {/* Gifts appear on the sheet as their locks open, and settle once
-            collected. Marker points sit on the furniture that hides them;
-            keep in step with HIDING in src/pins.ts. */}
+            collected. Never before the lock: no spoilers. */}
         <g aria-label="Named gifts">
           {GIFT_MARKS.map((mark) => {
             const named = state.resolvedPins.includes(mark.lockPin);
@@ -409,60 +363,74 @@ export function SurveyMapArt({ state }: { state: GameState }) {
           })}
         </g>
 
-        <g className="survey-north" aria-label="North points toward the top of the sheet">
-          <path d="M 660 76 L 660 42 L 652 57 M 660 42 L 668 57" />
-          <text className="survey-annotation" x="660" y="34" textAnchor="middle">
+        {/* The objective: a pulsing mark in the room the hunt is in now. */}
+        {objectivePoint && (
+          <g className="survey-objective" aria-label="Your objective is in this room">
+            <path
+              className="survey-objective__mark"
+              d={`M ${objectivePoint.x} ${objectivePoint.y - 10}
+                  L ${objectivePoint.x + 10} ${objectivePoint.y}
+                  L ${objectivePoint.x} ${objectivePoint.y + 10}
+                  L ${objectivePoint.x - 10} ${objectivePoint.y} Z`}
+            />
+            <circle
+              className="survey-objective__halo"
+              cx={objectivePoint.x}
+              cy={objectivePoint.y}
+              r={16}
+            />
+          </g>
+        )}
+
+        {/* The compass rose: north points to the top of the sheet. */}
+        <g className="survey-compass" aria-label="North points toward the top of the sheet">
+          <circle className="survey-compass__ring" cx="648" cy="64" r="22" />
+          <path className="survey-compass__ticks" d="M 648 42 L 648 48 M 648 80 L 648 86 M 626 64 L 632 64 M 664 64 L 670 64" />
+          <path className="survey-compass__needle" d="M 648 50 L 653 68 L 648 64 L 643 68 Z" />
+          <text className="survey-annotation" x="648" y="36" textAnchor="middle">
             N
           </text>
         </g>
 
+        {/* The hand-lettered title block and its legend. */}
         <g
           className="survey-title-block"
           aria-label="Survey title block and room state key"
         >
-          <rect x="474" y="40" width="166" height="110" />
-          <path d="M 474 66 L 640 66 M 474 136 L 640 136" />
-          <text className="survey-title" x="484" y="58">
-            FLAT 33
-          </text>
-          <text className="survey-title" x="630" y="58" textAnchor="end">
-            SURVEY
+          <rect x="454" y="40" width="186" height="118" />
+          <path d="M 454 70 L 640 70" />
+          <text className="survey-title" x="464" y="60">
+            FLAT 33 · ARCHITECTURAL SURVEY
           </text>
           <rect
-            className="survey-legend-swatch survey-legend-swatch--unresolved"
-            x="486"
-            y="76"
+            className="survey-legend-swatch survey-legend-swatch--holds"
+            x="466"
+            y="80"
             width="18"
             height="9"
           />
-          <text className="survey-legend-label" x="514" y="84">
-            UNRESOLVED
+          <text className="survey-legend-label" x="494" y="88">
+            CRIMSON · THE LOCK HOLDS
           </text>
           <rect
-            className="survey-legend-swatch survey-legend-swatch--cleared"
-            x="486"
-            y="96"
+            className="survey-legend-swatch survey-legend-swatch--released"
+            x="466"
+            y="100"
             width="18"
             height="9"
           />
-          <text className="survey-legend-label" x="514" y="104">
-            CLEARED
+          <text className="survey-legend-label" x="494" y="108">
+            SLATE · RELEASED
           </text>
-          <rect
-            className="survey-legend-swatch survey-legend-swatch--unentered"
-            x="486"
-            y="116"
-            width="18"
-            height="9"
+          <path
+            className="survey-legend-mark"
+            d="M 475 129 L 481 124.5 L 475 120 L 469 124.5 Z"
           />
-          <text className="survey-legend-label" x="514" y="124">
-            UNENTERED
+          <text className="survey-legend-label" x="494" y="128">
+            MARK · YOUR OBJECTIVE
           </text>
-          <text className="survey-annotation" x="484" y="146">
-            ENTRY HUB
-          </text>
-          <text className="survey-annotation" x="630" y="146" textAnchor="end">
-            SEALED
+          <text className="survey-annotation survey-annotation--dim" x="464" y="150">
+            THE KEEPER · MCMXCIII
           </text>
         </g>
       </svg>

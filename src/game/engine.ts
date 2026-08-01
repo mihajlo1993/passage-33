@@ -5,17 +5,17 @@ export const CRITICAL_HEALTH_THRESHOLD = 40;
 
 export const refusalHints = {
   unknownPin:
-    "That mark is not in the file. The Division numbered every mark it left, and it did not leave that one.",
+    "That mark is not in the ledger. The Keeper numbered everything he left behind, and he did not leave that.",
   alreadyResolved:
-    "That entry is closed. The terminal does not reopen what it has signed. The next entry is waiting.",
+    "That entry is closed and signed. The ledger does not reopen what it has released. The next entry is waiting.",
   outOfAct:
-    "Out of order. The survey resumes its entries in the sequence they were opened. The house insists on it.",
+    "Out of order. The locks open in the order they were sealed. The Keeper insists on it, politely, from wherever he is.",
   missingItems:
-    "The entry cannot proceed. Something the survey catalogued is not yet in the terminal's custody. Retrace.",
+    "The entry cannot proceed. Something the ledger released is not yet in your hands. Retrace your steps.",
   missingPins:
-    "An earlier entry stands open. The Division closes nothing out of order, and neither will you.",
+    "An earlier entry stands open. The Keeper closed nothing out of order in thirty-three years, and tonight will not be the exception.",
   interactionRequired:
-    "The mark has done its work. What follows happens on the terminal, with your hands. Paper cannot finish an entry.",
+    "The mark has done its work. What follows happens at the terminal, with your hands. Paper cannot finish an entry.",
 } as const;
 
 export type PinRefusalReason =

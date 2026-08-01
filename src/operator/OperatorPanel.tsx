@@ -27,7 +27,6 @@ import {
 } from "./game";
 import {
   forceOperatorTorch,
-  reportOperatorArInitialization,
   reportOperatorAudioInitialization,
   reportOperatorContext,
   requestOperatorReset,
@@ -48,8 +47,6 @@ export interface OperatorPanelProps {
   readonly activePin?: number | null;
   /** Optional runtime zone truth; otherwise the latest resolved-pin zone wins. */
   readonly activeZone?: ZoneId | null;
-  /** AR screens report ready/error through this prop or the exported runtime API. */
-  readonly arInitialization?: OperatorInitializationState;
   readonly onSkipScare?: () => void;
   readonly onReset?: () => void;
 }
@@ -78,7 +75,6 @@ function statusWord(state: OperatorInitializationState): string {
 export function OperatorPanel({
   activePin,
   activeZone,
-  arInitialization,
   onSkipScare,
   onReset,
 }: OperatorPanelProps) {
@@ -108,12 +104,6 @@ export function OperatorPanel({
       reportOperatorContext(activePin ?? null, activeZone ?? null);
     }
   }, [activePin, activeZone]);
-
-  useEffect(() => {
-    if (arInitialization !== undefined) {
-      reportOperatorArInitialization(arInitialization);
-    }
-  }, [arInitialization]);
 
   const observedAudioInitialization = audioInitializationState(audio.master.state);
   useEffect(() => {
@@ -238,7 +228,6 @@ export function OperatorPanel({
           </div>
           <div><dt>ZONE</dt><dd>{displayedZone.toUpperCase()}</dd></div>
           <div><dt>AUDIO</dt><dd>{statusWord(runtime.audioInitialization)}</dd></div>
-          <div><dt>AR</dt><dd>{statusWord(runtime.arInitialization)}</dd></div>
         </dl>
 
         <div className="operator-panel__body">

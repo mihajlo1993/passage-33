@@ -1,6 +1,44 @@
-# HANDOFF: THE KEEPER'S FOUR LOCKS (current state, 2026-07-30 night)
+# HANDOFF: THE KEEPER'S FOUR LOCKS (current state, 2026-08-01, feat/showtime)
 
 Read this first in any new session. It is the complete state of the project.
+
+## 2026-08-01: the feat/showtime pass (this branch, unmerged)
+
+Seven phases on top of the 2026-07-30 state; STRING-TABLE.md holds the
+approved copy changes and SHOWTIME-CHECKLIST.md the device run-through.
+Facts that supersede older sections of this file:
+
+- Shell: fixed 100dvh grid (header / scrolling slot / nav). Four tabs:
+  HOUSE / MAP / GIFTS / LETTER. Header wears four wax seals (SealsRow),
+  which ARE the progress readout; no numeric counters anywhere.
+- Collect steps confirm with ONE 1.2s press-and-hold on the home screen
+  (HoldButton). The dark beat keeps a single tap to arm; the operator's
+  SKIP CURRENT SCARE ends it mid-stage.
+- Lock IV is THE THREE VERBS now (SparkleVerbs.tsx): hold the mouth to
+  POUR 2s, hold the lever to CHARGE 2.5s, tap to RELEASE (33 CSS stars),
+  then TYPE the name on the usual matcher. The shutters/nameplates flow
+  and SPARKLE_NAMEPLATES are gone.
+- The map is a dark blueprint inside the shell tab: active room pulses
+  crimson, released rooms slate, unreached rooms outline-only; pinch
+  zoom + double-tap fit/2x over the native-scroll pan (pan is still the
+  browser's; the old gesture viewport stays dead).
+- The finale plays public/cinema/finale.mp4 (720x1280 CRF 23, 17.8MB,
+  93.875s, built by scripts/prepare-cinema.mjs from
+  assets-incoming/cinema/) as a silent bed under the letter; narration
+  clock is master; ended film holds its last frame; poster fallback.
+  LETTER tab gets a Chronicle replay card after the finish.
+- /save, /tape, /ar are gone with their assets and tests. The scanner
+  (/scan) and print routes stay per owner instruction, but NOTE: zero
+  pins resolve by scan in pins.ts (printablePins is empty; two tests
+  assert it). The Host-era voice on those screens was re-skinned.
+- audit:build audits dist/ directly (no sw.js) with bucket subtotals
+  and a 60MB cinema budget. generate:assets now ends with
+  generate:cinema.
+- New dependency: @fontsource/im-fell-english (chapter titles, coda).
+- pins.ts: riddleConfigByPin entries each carry eight pin-specific
+  refusals; lock IV's puzzle kind is 'verbs'. Answers, HIDING,
+  NUMBER_LOCK, FRAGMENTS, LETTER_CODA, and all audio are untouched.
+
 
 ## What the product is
 

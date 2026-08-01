@@ -28,7 +28,6 @@ const GRID_SLOTS = 12;
 
 export interface InventoryScreenProps {
   state: GameState;
-  onUseFirstAid: () => boolean;
 }
 
 export function InventoryScreen({ state }: InventoryScreenProps) {
@@ -71,8 +70,8 @@ export function InventoryScreen({ state }: InventoryScreenProps) {
     <section className="screen inventory-screen" aria-labelledby="inventory-title">
       <header className="screen-heading inventory-heading">
         <div>
-          <p className="eyebrow">Custody of the terminal</p>
-          <h1 id="inventory-title">Items</h1>
+          <p className="eyebrow">Held in trust</p>
+          <h1 id="inventory-title">The gifts</h1>
         </div>
       </header>
 
@@ -120,7 +119,7 @@ export function InventoryScreen({ state }: InventoryScreenProps) {
           </div>
         </aside>
       ) : (
-        <p className="re-detail__hint">Select an item to inspect it.</p>
+        <p className="re-detail__hint">Choose a thing the Keeper kept, and examine it.</p>
       )}
 
       <EcgPanel health={state.health} />

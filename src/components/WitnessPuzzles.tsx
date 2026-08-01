@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { REFUSAL_LINES, numberLockAnswer, type RiddleConfig } from "@/src/pins";
+import { motion } from "@/src/tokens";
 import type { Pin } from "@/src/types";
 import type { ModelViewerElement } from "@/src/model-viewer";
 import { playKeeper } from "@/src/audio/keeper";
@@ -33,47 +34,61 @@ const RUNNER_SPOTS = {
   W: { position: "0 0.0635 0.0195", normal: "0 1 0.25", label: "W" },
 } as const;
 
-/** Three shutters make the last witness give a complete, truthful statement. */
-export const SPARKLE_SHUTTERS = [
+/**
+ * THE THREE VERBS: she operates the last witness once, in order, and its
+ * statement discovers itself. POUR and CHARGE are holds on the artifact;
+ * RELEASE is a single tap that sets thirty-three stars out of the mouth.
+ * Then she names the apparatus by typing, on lock I's contract.
+ */
+export const SPARKLE_VERBS = [
   {
-    id: "intake",
-    lead: "I TAKE",
+    id: "pour",
+    verb: "POUR",
+    kind: "hold",
+    holdMs: 2_000,
     hotspot: "IN",
-    position: "0 0.055 0.02",
+    // The vessel's mouth, at the top of the flask.
+    position: "0 0.16 0.012",
     normal: "0 0 1",
-    options: ["BIRTHDAY WINE", "STILL WATER", "RAIN"],
-    answer: "STILL WATER",
-    correctIndex: 1,
+    lead: "I TAKE",
+    reveals: "STILL WATER",
+    instruction: "Hold the mouth and pour",
   },
   {
     id: "charge",
-    lead: "I BREATHE",
+    verb: "CHARGE",
+    kind: "hold",
+    holdMs: 2_500,
     hotspot: "GAS",
+    // The lever on the vessel's flank.
     position: "0.024 0.09 0",
     normal: "1 0.25 0",
-    options: ["HOT AIR", "GOOD INTENTIONS", "SILVER BREATH"],
-    answer: "SILVER BREATH",
-    correctIndex: 2,
+    lead: "I BREATHE",
+    reveals: "SILVER BREATH",
+    instruction: "Hold the lever until the hiss peaks",
   },
   {
-    id: "return",
-    lead: "I RETURN",
+    id: "release",
+    verb: "RELEASE",
+    kind: "tap",
+    holdMs: 0,
     hotspot: "OUT",
     position: "0 0.16 0.012",
     normal: "0 0 1",
-    options: ["STEAM", "STARS", "APOLOGIES"],
-    answer: "STARS",
-    correctIndex: 1,
+    lead: "I RETURN",
+    reveals: "STARS",
+    instruction: "One tap. Let it speak",
   },
 ] as const;
 
-export const SPARKLE_NAMEPLATES = ["KETTLE", "CARBONATOR", "DECANTER"] as const;
+export type SparkleVerb = typeof SPARKLE_VERBS[number];
 
-export function sparkleStatementIsTrue(selections: readonly number[]): boolean {
-  return selections.length === SPARKLE_SHUTTERS.length
-    && SPARKLE_SHUTTERS.every(
-      (shutter, index) => selections[index] === shutter.correctIndex,
-    );
+/** Thirty-three, of course. */
+export const SPARKLE_STAR_COUNT = 33;
+export const SPARKLE_STARS_MS = 3_000;
+
+export function sparkleStatementComplete(doneVerbs: number): boolean {
+  return doneVerbs >= SPARKLE_VERBS.length;
 }
 
 /** Camera azimuths that square each obelisk face to the viewer. */
@@ -81,7 +96,10 @@ const WAGER_FACE_THETA = [0, -120, -240] as const;
 const WAGER_OPERANDS = ["1993", "2", "IIII"] as const;
 
 /** Shared refusal/feedback state for a lock: rotate lines, shake, damage. */
-function useLockFeedback(onWrongAttempt: () => void) {
+export function useLockFeedback(
+  onWrongAttempt: () => void,
+  lines: readonly string[] = REFUSAL_LINES,
+) {
   const [feedback, setFeedback] = useState("");
   const [shaking, setShaking] = useState(false);
   const wrongRef = useRef(0);
@@ -90,7 +108,7 @@ function useLockFeedback(onWrongAttempt: () => void) {
 
   const wrong = (chargeEvery = 1) => {
     wrongRef.current += 1;
-    setFeedback(REFUSAL_LINES[(wrongRef.current - 1) % REFUSAL_LINES.length]);
+    setFeedback(lines[(wrongRef.current - 1) % lines.length]);
     setShaking(true);
     window.setTimeout(() => setShaking(false), 340);
     void audio.play("refused");
@@ -135,7 +153,7 @@ function assignViewerRef(
 }
 
 /** The lit bench with the witness and its tappable hotspots. */
-function WitnessBench({ config, lost, onLost, cameraOrbit, cameraTarget, viewerRef, children }: BenchProps) {
+export function WitnessBench({ config, lost, onLost, cameraOrbit, cameraTarget, viewerRef, children }: BenchProps) {
   const onLostRef = useRef(onLost);
   const attachedViewerRef = useRef<ModelViewerElement | null>(null);
   onLostRef.current = onLost;
@@ -185,7 +203,7 @@ function WitnessBench({ config, lost, onLost, cameraOrbit, cameraTarget, viewerR
   );
 }
 
-function LockHeading({ pin }: { pin: Pin }) {
+export function LockHeading({ pin }: { pin: Pin }) {
   return (
     <header className="lock-screen__heading">
       <p className="eyebrow">{pin.name}</p>
@@ -200,7 +218,7 @@ interface HintRowProps {
   onHint: () => void;
 }
 
-function HintRow({ hints, hintCount, onHint }: HintRowProps) {
+export function HintRow({ hints, hintCount, onHint }: HintRowProps) {
   return (
     <>
       {hintCount > 0 && <p className="riddle-box__hint">{hints[hintCount - 1]}</p>}
@@ -218,7 +236,7 @@ function HintRow({ hints, hintCount, onHint }: HintRowProps) {
 }
 
 /** Toggle that trades the Keeper's words for a bigger witness. */
-function WordsToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+export function WordsToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
   return (
     <button className="text-control panel-toggle" onClick={onToggle}>
       {shown ? "Give the witness room" : "Show the words"}
@@ -231,16 +249,26 @@ function WordsToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void
 export function RunnerClicks({ pin, config, onSolved, onCancel, onWrongAttempt }: WitnessPuzzleProps) {
   const pattern = config.puzzle?.kind === "clicks" ? config.puzzle.pattern : [];
   const [progress, setProgress] = useState(0);
+  const [hitSpot, setHitSpot] = useState<"L" | "W" | "R" | null>(null);
   const [hintCount, setHintCount] = useState(0);
   const [lost, setLost] = useState(false);
   const [wordsShown, setWordsShown] = useState(true);
-  const feedback = useLockFeedback(onWrongAttempt);
+  const feedback = useLockFeedback(onWrongAttempt, config.refusals);
+  const hitTimerRef = useRef<number | null>(null);
   const glowing = hintCount >= 3;
+
+  useEffect(() => () => {
+    if (hitTimerRef.current !== null) window.clearTimeout(hitTimerRef.current);
+  }, []);
 
   const tap = (id: "L" | "W" | "R") => {
     if (progress >= pattern.length) return;
     if (id === pattern[progress]) {
       feedback.step();
+      // A soft flash where the correct click landed.
+      setHitSpot(id);
+      if (hitTimerRef.current !== null) window.clearTimeout(hitTimerRef.current);
+      hitTimerRef.current = window.setTimeout(() => setHitSpot(null), 280);
       const next = progress + 1;
       setProgress(next);
       if (next === pattern.length) feedback.solved(onSolved);
@@ -259,6 +287,7 @@ export function RunnerClicks({ pin, config, onSolved, onCancel, onWrongAttempt }
       className={
         "witness-hotspot"
         + (glowing && pattern[progress] === id ? " is-next" : "")
+        + (hitSpot === id ? " is-hit" : "")
       }
       aria-label={id === "L" ? "Left shoulder" : id === "R" ? "Right shoulder" : "The wheel"}
       onClick={() => tap(id)}
@@ -326,27 +355,89 @@ export function WagerSum({ pin, config, onSolved, onCancel, onWrongAttempt }: Wi
   const [hintCount, setHintCount] = useState(0);
   const [lost, setLost] = useState(false);
   const [wordsShown, setWordsShown] = useState(true);
-  const feedback = useLockFeedback(onWrongAttempt);
+  const feedback = useLockFeedback(onWrongAttempt, config.refusals);
   const haptics = useHaptics();
+  const audio = useAudio();
+  const tweenFrameRef = useRef<number | null>(null);
+  const thetaRef = useRef(0);
+  const repeatTimerRef = useRef<number | null>(null);
+  const repeatIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (tweenFrameRef.current !== null) cancelAnimationFrame(tweenFrameRef.current);
+    if (repeatTimerRef.current !== null) window.clearTimeout(repeatTimerRef.current);
+    if (repeatIntervalRef.current !== null) window.clearInterval(repeatIntervalRef.current);
+  }, []);
 
   const allSeen = lost || seenCount >= WAGER_FACE_THETA.length;
+
+  /** An eased camera tween face to face; never a hard cut. */
+  const tweenCameraTo = (targetTheta: number) => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    if (tweenFrameRef.current !== null) cancelAnimationFrame(tweenFrameRef.current);
+    const startTheta = thetaRef.current;
+    const startedAt = performance.now();
+    const durationMs = motion.durationMs.slow + motion.durationMs.base;
+    const tick = () => {
+      const progress = Math.min(1, (performance.now() - startedAt) / durationMs);
+      // The heavy house curve, approximated: ease-out cubic.
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const theta = startTheta + (targetTheta - startTheta) * eased;
+      thetaRef.current = theta;
+      viewer.cameraOrbit = `${theta}deg 75deg 105%`;
+      if (progress < 1) {
+        tweenFrameRef.current = requestAnimationFrame(tick);
+      } else {
+        tweenFrameRef.current = null;
+      }
+    };
+    tweenFrameRef.current = requestAnimationFrame(tick);
+  };
 
   const turnWitness = () => {
     const next = (face + 1) % WAGER_FACE_THETA.length;
     setFace(next);
-    setSeenCount(Math.max(seenCount, next + 1));
     haptics.contact();
-    const viewer = viewerRef.current;
-    if (viewer) viewer.cameraOrbit = `${WAGER_FACE_THETA[next]}deg 75deg 105%`;
+    // Always turn a full step onward, past 360, so the spin never rewinds.
+    const currentTheta = thetaRef.current;
+    const step = 360 / WAGER_FACE_THETA.length;
+    tweenCameraTo(currentTheta - step);
+    if (next + 1 > seenCount) {
+      // A number nobody has read for thirty-three years: stamp it.
+      setSeenCount(next + 1);
+      haptics.found();
+      void audio.play("dial-tick");
+    }
   };
 
   const spin = (wheel: number, delta: number) => {
     haptics.contact();
+    void audio.play("dial-tick");
     setDials((current) => {
       const next = [...current] as typeof dials;
       next[wheel] = (next[wheel] + delta + 10) % 10;
       return next;
     });
+  };
+
+  /** Long-press auto-repeat: the wheel keeps turning under a held thumb. */
+  const beginSpinRepeat = (wheel: number, delta: number) => {
+    spin(wheel, delta);
+    repeatTimerRef.current = window.setTimeout(() => {
+      repeatIntervalRef.current = window.setInterval(() => spin(wheel, delta), 110);
+    }, 380);
+  };
+
+  const endSpinRepeat = () => {
+    if (repeatTimerRef.current !== null) {
+      window.clearTimeout(repeatTimerRef.current);
+      repeatTimerRef.current = null;
+    }
+    if (repeatIntervalRef.current !== null) {
+      window.clearInterval(repeatIntervalRef.current);
+      repeatIntervalRef.current = null;
+    }
   };
 
   const submit = () => {
@@ -398,15 +489,23 @@ export function WagerSum({ pin, config, onSolved, onCancel, onWrongAttempt }: Wi
               <button
                 className="text-control"
                 aria-label={`Wheel ${index + 1} up`}
-                onClick={() => spin(index, 1)}
+                onPointerDown={() => beginSpinRepeat(index, 1)}
+                onPointerUp={endSpinRepeat}
+                onPointerLeave={endSpinRepeat}
+                onPointerCancel={endSpinRepeat}
+                onContextMenu={(event) => event.preventDefault()}
               >
                 +
               </button>
-              <span className="dial-wheel__digit">{digit}</span>
+              <span className="dial-wheel__digit" key={`digit-${index}-${digit}`}>{digit}</span>
               <button
                 className="text-control"
                 aria-label={`Wheel ${index + 1} down`}
-                onClick={() => spin(index, -1)}
+                onPointerDown={() => beginSpinRepeat(index, -1)}
+                onPointerUp={endSpinRepeat}
+                onPointerLeave={endSpinRepeat}
+                onPointerCancel={endSpinRepeat}
+                onContextMenu={(event) => event.preventDefault()}
               >
                 &minus;
               </button>
@@ -428,157 +527,3 @@ export function WagerSum({ pin, config, onSolved, onCancel, onWrongAttempt }: Wi
   );
 }
 
-/* =========== LOCK IV: make the witness testify, then name it =========== */
-
-export function StarLadder({ pin, config, onSolved, onCancel, onWrongAttempt }: WitnessPuzzleProps) {
-  const [selections, setSelections] = useState<[number, number, number]>([0, 0, 0]);
-  const [statementAccepted, setStatementAccepted] = useState(false);
-  const [hintCount, setHintCount] = useState(0);
-  const [lost, setLost] = useState(false);
-  const [wordsShown, setWordsShown] = useState(true);
-  const feedback = useLockFeedback(onWrongAttempt);
-  const guideOn = hintCount >= 3;
-  const nextWrongShutter = SPARKLE_SHUTTERS.findIndex(
-    (shutter, index) => selections[index] !== shutter.correctIndex,
-  );
-
-  const turnShutter = (index: number) => {
-    if (statementAccepted) return;
-    feedback.step();
-    setSelections((current) => {
-      const shutter = SPARKLE_SHUTTERS[index];
-      if (!shutter) return current;
-      const next = [...current] as [number, number, number];
-      next[index] = (next[index] + 1) % shutter.options.length;
-      return next;
-    });
-  };
-
-  const testStatement = () => {
-    if (sparkleStatementIsTrue(selections)) {
-      feedback.step();
-      setStatementAccepted(true);
-      return;
-    }
-    feedback.wrong(2);
-  };
-
-  const nameWitness = (name: typeof SPARKLE_NAMEPLATES[number]) => {
-    if (name === "CARBONATOR") {
-      feedback.solved(onSolved);
-      return;
-    }
-    feedback.wrong(2);
-  };
-
-  const shutters = SPARKLE_SHUTTERS.map((shutter, index) => {
-    const selected = shutter.options[selections[index] ?? 0];
-    const guided = guideOn && nextWrongShutter === index;
-    return (
-      <button
-        key={shutter.id}
-        slot={`hotspot-sparkle-${shutter.id}`}
-        data-position={shutter.position}
-        data-normal={shutter.normal}
-        className={
-          "witness-hotspot witness-hotspot--shutter"
-          + (guided ? " is-next" : "")
-        }
-        aria-label={`${shutter.lead}: ${selected}. Tap to turn the shutter.`}
-        onClick={() => turnShutter(index)}
-      >
-        {shutter.hotspot}
-      </button>
-    );
-  });
-
-  return (
-    <section className="riddle-lock" aria-labelledby="witness-title">
-      <LockHeading pin={pin} />
-      <WitnessBench
-        config={config}
-        lost={lost}
-        onLost={() => setLost(true)}
-        cameraOrbit="0deg 85deg 0.32m"
-        cameraTarget="0m 0.15m 0m"
-      >
-        {!statementAccepted && shutters}
-      </WitnessBench>
-
-      <div className={"riddle-box re-frame" + (feedback.shaking ? " riddle-box--shake" : "")}>
-        <WordsToggle shown={wordsShown} onToggle={() => setWordsShown(!wordsShown)} />
-        {wordsShown && <p className="riddle-box__riddle">{config.riddle}</p>}
-
-        <div className="sparkle-statement" aria-label="The witness statement">
-          {SPARKLE_SHUTTERS.map((shutter, index) => (
-            <p className="sparkle-clause" key={shutter.id}>
-              <span>{shutter.lead}</span>
-              <strong className={statementAccepted ? "is-sworn" : ""}>
-                {shutter.options[selections[index] ?? 0]}
-              </strong>
-            </p>
-          ))}
-        </div>
-
-        {!statementAccepted && (
-          <>
-            {lost && (
-              <div className="puzzle-fallback sparkle-fallback" aria-label="Plain shutter controls">
-                {SPARKLE_SHUTTERS.map((shutter, index) => {
-                  const selected = shutter.options[selections[index] ?? 0];
-                  const guided = guideOn && nextWrongShutter === index;
-                  return (
-                    <button
-                      key={shutter.id}
-                      className={"mechanical-button sparkle-shutter" + (guided ? " is-next" : "")}
-                      onClick={() => turnShutter(index)}
-                    >
-                      {shutter.lead}: {selected}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <button
-              className={
-                "mechanical-button mechanical-button--primary mechanical-button--full sparkle-test"
-                + (guideOn && nextWrongShutter === -1 ? " is-next" : "")
-              }
-              onClick={testStatement}
-            >
-              Test the witness
-            </button>
-          </>
-        )}
-
-        {statementAccepted && (
-          <>
-            <p className="puzzle-sum" aria-live="polite">
-              The statement is true. Name the apparatus.
-            </p>
-            <div className="sparkle-nameplates" aria-label="Name the apparatus">
-              {SPARKLE_NAMEPLATES.map((name) => (
-              <button
-                  key={name}
-                  className={
-                    "mechanical-button sparkle-nameplate"
-                    + (guideOn && name === "CARBONATOR" ? " is-next" : "")
-                  }
-                  onClick={() => nameWitness(name)}
-              >
-                  {name}
-              </button>
-              ))}
-            </div>
-          </>
-        )}
-        <p className="riddle-box__feedback" aria-live="polite">{feedback.feedback}</p>
-        {wordsShown && (
-          <HintRow hints={config.hints} hintCount={hintCount} onHint={() => setHintCount(hintCount + 1)} />
-        )}
-      </div>
-
-      <button className="text-control" onClick={onCancel}>Step away</button>
-    </section>
-  );
-}

@@ -24,15 +24,7 @@ const PROP_SHEET_IDS = Object.freeze(["sheet01", "sheet02"]);
 
 const SOURCE_SPECS = Object.freeze([
   { id: "coldOpen", source: "cold-open.png", output: "media/cold-open", width: 1080, height: 1920 },
-  ...Array.from({ length: 7 }, (_, offset) => ({
-    id: `tape${String(offset + 1).padStart(2, "0")}`,
-    source: `tape-${String(offset + 1).padStart(2, "0")}.png`,
-    output: `media/tape-${String(offset + 1).padStart(2, "0")}`,
-    width: 640,
-    height: 360,
-  })),
   { id: "trophy", source: "trophy.png", output: "media/trophy", width: 1280, height: 720 },
-  { id: "creature", source: "creature.png", output: "ar/textures/creature", width: 1024, height: 2048, blackKey: true, webp: false },
   { id: "appIcon", source: "app-icon.png", output: "media/app-icon", width: 1024, height: 1024, icon: true },
   { id: "sheet01", source: "sheet01.png", output: "media/sheet01", width: 1754, height: 2480, fit: "contain" },
   { id: "sheet02", source: "sheet02.png", output: "media/sheet02", width: 1754, height: 2480, fit: "contain" },
@@ -146,35 +138,6 @@ function containImage(image, width, height) {
   const drawnY = (height - drawnHeight) / 2;
   context.drawImage(image, drawnX, drawnY, drawnWidth, drawnHeight);
   return canvas;
-}
-
-/** Exact pure-black key, matching the established AR asset generator. */
-export function keyBlackToAlpha(source, label = "creature.png") {
-  const context = source.getContext("2d");
-  const pixels = context.getImageData(0, 0, source.width, source.height);
-  const keyed = createCanvas(source.width, source.height);
-  let blackPixels = 0;
-  let visiblePixels = 0;
-
-  for (let offset = 0; offset < pixels.data.length; offset += 4) {
-    invariant(pixels.data[offset + 3] === 255, `${label} must be opaque before keying`);
-    if (
-      pixels.data[offset] === 0
-      && pixels.data[offset + 1] === 0
-      && pixels.data[offset + 2] === 0
-    ) {
-      pixels.data[offset + 3] = 0;
-      blackPixels += 1;
-    } else {
-      visiblePixels += 1;
-    }
-  }
-
-  const totalPixels = source.width * source.height;
-  invariant(blackPixels > totalPixels * 0.25, `${label} needs a substantial pure-black background`);
-  invariant(visiblePixels > 100, `${label} contains no visible creature`);
-  keyed.getContext("2d").putImageData(pixels, 0, 0);
-  return keyed;
 }
 
 async function decodePng(file, label) {
@@ -335,7 +298,7 @@ export async function processMediaAssets(options = {}) {
       let canvas = spec.fit === "contain"
         ? containImage(image, spec.width, spec.height)
         : coverImage(image, spec.width, spec.height);
-      if (spec.blackKey) canvas = keyBlackToAlpha(canvas, spec.source);
+
       const png = pngBytes(canvas);
       specPublicOutputs.push({ file: pngFile, bytes: png });
       let webp = null;

@@ -9,19 +9,20 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "generate:audio": "node scripts/generate-audio-assets.mjs",
-    "generate:ar": "node scripts/generate-ar-assets.mjs",
     "generate:media": "node scripts/process-image-assets.mjs",
-    "generate:assets": "npm run generate:audio && npm run generate:media && npm run generate:ar",
+    "generate:cinema": "node scripts/prepare-cinema.mjs",
+    "generate:assets": "npm run generate:audio && npm run generate:media && npm run generate:cinema",
     "report:audio": "node scripts/report-voice-audio.mjs",
     "build": "tsc -b && vite build",
     "audit:build": "node scripts/audit-build-output.mjs",
     "preview": "vite preview --host 127.0.0.1",
-    "pretest": "npm run generate:audio -- --check --quiet && npm run generate:media -- --check --quiet && npm run generate:ar -- --check --quiet",
-    "test": "node --import tsx --test tests/game-flow.test.ts tests/fx.test.ts tests/audio-assets.test.ts tests/audio-engine.test.ts tests/audio-static.test.ts tests/map.test.ts tests/map-viewport.test.ts tests/map-static.test.ts tests/ar-assets.test.ts tests/ar-state.test.ts tests/ar-room-runtime.test.ts tests/ar-room-screen.test.ts tests/ar-static.test.ts tests/phase2-integration.test.ts tests/media-pipeline.test.ts tests/tape-playback.test.ts tests/operator-gesture.test.ts tests/operator-game.test.ts tests/operator-static.test.ts tests/media-wiring.test.ts tests/sheets-print.test.ts tests/asset-generation-guards.test.ts tests/examine-static.test.ts tests/witness-models.test.ts tests/witness-puzzles.test.ts"
+    "pretest": "npm run generate:audio -- --check --quiet && npm run generate:media -- --check --quiet",
+    "test": "node --import tsx --test tests/game-flow.test.ts tests/fx.test.ts tests/audio-assets.test.ts tests/audio-engine.test.ts tests/audio-static.test.ts tests/map.test.ts tests/map-viewport.test.ts tests/map-static.test.ts tests/phase2-integration.test.ts tests/media-pipeline.test.ts tests/operator-gesture.test.ts tests/operator-game.test.ts tests/operator-static.test.ts tests/media-wiring.test.ts tests/sheets-print.test.ts tests/asset-generation-guards.test.ts tests/examine-static.test.ts tests/witness-models.test.ts tests/witness-puzzles.test.ts tests/cinema.test.ts"
   },
   "dependencies": {
     "@fontsource/archivo-narrow": "5.3.0",
     "@fontsource/courier-prime": "5.3.0",
+    "@fontsource/im-fell-english": "5.2.5",
     "@fontsource/libre-franklin": "^5.3.0",
     "@fontsource/special-elite": "5.3.0",
     "@iconify-json/game-icons": "1.2.4",

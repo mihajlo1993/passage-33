@@ -9,12 +9,13 @@ import "@fontsource/archivo-narrow/700.css";
 import "@fontsource/courier-prime/400.css";
 import "@fontsource/courier-prime/700.css";
 import "@fontsource/special-elite/400.css";
+import "@fontsource/im-fell-english/400.css";
+import "@fontsource/im-fell-english/400-italic.css";
 import { AudioDirector } from "./audio/AudioDirector";
 import { AudioProvider } from "./audio/AudioProvider";
 import { GameApp } from "./components/GameApp";
 import { VHSLayer } from "./fx";
 import { OperatorPanel } from "./operator";
-import { MAP_CONTENT_ASPECT_RATIO } from "./map/viewport";
 import { colours, effects, layout, lines, motion, surfaces, typography } from "./tokens";
 import "./styles.css";
 
@@ -62,6 +63,7 @@ const cssTokens: Record<string, string> = {
   "--font-display": typography.fontFamily.display,
   "--font-doc": typography.fontFamily.doc,
   "--font-award": typography.fontFamily.award,
+  "--font-serif": typography.fontFamily.serif,
   "--tracking-ui": typography.uiLetterSpacing,
   "--tracking-caps": typography.capsLetterSpacing,
   "--tracking-title": typography.titleLetterSpacing,
@@ -115,7 +117,6 @@ const cssTokens: Record<string, string> = {
   "--icon-body": layout.iconSizePx.body + "px",
   "--icon-large": layout.iconSizePx.large + "px",
   "--icon-examine": layout.iconSizePx.examine + "px",
-  "--map-aspect": String(MAP_CONTENT_ASPECT_RATIO),
 };
 
 Object.entries(cssTokens).forEach(([name, value]) => root.style.setProperty(name, value));

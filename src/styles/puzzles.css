@@ -1,290 +1,5 @@
 /* Day 4 interaction surfaces. Physical objects, never app widgets. */
 
-/* ---- The fogged mirror ---- */
-
-.mirror-wipe {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  min-height: 100dvh;
-}
-
-.mirror-wipe__glass {
-  position: relative;
-  flex: 1;
-  min-height: 46dvh;
-  overflow: hidden;
-  border: var(--hairline) solid var(--c-hairline);
-  background: var(--c-void);
-}
-
-.mirror-wipe__figures {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xl);
-  font-family: var(--font-doc);
-  font-size: calc(var(--text-display) * 1.6);
-  color: var(--c-bone);
-  text-shadow: 0 0 14px var(--c-bone-dim);
-}
-
-.mirror-wipe__fog {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-  cursor: crosshair;
-}
-
-.mirror-wipe__glass[data-settled="true"] .mirror-wipe__fog {
-  opacity: 0.35;
-  transition: opacity var(--motion-slow) var(--ease-heavy);
-}
-
-/* ---- The Kallax glyph grid ---- */
-
-.glyph-grid-screen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.glyph-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-top: var(--hairline) solid var(--c-hairline);
-  border-left: var(--hairline) solid var(--c-hairline);
-}
-
-.glyph-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xs);
-  aspect-ratio: 1;
-  padding: var(--space-sm);
-  border: 0;
-  border-right: var(--hairline) solid var(--c-hairline);
-  border-bottom: var(--hairline) solid var(--c-hairline);
-  border-radius: 0;
-  background: var(--c-raised);
-  color: var(--c-bone-dim);
-  font-family: var(--font-ui);
-  font-size: var(--text-micro);
-  letter-spacing: var(--tracking-ui);
-}
-
-.glyph-cell[data-selected="true"] {
-  background: var(--c-hairline);
-  color: var(--c-bone);
-}
-
-.glyph-cell[data-solved="true"] {
-  background: var(--c-slate);
-  color: var(--c-bone);
-}
-
-.glyph-cell__icon {
-  width: var(--icon-large);
-  height: var(--icon-large);
-}
-
-/* ---- The paired keycard reader ---- */
-
-.keycard-screen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.keycard-slots {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-lg);
-  padding: var(--space-lg) 0;
-}
-
-.keycard-slot {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-lg) var(--space-md);
-  border: var(--hairline) solid var(--c-hairline);
-  border-radius: 0;
-  background: var(--c-surface);
-  color: var(--c-bone-dim);
-  font-family: var(--font-ui);
-  letter-spacing: var(--tracking-ui);
-  min-height: calc(var(--touch-target) * 3);
-}
-
-.keycard-slot__mouth {
-  width: 70%;
-  height: calc(var(--hairline) * 6);
-  background: var(--c-void);
-  border: var(--hairline) solid var(--c-hairline);
-}
-
-.keycard-slot__card {
-  width: 56%;
-  height: calc(var(--touch-target) * 0.9);
-  border: var(--hairline) solid var(--c-hairline);
-  transition: transform var(--motion-slow) var(--ease-heavy), opacity var(--motion-slow) var(--ease-heavy);
-}
-
-.keycard-slot[data-colour="red"] .keycard-slot__card { background: var(--c-amber); }
-.keycard-slot[data-colour="blue"] .keycard-slot__card { background: var(--c-slate); }
-
-.keycard-slot[data-holding="true"] .keycard-slot__card {
-  transform: translateY(calc(var(--space-md) * -1)) scale(0.96);
-}
-
-.keycard-slot[data-inserted="true"] .keycard-slot__card {
-  transform: translateY(calc(var(--space-xl) * -1)) scaleY(0.2);
-  opacity: 0.25;
-}
-
-.keycard-slot[data-inserted="true"] {
-  color: var(--c-bone);
-  border-color: var(--c-bone-dim);
-}
-
-/* ---- The valve ---- */
-
-.valve-screen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.valve-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-lg);
-  padding: var(--space-md) 0;
-}
-
-.valve-wheel {
-  width: min(64vw, 300px);
-  height: min(64vw, 300px);
-  touch-action: none;
-  cursor: grab;
-}
-
-.valve-wheel:active { cursor: grabbing; }
-
-.valve-wheel__rim {
-  fill: none;
-  stroke: var(--c-bone-dim);
-  stroke-width: 14px;
-}
-
-.valve-wheel__hub {
-  fill: var(--c-raised);
-  stroke: var(--c-bone-dim);
-  stroke-width: 4px;
-}
-
-.valve-wheel__spoke {
-  stroke: var(--c-bone-dim);
-  stroke-width: 8px;
-}
-
-.valve-wheel[data-dead="true"] .valve-wheel__rim,
-.valve-wheel[data-dead="true"] .valve-wheel__spoke {
-  stroke: var(--c-slate);
-}
-
-.valve-readout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  width: 100%;
-  font-family: var(--font-ui);
-  font-size: var(--text-micro);
-  letter-spacing: var(--tracking-ui);
-  color: var(--c-bone-dim);
-}
-
-.valve-readout__track {
-  height: calc(var(--hairline) * 8);
-  border: var(--hairline) solid var(--c-hairline);
-  background: var(--c-void);
-}
-
-.valve-readout__track i {
-  display: block;
-  height: 100%;
-  background: var(--c-amber);
-  transition: width var(--motion-base) var(--ease-heavy);
-}
-
-.valve-readout strong { color: var(--c-bone); }
-
-/* ---- The shadow wall ---- */
-
-.shadow-wall {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  min-height: 100dvh;
-}
-
-.shadow-stage {
-  position: relative;
-  flex: 1;
-  min-height: 44dvh;
-  border: var(--hairline) solid var(--c-hairline);
-  background: var(--c-surface);
-  overflow: hidden;
-}
-
-.shadow-stage__wall {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    radial-gradient(
-      ellipse 120% 90% at 50% 40%,
-      var(--c-raised) 0%,
-      var(--c-void) 85%
-    );
-}
-
-.shadow-stage__cast {
-  font-family: var(--font-award);
-  font-size: calc(var(--text-display) * 2.4);
-  color: var(--c-void);
-  text-shadow: 0 0 6px var(--c-void);
-  transition: filter var(--motion-fast) linear, transform var(--motion-fast) linear;
-}
-
-.shadow-stage[data-locked="true"] .shadow-stage__cast {
-  color: var(--c-void);
-  opacity: 0.9;
-}
-
-.shadow-stage__relic {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
 /* ---- Action beats ---- */
 
 .action-beat {
@@ -314,10 +29,6 @@
   animation: staging-breathe 1.4s var(--ease-heavy) infinite alternate;
 }
 
-.action-beat--staging[data-beat="behindYou"] .action-beat__staging-line {
-  color: var(--c-amber);
-}
-
 @keyframes staging-breathe {
   from { opacity: 0.35; }
   to { opacity: 1; }
@@ -341,463 +52,14 @@
   background: var(--c-amber);
 }
 
+.hold-control__note {
+  text-align: center;
+  color: var(--c-text-mute);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .action-beat__staging-line { animation: none; }
 }
-
-/* ---- The padlock verdict ---- */
-
-.padlock-verdict {
-  display: flex;
-  gap: var(--space-xs);
-  justify-content: center;
-  padding-bottom: var(--space-md);
-  perspective: 600px;
-}
-
-.verdict-tile {
-  position: relative;
-  width: calc(var(--touch-target) * 0.82);
-  height: var(--touch-target);
-  transform-style: preserve-3d;
-  transition: transform var(--motion-slow) var(--ease-heavy);
-}
-
-.verdict-tile[data-flipped="true"] {
-  transform: rotateX(180deg);
-}
-
-.verdict-tile__face {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--hairline) solid var(--c-hairline);
-  font-family: var(--font-ui);
-  font-size: var(--text-heading);
-  font-style: normal;
-  font-weight: 700;
-  letter-spacing: var(--tracking-ui);
-  backface-visibility: hidden;
-}
-
-.verdict-tile__face--front {
-  background: var(--c-surface);
-  color: var(--c-amber);
-}
-
-.verdict-tile__face--back {
-  background: var(--c-slate);
-  color: var(--c-bone);
-  transform: rotateX(180deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .verdict-tile {
-    transition: none;
-  }
-}
-
-/* ---- Rebuild: the seal cube ---- */
-
-.seal-cube {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  min-height: 100dvh;
-}
-
-.seal-cube__stage {
-  position: relative;
-  flex: 1;
-  min-height: 46dvh;
-  background:
-    radial-gradient(
-      ellipse 85% 60% at 50% 42%,
-      rgba(150, 118, 72, 0.7) 0%,
-      rgba(84, 66, 40, 0.38) 40%,
-      rgba(10, 8, 6, 0) 72%
-    ),
-    linear-gradient(180deg, #0a0806 0%, #060504 55%, #020202 100%);
-}
-
-.seal-cube__viewer {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.seal-cube__core {
-  position: absolute;
-  right: var(--space-md);
-  bottom: var(--space-md);
-  left: var(--space-md);
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  background: rgba(0, 0, 0, 0.88);
-}
-
-.seal-cube__core span {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xs);
-  font-size: var(--text-micro);
-  letter-spacing: var(--tracking-caps);
-  color: var(--c-text-hi);
-}
-
-.seal-cube__core small {
-  color: var(--c-amber);
-  font-size: var(--text-micro);
-}
-
-/* ---- The census ---- */
-
-.census-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.census-slots {
-  display: flex;
-  flex-direction: column;
-  background: rgba(0, 0, 0, 0.88);
-}
-
-.census-slot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  border-bottom: 1px solid var(--line-warm);
-}
-
-.census-slot:last-child { border-bottom: 0; }
-
-.census-slot__label {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  color: var(--c-text);
-  font-size: var(--text-body);
-}
-
-.census-slot__label small {
-  color: var(--c-text-mute);
-  font-size: var(--text-micro);
-}
-
-.census-slot__entry {
-  display: flex;
-  gap: var(--space-sm);
-}
-
-.census-slot__entry input {
-  width: calc(var(--touch-target) * 1.6);
-  height: var(--touch-target);
-  padding: 0 var(--space-sm);
-  border: 1px solid var(--line);
-  border-radius: 0;
-  background: var(--c-surface);
-  color: var(--c-text-hi);
-  font-family: var(--font-ui);
-  font-size: var(--text-heading);
-  text-align: center;
-}
-
-.census-slot__value {
-  color: var(--c-ink);
-  background: linear-gradient(180deg, var(--c-bone-bright), var(--c-bone-muted));
-  min-width: var(--touch-target);
-  padding: var(--space-xs) var(--space-sm);
-  text-align: center;
-  font-size: var(--text-heading);
-}
-
-.census-slot[data-accepted="true"] .census-slot__label { color: var(--c-text-mute); }
-
-/* ---- The crest wheel ---- */
-
-.crest-wheel-screen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.crest-stage {
-  display: flex;
-  justify-content: center;
-  padding: var(--space-md) 0;
-}
-
-/* Physical size matters: the printed crest card is 60mm and must cover this. */
-.crest-wheel {
-  width: 60mm;
-  height: 60mm;
-  touch-action: none;
-  cursor: grab;
-}
-
-.crest-wheel:active { cursor: grabbing; }
-
-.crest-wheel__rim {
-  fill: none;
-  stroke: var(--c-bone-dim);
-  stroke-width: 3px;
-}
-
-.crest-wheel__inner {
-  fill: rgba(0, 0, 0, 0.6);
-  stroke: var(--c-bone-dim);
-  stroke-width: 1.5px;
-}
-
-.crest-wheel__spoke {
-  stroke: var(--line-warm);
-  stroke-width: 1px;
-}
-
-.crest-wheel__notch {
-  fill: var(--c-amber);
-}
-
-.crest-wheel__window {
-  fill: none;
-  stroke: var(--c-amber);
-  stroke-width: 2px;
-  stroke-dasharray: 4 3;
-}
-
-.crest-stage[data-locked="true"] .crest-wheel__window {
-  stroke-dasharray: none;
-  stroke: var(--c-bone);
-}
-
-/* ---- The six lines ---- */
-
-.six-lines {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.six-lines__table {
-  display: flex;
-  flex-direction: column;
-  background: rgba(0, 0, 0, 0.88);
-}
-
-.six-lines__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
-  border-bottom: 1px solid var(--line-warm);
-  font-family: var(--font-doc);
-}
-
-.six-lines__row:last-child { border-bottom: 0; }
-
-.six-lines__row > span:first-child {
-  width: 1.4em;
-  color: var(--c-text-mute);
-}
-
-.six-lines__row[data-fixed="true"] strong { color: var(--c-text-hi); }
-.six-lines__row[data-solved="true"] strong { color: var(--c-ecg); }
-
-.six-lines__entry {
-  display: flex;
-  flex: 1;
-  gap: var(--space-sm);
-}
-
-.six-lines__entry input {
-  flex: 1;
-  height: var(--touch-target);
-  padding: 0 var(--space-sm);
-  border: 1px solid var(--line);
-  border-radius: 0;
-  background: var(--c-surface);
-  color: var(--c-text-hi);
-  font-family: var(--font-doc);
-  font-size: var(--text-body);
-}
-
-.six-lines__closing { border-left: 2px solid var(--c-amber); padding-left: var(--space-md); }
-
-/* ---- The music box ---- */
-
-.music-box {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.music-box__cylinders {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  background: rgba(0, 0, 0, 0.88);
-}
-
-.music-cylinder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.music-cylinder__value {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target);
-  height: calc(var(--touch-target) * 1.3);
-  border: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--c-plate-hi), var(--c-plate-lo));
-  color: var(--c-ink);
-  font-size: var(--text-title);
-  font-weight: 600;
-}
-
-.music-box__cylinders[data-playing="true"] .music-cylinder__value {
-  background: linear-gradient(180deg, var(--c-bone-bright), var(--c-bone-muted));
-  box-shadow: var(--glow-select);
-}
-
-/* ---- The film reel ---- */
-
-.film-reel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-}
-
-.film-reel__strip {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-sm);
-  padding: var(--space-md);
-  background: rgba(0, 0, 0, 0.88);
-}
-
-.film-frame {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-xs);
-  min-height: calc(var(--touch-target) * 1.8);
-  padding: var(--space-sm) var(--space-md);
-  border: 1px dashed var(--line);
-  border-radius: 0;
-  background: var(--c-surface);
-  color: var(--c-text);
-  text-align: left;
-}
-
-.film-frame strong { color: var(--c-text-hi); font-size: var(--text-body); }
-.film-frame small { color: var(--c-text-mute); font-size: var(--text-micro); }
-
-.film-frame[data-picked="true"] {
-  border-style: solid;
-  background: linear-gradient(180deg, var(--c-bone-bright), var(--c-bone-muted));
-}
-
-.film-frame[data-picked="true"] strong,
-.film-frame[data-picked="true"] small { color: var(--c-ink); }
-
-.film-frame__order {
-  position: absolute;
-  top: var(--space-xs);
-  right: var(--space-sm);
-  color: var(--c-amber);
-  font-weight: 600;
-}
-
-.film-frame[data-blank="true"] { border-color: var(--line-soft); }
-
-/* ---- Mirror wipe: line reveals ---- */
-
-.mirror-wipe__figures--lines {
-  flex-direction: column;
-  gap: var(--space-md);
-  font-size: var(--text-title);
-  letter-spacing: var(--tracking-caps);
-  text-align: center;
-}
-
-.mirror-wipe__figures--lines[data-mirrored="true"] {
-  transform: scaleX(-1);
-}
-
-
-/* ---- The surveyor's diagram (seal net) ---- */
-
-.seal-net {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-lg);
-  padding: var(--space-md) 0;
-}
-
-.seal-net__cross {
-  display: grid;
-  grid-template-areas:
-    ". north ."
-    "west up east"
-    ". south .";
-  gap: var(--space-xs);
-}
-
-.seal-net__cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target);
-  height: var(--touch-target);
-  border: 1px solid var(--line);
-  background: var(--c-raised);
-  color: var(--c-text);
-  font-family: var(--font-award);
-  font-size: var(--text-heading);
-}
-
-.seal-net__cell--north { grid-area: north; }
-.seal-net__cell--west { grid-area: west; }
-.seal-net__cell--up { grid-area: up; border-width: 2px; border-color: var(--c-amber); }
-.seal-net__cell--east { grid-area: east; }
-.seal-net__cell--south { grid-area: south; }
-
-.seal-net__cell--up[data-aligned="true"] {
-  background: linear-gradient(180deg, var(--c-bone-bright), var(--c-bone-muted));
-  color: var(--c-ink);
-  box-shadow: var(--glow-select);
-}
-
-.seal-net__controls {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  flex: 1;
-}
-
 
 /* ---- The riddle locks ---- */
 
@@ -818,7 +80,7 @@
     radial-gradient(ellipse 85% 60% at 50% 40%,
       rgba(150, 118, 72, 0.7) 0%, rgba(84, 66, 40, 0.36) 42%, rgba(8, 6, 4, 0) 74%),
     radial-gradient(ellipse 60% 12% at 50% 82%, rgba(0, 0, 0, 0.9) 0%, transparent 70%),
-    linear-gradient(180deg, #0c0906 0%, #060504 60%, #010101 100%);
+    linear-gradient(180deg, rgba(12, 9, 6, 1) 0%, rgba(6, 5, 4, 1) 60%, rgba(1, 1, 1, 1) 100%);
 }
 
 .riddle-bench__viewer {
@@ -893,19 +155,6 @@
 
 /* ---- The finale candles ---- */
 
-.letter-whole {
-  height: 100%;
-  margin: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--space-lg) var(--space-md);
-  background: var(--c-void);
-  color: var(--c-bone);
-  font-size: var(--text-body);
-  line-height: 1.8;
-  font-style: italic;
-}
-
 .candles {
   display: flex;
   flex-wrap: wrap;
@@ -917,7 +166,7 @@
 .candle-flame-css {
   width: 7px;
   height: 22px;
-  background: radial-gradient(ellipse at 50% 75%, #ffd9a0 0%, #e8a54b 55%, rgba(160, 80, 20, 0) 100%);
+  background: radial-gradient(ellipse at 50% 75%, rgba(255, 217, 160, 1) 0%, rgba(232, 165, 75, 1) 55%, rgba(160, 80, 20, 0) 100%);
   border-radius: 50% 50% 45% 45%;
   animation: candle-flicker 1.3s ease-in-out infinite alternate;
   position: relative;
@@ -988,30 +237,6 @@
 .witness-hotspot.is-next {
   animation: hotspot-pulse 1.1s ease-in-out infinite;
   border-color: var(--c-amber);
-}
-
-.witness-hotspot--star {
-  width: 34px;
-  height: 34px;
-}
-.witness-hotspot--star i {
-  display: block;
-  width: 10px;
-  height: 10px;
-  transform: rotate(45deg);
-  background: rgba(228, 219, 210, 0.85);
-  transition: background 160ms ease, box-shadow 160ms ease;
-}
-.witness-hotspot--star.is-lit i {
-  background: var(--c-amber);
-  box-shadow: 0 0 12px rgba(232, 165, 75, 0.8);
-}
-
-.witness-hotspot--shutter {
-  width: calc(var(--touch-target) + var(--space-sm));
-  height: var(--touch-target);
-  border-radius: 0;
-  font-size: var(--text-micro);
 }
 
 @keyframes hotspot-pulse {
@@ -1120,27 +345,96 @@
   color: var(--c-bone-bright);
 }
 
-.sparkle-nameplates {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-sm);
+/* ---- The three verbs: gauge, stars, and the brass name plate ---- */
+
+.sparkle-bench-stage {
+  position: relative;
 }
 
-.sparkle-nameplate {
-  min-width: 0;
-  padding-inline: var(--space-xs);
+/* Thirty-three CSS stars rise over the witness for three seconds. */
+.sparkle-stars {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
 }
 
-.sparkle-nameplate.is-next,
-.sparkle-shutter.is-next,
-.sparkle-test.is-next {
+.sparkle-stars i {
+  position: absolute;
+  bottom: 22%;
+  width: 5px;
+  height: 5px;
+  background: var(--c-bone-bright);
+  box-shadow: 0 0 8px 2px rgba(232, 192, 96, 0.55);
+  transform: translateY(0) scale(1);
+  opacity: 0;
+  animation-name: sparkle-star-rise;
+  animation-timing-function: var(--ease-heavy);
+  animation-fill-mode: both;
+}
+
+@keyframes sparkle-star-rise {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateY(-34dvh) scale(1.1); opacity: 0; }
+}
+
+.witness-hotspot--verb {
+  width: calc(var(--touch-target) + var(--space-sm));
+  height: calc(var(--touch-target) + var(--space-sm));
+  font-size: var(--text-micro);
+  touch-action: none;
+}
+
+.witness-hotspot--verb.is-holding {
   border-color: var(--c-amber);
-  color: var(--c-bone-bright);
-  box-shadow: var(--glow-select);
+  background: rgba(232, 165, 75, 0.28);
 }
 
-.sparkle-test.is-next {
-  color: var(--c-ink);
+.sparkle-gauge {
+  height: calc(var(--hairline) * 8);
+}
+
+/* A typed answer engraved on a brass plate, as on the first lock. */
+.brass-input {
+  border-color: rgba(160, 120, 52, 0.65);
+  background:
+    var(--paper-noise),
+    linear-gradient(180deg, rgba(96, 66, 26, 0.5) 0%, rgba(58, 40, 18, 0.6) 55%, rgba(38, 26, 12, 0.7) 100%);
+  background-blend-mode: multiply, normal;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(232, 192, 96, 0.25);
+  color: var(--c-bone-bright);
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.brass-input::placeholder {
+  color: rgba(228, 219, 210, 0.4);
+  text-transform: none;
+}
+
+.brass-input.is-next {
+  outline: var(--hairline) solid var(--c-amber);
+  outline-offset: 2px;
+}
+
+/* The correct click lands with a soft flash, never a bounce. */
+.witness-hotspot.is-hit {
+  border-color: var(--c-bone-bright);
+  background: rgba(255, 248, 236, 0.4);
+  box-shadow: 0 0 14px 4px rgba(255, 248, 236, 0.35);
+}
+
+/* The brass wheels step with an 80ms weighted settle. */
+.dial-wheel__digit {
+  animation: dial-step 80ms var(--ease-heavy);
+}
+
+@keyframes dial-step {
+  from { transform: translateY(-3px); opacity: 0.55; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .sparkle-fallback {
@@ -1175,72 +469,113 @@
 
 /* ==================== THE LETTER, READ ALOUD ==================== */
 
-.screen.letter-screen {
+/* ---- The finale film: full-bleed silent bed under the reading ---- */
+
+.letter-screen--film {
   position: relative;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  width: min(100%, var(--frame-width));
+  display: block;
+  width: 100%;
   height: 100dvh;
-  min-height: 100dvh;
-  margin-inline: auto;
-  padding:
-    calc(var(--space-md) + env(safe-area-inset-top))
-    var(--space-md)
-    calc(var(--space-md) + env(safe-area-inset-bottom));
-  gap: var(--space-md);
-  align-content: stretch;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
-  border-inline: var(--hairline) solid var(--c-hairline);
+  border: 0;
   background: var(--c-void);
 }
 
-.letter-screen__heading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: var(--space-md);
-  padding-bottom: var(--space-sm);
-  border-bottom: var(--hairline) solid var(--c-hairline);
+.finale-film {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--c-void);
 }
 
-.letter-screen__heading h1 {
-  max-width: 9ch;
-  font-size: var(--text-heading);
-  text-align: right;
+.finale-film__video,
+.finale-film__poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.letter-document {
-  position: relative;
-  min-height: 0;
-  overflow: hidden;
-  border-block: var(--hairline) solid var(--c-hairline);
+.finale-film__poster {
+  animation: finale-poster-in 800ms var(--ease-heavy) both;
 }
 
-.letter-audio-fallback {
+@keyframes finale-poster-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.letter-screen__mark {
   position: absolute;
   z-index: 2;
-  inset: 0;
-  display: grid;
-  align-content: center;
-  gap: var(--space-lg);
-  padding: var(--space-xl);
-  background: var(--c-void);
+  top: calc(var(--space-lg) + env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
   text-align: center;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* The letter rides the film as a lower-third band. Her scroll wins. */
+.letter-band {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 44dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding:
+    var(--space-xl)
+    var(--space-lg)
+    calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Legibility comes from a soft gradient scrim, never a solid box. */
+.letter-band__scrim {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 52dvh;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.55) 30%,
+    rgba(0, 0, 0, 0.82) 70%,
+    rgba(0, 0, 0, 0.9) 100%
+  );
 }
 
 .letter-reading {
+  position: relative;
   display: grid;
   gap: var(--space-md);
   min-height: 100%;
+  color: var(--c-bone);
+  font-size: var(--text-body);
+  line-height: 1.8;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .letter-paragraph {
   margin: 0;
+  font-family: var(--font-doc);
 }
 
+/* The coda is where the mask comes off: the Keeper's own serif hand. */
 .letter-paragraph--coda {
+  font-family: var(--font-serif);
   font-style: normal;
   color: var(--c-bone-bright);
+}
+
+.letter-paragraph--coda::first-letter {
+  padding-right: var(--space-hair);
+  font-size: calc(var(--text-title) * 1.15);
+  line-height: 0.85;
 }
 
 /* Words arrive as the Keeper reads them. */
@@ -1271,10 +606,15 @@
     calc(var(--space-xl) + env(safe-area-inset-top))
     var(--space-lg)
     calc(var(--space-xl) + env(safe-area-inset-bottom));
-  background: var(--c-void);
+  background: radial-gradient(
+    ellipse 120% 90% at 50% 55%,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.78) 68%,
+    rgba(0, 0, 0, 0.92) 100%
+  );
   opacity: 0;
   visibility: hidden;
-  transition: opacity 1400ms ease;
+  transition: opacity 1400ms var(--ease-heavy);
   pointer-events: none;
 }
 .letter-finale.is-lit {
@@ -1301,4 +641,46 @@
 .panel-toggle {
   justify-self: end;
   margin-left: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sparkle-stars i { animation-duration: 1ms !important; }
+  .dial-wheel__digit { animation: none; }
+}
+
+/* ---- The Chronicle: replay the whole letter from the letter tab ---- */
+
+.chronicle-card {
+  position: relative;
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: start;
+  width: 100%;
+  margin-bottom: var(--space-lg);
+  padding: 0 0 var(--space-md);
+  overflow: hidden;
+  border: var(--hairline) solid var(--line);
+  background: var(--c-void);
+  color: var(--c-bone);
+  text-align: left;
+  cursor: pointer;
+}
+
+.chronicle-card__poster {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+  border-bottom: var(--hairline) solid var(--line-soft);
+  margin-bottom: var(--space-sm);
+}
+
+.chronicle-card__title {
+  padding-inline: var(--space-md);
+  font-family: var(--font-serif);
+  font-size: var(--text-heading);
+  color: var(--c-bone-bright);
+}
+
+.chronicle-card .microcopy {
+  padding-inline: var(--space-md);
 }

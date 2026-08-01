@@ -10,6 +10,5 @@ export {
   roomDefinitions,
   roomStatusLabels,
 } from "./model";
-export { useMapViewport } from "./useMapViewport";
 export * from "./types";
 export * from "./viewport";

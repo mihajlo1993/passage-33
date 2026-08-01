@@ -2,26 +2,28 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { numberLockAnswer, riddleConfigByPin } from "../src/pins";
+import { numberLockAnswer, riddleAnswerMatches, riddleConfigByPin } from "../src/pins";
 import {
-  SPARKLE_NAMEPLATES,
-  SPARKLE_SHUTTERS,
-  sparkleStatementIsTrue,
+  SPARKLE_STAR_COUNT,
+  SPARKLE_STARS_MS,
+  SPARKLE_VERBS,
+  sparkleStatementComplete,
 } from "../src/components/WitnessPuzzles";
 
 const root = new URL("..", import.meta.url);
 
 /**
  * The witness puzzle contract: locks II, III and IV are played on the 3D
- * artifact with explicit deterministic taps. Lock I stays a typed riddle.
- * Nothing may gate on camera angles and nothing may hard-stall.
+ * artifact with explicit deterministic touches. Locks I and IV end at a
+ * typed answer on the same forgiving matcher. Nothing may gate on camera
+ * angles and nothing may hard-stall.
  */
 
 test("lock I is a typed riddle; locks II, III, IV are witness puzzles", () => {
   assert.equal(riddleConfigByPin[1]!.puzzle, undefined);
   assert.equal(riddleConfigByPin[3]!.puzzle?.kind, "clicks");
   assert.equal(riddleConfigByPin[5]!.puzzle?.kind, "sum");
-  assert.equal(riddleConfigByPin[8]!.puzzle?.kind, "testimony");
+  assert.equal(riddleConfigByPin[8]!.puzzle?.kind, "verbs");
 });
 
 test("the runner's click pattern is playable and matches its own story", () => {
@@ -44,34 +46,55 @@ test("the wager's wheels take exactly the engraved sum", () => {
   assert.match(config.hints[2], /1 9 9 9/);
 });
 
-test("the sparkle witness must testify truthfully before it can be named", () => {
+test("the three verbs run POUR, CHARGE, RELEASE and discover the statement", () => {
   const puzzle = riddleConfigByPin[8]!.puzzle;
-  assert.ok(puzzle?.kind === "testimony");
+  assert.ok(puzzle?.kind === "verbs");
   assert.deepEqual(
-    SPARKLE_SHUTTERS.map((shutter) => shutter.answer),
+    SPARKLE_VERBS.map((verb) => verb.verb),
+    ["POUR", "CHARGE", "RELEASE"],
+  );
+  assert.deepEqual(
+    SPARKLE_VERBS.map((verb) => verb.reveals),
     ["STILL WATER", "SILVER BREATH", "STARS"],
   );
-  for (const shutter of SPARKLE_SHUTTERS) {
-    assert.equal(shutter.options[shutter.correctIndex], shutter.answer);
-  }
-  const truthful = SPARKLE_SHUTTERS.map((shutter) => shutter.correctIndex);
-  assert.equal(sparkleStatementIsTrue(truthful), true);
-  assert.equal(sparkleStatementIsTrue([0, 0, 0]), false);
-  assert.ok(SPARKLE_NAMEPLATES.includes("CARBONATOR"));
+  // POUR fills over two seconds; CHARGE builds for two and a half; RELEASE
+  // is a single tap.
+  assert.deepEqual(
+    SPARKLE_VERBS.map((verb) => [verb.kind, verb.holdMs]),
+    [["hold", 2_000], ["hold", 2_500], ["tap", 0]],
+  );
+  // Thirty-three stars rise for three seconds. Of course thirty-three.
+  assert.equal(SPARKLE_STAR_COUNT, 33);
+  assert.equal(SPARKLE_STARS_MS, 3_000);
+  assert.equal(sparkleStatementComplete(2), false);
+  assert.equal(sparkleStatementComplete(3), true);
+});
+
+test("lock IV ends at a typed name on lock I's matcher contract", () => {
   const config = riddleConfigByPin[8]!;
+  assert.ok(riddleAnswerMatches(config, "carbonator"));
+  assert.ok(riddleAnswerMatches(config, "AARKE"));
+  assert.ok(riddleAnswerMatches(config, "sparkling water"));
+  assert.ok(!riddleAnswerMatches(config, "kettle"));
   assert.match(config.riddle, /under oath/i);
-  assert.match(config.hints[2], /STILL WATER.*SILVER BREATH.*STARS.*CARBONATOR/i);
+  // The third hint names it outright: no hard-stall is possible.
+  assert.match(config.hints[2], /POUR.*CHARGE.*RELEASE.*CARBONATOR/i);
 });
 
 test("puzzles never watch the camera and never hard-stall", () => {
-  const source = readFileSync(new URL("src/components/WitnessPuzzles.tsx", root), "utf8");
-  assert.doesNotMatch(source, /camera-change/, "no camera watching");
-  assert.doesNotMatch(source, /getCameraOrbit/, "no orbit-angle gating");
-  assert.doesNotMatch(source, /pointermove|touchmove/, "no gesture math");
-  assert.match(source, /puzzle-fallback/, "a lost model degrades to plain buttons");
-  assert.match(source, /addEventListener\("error", handleModelError\)/, "model failure uses a native listener");
-  assert.match(source, /is-next/, "the third hint glows the next correct touch");
-  assert.match(source, /statementAccepted/, "the last witness must pass before it can be named");
+  const shared = readFileSync(new URL("src/components/WitnessPuzzles.tsx", root), "utf8");
+  const verbs = readFileSync(new URL("src/components/SparkleVerbs.tsx", root), "utf8");
+  for (const source of [shared, verbs]) {
+    assert.doesNotMatch(source, /camera-change/, "no camera watching");
+    assert.doesNotMatch(source, /getCameraOrbit/, "no orbit-angle gating");
+    assert.doesNotMatch(source, /pointermove|touchmove/, "no gesture math");
+    assert.match(source, /puzzle-fallback/, "a lost model degrades to plain buttons");
+    assert.match(source, /is-next/, "the third hint glows the next correct touch");
+  }
+  assert.match(shared, /addEventListener\("error", handleModelError\)/, "model failure uses a native listener");
+  assert.match(verbs, /releaseHold/, "releasing a held verb early resets silently");
+  assert.match(verbs, /sparkleStatementComplete/, "the statement must complete before naming");
+  assert.doesNotMatch(verbs, /SPARKLE_NAMEPLATES|statementAccepted/, "the nameplate flow is gone");
   for (const pinId of [3, 5, 8] as const) {
     assert.equal(riddleConfigByPin[pinId]!.hints.length, 3);
   }

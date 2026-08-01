@@ -2,15 +2,7 @@ import { generatedMediaAssets } from "./generated/media.generated";
 
 export type MediaAssetId =
   | "coldOpen"
-  | "tape01"
-  | "tape02"
-  | "tape03"
-  | "tape04"
-  | "tape05"
-  | "tape06"
-  | "tape07"
   | "trophy"
-  | "creature"
   | "appIcon"
   | "sheet01"
   | "sheet02";

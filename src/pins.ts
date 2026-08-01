@@ -72,7 +72,7 @@ export const LETTER_CODA = [
 export type WitnessPuzzle =
   | { readonly kind: 'clicks'; readonly pattern: readonly ('L' | 'W' | 'R')[] }
   | { readonly kind: 'sum' }
-  | { readonly kind: 'testimony' };
+  | { readonly kind: 'verbs' };
 
 export interface RiddleConfig {
   readonly model: string;
@@ -83,6 +83,8 @@ export interface RiddleConfig {
   readonly answers: readonly string[];
   readonly numeric?: boolean;
   readonly hints: readonly [string, string, string];
+  /** Pin-specific refusal lines, rotated in order; min eight per lock. */
+  readonly refusals: readonly string[];
   /**
    * When set, the lock is played on the witness itself instead of typed:
    * the riddle text becomes the Keeper's instruction. The answers above
@@ -99,9 +101,19 @@ export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> 
       'My whole life is spent under a runner who never leaves home. Storms of clicking pass over me and I keep every journey but show none. Cities get maps. Desks get me. What am I?',
     answers: ['mat', 'mousemat', 'mousepad', 'pad', 'podloga', 'deskmat', 'matt'],
     hints: [
-      'Look at the witness on the bench: the flat piece, not the sleeper on top of it. The lock wants the flat piece.',
-      'You would find one next to every keyboard in the world.',
-      'A mouse runs on it. Tell the lock what it runs on.',
+      'Look at the witness on the bench: the flat piece, not the sleeper resting on it. The lock wants the flat piece named.',
+      'You would find one beside every keyboard in the world, and nobody has ever thanked it.',
+      'A mouse runs on it. Tell the lock what the mouse runs on.',
+    ],
+    refusals: [
+      'The lock listens, considers, and declines.',
+      'No. But the lock admires the attempt. It has heard far worse.',
+      'Wrong guesses cost nothing but pride. The Keeper wrote that on the first night.',
+      'Not that. The lock has waited twelve thousand nights; it can wait one more minute.',
+      'The lock turns your answer over twice, to be polite. Still no.',
+      'Declined, and entered in the ledger as nearly.',
+      'The quiet servant would not answer to that name either.',
+      'Patience. The answer is flatter than you think.',
     ],
   },
   3: {
@@ -112,9 +124,19 @@ export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> 
     answers: ['mouse', 'miska', 'computermouse', 'amouse', 'themouse', 'mis'],
     puzzle: { kind: 'clicks', pattern: ['L', 'R', 'R', 'R', 'W'] },
     hints: [
-      'Touch the runner itself: it has a left shoulder, a right shoulder, and a wheel on its back.',
-      'One lock is open behind you; three still wait; the wheel comes last. Left, then right three times, then the wheel.',
-      'Tap: left, right, right, right, wheel. The next touch now glows for you.',
+      'Touch the runner itself. It has a left shoulder, a right shoulder, and a wheel on its back. The lock hears every click.',
+      'One lock stands open behind you; three still wait; the wheel comes last. Left once, then right three times, then the wheel.',
+      'Tap: left, right, right, right, wheel. The next correct touch now glows for you.',
+    ],
+    refusals: [
+      'The runner flicks an ear. Not its language.',
+      'A wrong click. It forgives you; it keeps no ledger of grudges.',
+      'The pattern broke. Begin again; the runner always does.',
+      'Not that shoulder, not that order. Listen with your fingers.',
+      'The lock heard an accent it did not know. Speak click, not word.',
+      'Declined. The runner rehearsed this for thirty-three years; take your time.',
+      'Nearly. Instinct is only patience moving faster.',
+      'The wheel comes last. Everything before it is shoulders.',
     ],
   },
   5: {
@@ -127,35 +149,62 @@ export const riddleConfigByPin: Readonly<Partial<Record<number, RiddleConfig>>> 
     puzzle: { kind: 'sum' },
     hints: [
       'Turn the witness face by face. It wears your birth year, the day your birthday returns tonight, and IIII for the Keeper\'s four locks.',
-      'The year is 1993. You were born on the 2nd, and tonight is the 2nd again. The Keeper built four locks. Add them.',
+      'The year is 1993. You were born on the 2nd, and tonight is the 2nd again. The Keeper built four locks. Add all three.',
       '1993 + 2 + 4 = 1999. Set the wheels to 1 9 9 9 and turn the lock.',
+    ],
+    refusals: [
+      'The wheels return your sum untouched. Count again.',
+      'The arithmetic declines. The Keeper checked it thirty-three years early.',
+      'A wrong sum. The wager stands; steady nerve, then a correct number.',
+      'The lock does not round. It never has.',
+      'Declined, and entered in the ledger as close enough for anyone but a lock.',
+      'Three numbers, one sum. The witness wears all three; turn it and collect them.',
+      'No. Though the Keeper always admired a confident wrong answer.',
+      'The house held this wager for decades. It can hold your next attempt too.',
     ],
   },
   8: {
     model: '/models/witnessSparkle.glb',
     benchNote: 'A silver vessel gives its evidence in three parts: what it takes, what it breathes, what it returns.',
     riddle:
-      'The last witness is under oath. Turn its IN, GAS, and OUT shutters until it can say, truthfully: I take ____. I breathe ____. I return ____. Test the statement, then name the apparatus. The Keeper has already wrapped one. Naturally.',
+      'The last witness is under oath, and words alone will not do. Operate it: hold its mouth and pour it something still, hold its lever until it draws a silver breath, then one tap, and let it speak. When all three truths are said, name the apparatus. The Keeper has already wrapped one. Naturally.',
     answers: [
       'carbonator', 'aarke', 'sodastream', 'sparklingwater', 'sodamaker',
       'gaziranavoda', 'soda', 'fizzywater', 'watercarbonator',
       'sparklingwatermaker', 'sodawater',
     ],
-    puzzle: { kind: 'testimony' },
+    puzzle: { kind: 'verbs' },
     hints: [
-      'The witness speaks in order: what goes in, what charges it, what comes back out. The seven points above its mouth are evidence.',
-      'It takes something still. The metal breath is CO2. What returns is fit for a birthday glass.',
-      'Set STILL WATER, SILVER BREATH, STARS. Press TEST THE WITNESS. Then press CARBONATOR. The next correct control now glows.',
+      'The witness works in order: its mouth takes, its lever charges, its mouth returns. Begin at the mouth, and be unhurried. The seven cast stars above it are evidence.',
+      'Hold the mouth until the pour fills. Hold the lever until the hiss peaks. Then one tap sets the stars out. What drinks still water and breathes out a celebration?',
+      'POUR, CHARGE, RELEASE, then type CARBONATOR. The next correct control now glows.',
+    ],
+    refusals: [
+      'The witness keeps its statement. Not that.',
+      'Declined. The apparatus knows its own name, and waits to hear you say it.',
+      'It does not take that, breathe that, or return that.',
+      'Wrong. The stars stay in the vessel a moment longer.',
+      'The last lock is the fussiest of the four. The Keeper made it that way on purpose.',
+      'No. Joy is exact, or it is only noise.',
+      'The witness has held its oath for thirty-three years. It will not bend it now.',
+      'Declined, gently. It wants to be named as badly as you want to name it.',
     ],
   },
 };
 
-/** In-character replies to wrong answers; they rotate and never punish. */
+/**
+ * The generic fallback replies to wrong answers; each lock carries its own
+ * eight in riddleConfigByPin.refusals. They rotate and never punish.
+ */
 export const REFUSAL_LINES = [
   'The lock listens, considers, and declines.',
   'No. But the lock admires the attempt.',
   'The Keeper wrote: wrong guesses cost nothing but pride.',
   'Not that. The lock has waited thirty-three years; it can wait another minute.',
+  'Declined, and entered in the ledger as nearly.',
+  'The lock turns your answer over twice, to be polite. Still no.',
+  'The house has heard twelve thousand nights of silence. It can bear one wrong answer.',
+  'Try again. The Keeper never once punished a guess.',
 ] as const;
 
 /** Keeper voice clip per pin, played when the pin resolves. */
@@ -191,9 +240,9 @@ export const pins: readonly Pin[] = [
     kind: 'puzzle',
     resolution: 'riddle',
     objective:
-      'The first lock listens for the name of a quiet servant. Solve it, and a quarter of the letter is yours.',
+      'The first lock keeps the quietest thing the Keeper ever catalogued. It has practised patience under storms of clicking for twelve thousand and fifty-three nights. Name it, and a quarter of the letter is released.',
     bodyText:
-      'The first lock turns. A quarter of the letter is released, and the first gift is named. ' + HIDING.mat,
+      'The first lock turns. One quarter of the letter, released and entered in the ledger. ' + HIDING.mat,
   },
   {
     id: 2,
@@ -207,9 +256,9 @@ export const pins: readonly Pin[] = [
     resolution: 'action',
     actionLabel: 'I have it in my hands',
     objective:
-      'Go and take the first gift from its keeping. Come back to the terminal with it in your hands.',
+      'Go and take the first gift out of its keeping, then come back to the terminal with it in your hands. It has waited this long; it will not begrudge you the walk.',
     bodyText:
-      'Catalogued and released: one flat place for a small runner. The Keeper chose it for the desk where you will win things. Three locks remain.',
+      'Catalogued and released: one flat field for a small runner, kept rolled and tied since the night you were born. It taught this house patience. The Keeper chose it for the desk where you will win things. Three locks hold.',
   },
 
   // ---- STAGE TWO: THE RUNNER (the mouse) ----
@@ -224,9 +273,9 @@ export const pins: readonly Pin[] = [
     kind: 'puzzle',
     resolution: 'riddle',
     objective:
-      'The second lock keeps a small grey tenant. It has no bones and no bad intentions.',
+      'The second lock keeps a small grey tenant, boneless and quick, with no bad intentions on record. It answers to nothing but its own language. Instinct will do here what vocabulary will not.',
     bodyText:
-      'The second lock turns. Half the letter now. ' + HIDING.mouse,
+      'The second lock turns. Half the letter now, released and entered in the ledger. ' + HIDING.mouse,
   },
   {
     id: 4,
@@ -240,9 +289,9 @@ export const pins: readonly Pin[] = [
     resolution: 'action',
     actionLabel: 'I have it in my hands',
     objective:
-      'Collect the small grey runner from its box. It will not run away; it has been patient.',
+      'Collect the small grey runner from its box. It will not run away; patience was never its gift, but it learned from the mat.',
     bodyText:
-      'Catalogued and released: one runner, grey, clicking, boneless. The Keeper trusts you will get along famously. Two locks remain.',
+      'Catalogued and released: one runner, grey, clicking, boneless. Quick as a good guess. The Keeper trusts you will get along famously. Two locks hold.',
   },
 
   // ---- STAGE THREE: THE WAGER (the EuroMillions slips) ----
@@ -257,9 +306,9 @@ export const pins: readonly Pin[] = [
     kind: 'puzzle',
     resolution: 'riddle',
     objective:
-      'The third lock is arithmetic. The Keeper built it from three numbers only the two of you could know tonight.',
+      'The third lock is arithmetic with nerve in it. The Keeper built it from three numbers only the two of you could know tonight, then wagered on the future and never once checked the result.',
     bodyText:
-      'The third lock turns. Three quarters of the letter. ' + HIDING.slips,
+      'The third lock turns. Three quarters of the letter, released and entered in the ledger. ' + HIDING.slips,
   },
   {
     id: 6,
@@ -273,9 +322,9 @@ export const pins: readonly Pin[] = [
     resolution: 'action',
     actionLabel: 'I have them in my hands',
     objective:
-      'Collect the third gift: thin as paper and worth whatever the future decides.',
+      'Collect the third gift: thin as paper, worth whatever the future decides. The Keeper never gambled small. He gambled once, on you, and called it arithmetic.',
     bodyText:
-      'Catalogued and released: six lines, three red, three blue. Thirty-three chances, by the Keeper\'s arithmetic. One lock remains, and it prefers the dark.',
+      'Catalogued and released: six lines, three red, three blue. Thirty-three chances, by the Keeper\'s arithmetic. One lock holds, and it prefers the dark.',
   },
 
   // ---- STAGE FOUR: THE SPARKLE (the carbonator) ----
@@ -293,9 +342,9 @@ export const pins: readonly Pin[] = [
     actionLabel: 'Put the lights out',
     beat: 'threshold',
     objective:
-      'Before the last lock, a courtesy. Put out every light. Stand still, and let the building look at you the way the Keeper did, the night the letter was sealed.',
+      'Before the last lock, the Keeper asks the only favour in the whole arrangement. Put out every light. Stand still in the dark, and let the building look at you the way he did the night the letter was sealed. You have trusted the locks all evening. This once, they ask to trust you back.',
     bodyText:
-      'Nothing here has ever wished you harm. Nothing here ever will. The last lock is listening now.',
+      'Nothing here has ever wished you harm. Nothing here ever will. The building looked, and entered one line in the ledger: she came. The last lock is listening now.',
   },
   {
     id: 8,
@@ -308,9 +357,9 @@ export const pins: readonly Pin[] = [
     kind: 'puzzle',
     resolution: 'riddle',
     objective:
-      'The last lock guards the gift the Keeper chose himself. It has held its breath for thirty-three years.',
+      'The last lock keeps the gift the Keeper chose himself: the one that breathes in silver and breathes out stars. It has held its breath for thirty-three years. It would very much like to celebrate.',
     bodyText:
-      'The last lock turns. The letter is whole. ' + HIDING.carbonator,
+      'The last lock turns. The letter is whole, and the ledger wants one closing entry. ' + HIDING.carbonator,
   },
   {
     id: 9,
@@ -324,7 +373,7 @@ export const pins: readonly Pin[] = [
     resolution: 'action',
     actionLabel: 'I have it. Read me the letter.',
     objective:
-      'Take the last gift from where water sleeps, and bring it back. The Keeper will read the letter himself.',
+      'Take the last gift from where water sleeps, and bring it back. Then the Keeper will read you the letter himself, whole and aloud. He has been rehearsing it for twelve thousand and fifty-three nights.',
     bodyText:
       'The Keeper\'s watch is ended. The letter is yours, the gifts were always yours, and the building is proud of you. Happy birthday, Melissa.',
   },

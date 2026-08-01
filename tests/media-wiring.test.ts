@@ -4,57 +4,35 @@ import test from "node:test";
 
 test("phone media is wired through local WebP only", () => {
   const home = readFileSync("src/components/HomeScreen.tsx", "utf8");
-  const trophy = readFileSync("src/components/TrophyScreen.tsx", "utf8");
-  const tape = readFileSync("src/components/TapePlaybackScreen.tsx", "utf8");
   const mediaCss = readFileSync("src/styles/media.css", "utf8");
   assert.match(home, /MEDIA_ASSETS\.coldOpen/);
   assert.match(home, /const coverUrl = cover\.webp\?\.url/);
   assert.match(home, /src=\{coverUrl\}/);
-  assert.match(trophy, /MEDIA_ASSETS\.trophy/);
-  assert.match(trophy, /src=\{trophy\.webp\.url\}/);
-  assert.match(tape, /src=\{asset\.webp!\.url\}/);
-  for (const phoneSource of [home, trophy, tape]) {
-    assert.doesNotMatch(phoneSource, /\.png\.url|\/og\.png|<source\b|<picture\b/);
-  }
+  assert.doesNotMatch(home, /\.png\.url|\/og\.png|<source\b|<picture\b/);
   assert.match(mediaCss, /\.cold-open__media[\s\S]*position: absolute/);
   assert.match(mediaCss, /object-fit: cover/);
-  assert.match(mediaCss, /\.trophy-image[\s\S]*aspect-ratio: 16 \/ 9/);
   assert.doesNotMatch(mediaCss, /#[0-9a-f]{3,8}\b/i);
 });
 
-test("build order keys the incoming creature and precaches WebP without general PNG", () => {
+test("the media generator stays local, deterministic, and PNG-source only", () => {
   const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
     scripts: Record<string, string>;
   };
   const processor = readFileSync("scripts/process-image-assets.mjs", "utf8");
-  const arGenerator = readFileSync("scripts/generate-ar-assets.mjs", "utf8");
   const vite = readFileSync("vite.config.ts", "utf8");
 
   assert.equal(packageJson.scripts.prebuild, undefined);
   assert.equal(packageJson.scripts.build, "tsc -b && vite build");
-  assert.match(packageJson.scripts["generate:assets"] ?? "", /generate:media.*generate:ar/);
-  assert.match(processor, /output: "ar\/textures\/creature"/);
-  assert.match(processor, /keyBlackToAlpha\(canvas, spec\.source\)/);
-  assert.match(arGenerator, /defaultIncomingDirectory/);
-  assert.match(arGenerator, /incomingName = "creature\.png"/);
-  assert.match(arGenerator, /path\.join\(incomingDirectory, incomingName\)/);
   assert.doesNotMatch(vite, /\*\.\{[^}]*png/);
-  assert.match(arGenerator, /ar["'], ["']sprites/);
-  assert.match(arGenerator, /ar["'], ["']textures["'], ["']creature\.webp/);
-  assert.doesNotMatch(arGenerator, /data:image|base64/i);
   assert.doesNotMatch(processor, /https?:\/\/|\bfetch\s*\(/);
 });
 
-test("the tape route is retired but stays typed and dormant", () => {
-  const home = readFileSync("src/components/HomeScreen.tsx", "utf8");
-  assert.ok(!home.includes("/tape"), "the home driver no longer routes to tape");
-});
-
-test("app shell owns the tape route and resolves pin 12 only after playback", () => {
+test("the tape and AR routes are gone from the shell entirely", () => {
   const app = readFileSync("src/components/GameApp.tsx", "utf8");
-  assert.match(app, /"\/tape"/);
-  assert.match(app, /TapePlaybackScreen/);
-  assert.match(app, /resolvePin\(TAPE_PLAYBACK_PIN_ID, "action"\)/);
-  assert.match(app, /navigate\("\/map"\)/);
-  assert.match(app, /route === "\/tape"/);
+  const home = readFileSync("src/components/HomeScreen.tsx", "utf8");
+  assert.ok(!app.includes("/tape"), "no tape route");
+  assert.ok(!app.includes("TapePlaybackScreen"), "no tape screen import");
+  assert.ok(!app.includes("ARScreen"), "no AR screen import");
+  assert.ok(!app.includes('"/save"'), "no save route");
+  assert.ok(!home.includes("/tape"), "the home driver no longer routes to tape");
 });

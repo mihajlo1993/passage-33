@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createDefaultGameState } from "../src/game/engine";
+import {
+  attemptResolvePin,
+  createDefaultGameState,
+  resolutionModeForPin,
+} from "../src/game/engine";
+import { pins } from "../src/pins";
 import {
   deriveRoomStates,
   deriveSurveyMap,
@@ -219,6 +224,51 @@ test("room status is semantic: corridor starts entered, pins enter, clears overr
   assert.deepEqual(Object.keys(roomStatusLabels).sort(), ["cleared", "unentered", "unresolved"]);
 });
 
+test("state colours transition room by room as pins resolve", () => {
+  // Walk the pin graph and check the RE room rule at every step: the room
+  // the hunt is in reads crimson (unresolved), rooms whose work is done and
+  // left behind read slate (cleared), untouched rooms stay outline-only.
+  let state = createDefaultGameState(1_000);
+  // She wakes in the corridor; the first lock waits in the living room.
+  assert.equal(roomState(state, "corridor").status, "unresolved");
+  assert.equal(deriveSurveyMap(state).objectiveZone, "living");
+  assert.equal(roomState(state, "living").status, "unresolved");
+  assert.equal(roomState(state, "kitchen").status, "unentered");
+
+  for (const pin of pins) {
+    const result = attemptResolvePin(state, pin.id, 1_000 + pin.id, resolutionModeForPin(pin));
+    assert.equal(result.ok, true, `pin ${pin.id}`);
+    state = result.state;
+
+    const resolved = new Set(state.resolvedPins);
+    const nextPin = pins.find((candidate) => !resolved.has(candidate.id));
+    const model = deriveSurveyMap(state);
+    assert.equal(model.objectiveZone, nextPin?.zone ?? null);
+    if (nextPin) {
+      assert.equal(
+        roomState(state, nextPin.zone).status,
+        "unresolved",
+        `active room after pin ${pin.id}`,
+      );
+    }
+    for (const room of model.rooms) {
+      assert.ok(
+        ["unresolved", "cleared", "unentered"].includes(room.status),
+        room.id,
+      );
+    }
+  }
+
+  // The hunt has ended: nothing is active, and every visited room settled.
+  const finished = deriveSurveyMap(state);
+  assert.equal(finished.objectiveZone, null);
+  assert.ok(
+    finished.rooms
+      .filter((room) => ["living", "entry", "corridor", "bathroom"].includes(room.id))
+      .every((room) => room.status === "cleared"),
+  );
+});
+
 test("the balcony exposes only an outline lock boolean", () => {
   const initial = createDefaultGameState(1_000);
   assert.equal(roomState(initial, "balcony").outlineLocked, true);
@@ -255,8 +305,8 @@ test("the actual renderer model owns one bounded 680 by 500 drawing", () => {
   assert.equal(model.furniture.length, 9);
   assert.equal(model.landmarks.length, 2);
   assert.deepEqual(roomStatusLabels, {
-    unresolved: "UNRESOLVED",
-    cleared: "CLEARED",
-    unentered: "UNENTERED",
+    unresolved: "THE LOCK HOLDS",
+    cleared: "RELEASED",
+    unentered: "",
   });
 });

@@ -24,7 +24,6 @@ export {
 export {
   forceOperatorTorch,
   getOperatorRuntimeSnapshot,
-  reportOperatorArInitialization,
   reportOperatorAudioInitialization,
   reportOperatorContext,
   requestOperatorReset,

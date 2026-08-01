@@ -40,9 +40,9 @@ export function openingCenterline(opening: OpeningBounds): MapSegment {
 }
 
 export const roomStatusLabels: Readonly<Record<RoomStatus, RoomStatusLabel>> = {
-  unresolved: "UNRESOLVED",
-  cleared: "CLEARED",
-  unentered: "UNENTERED",
+  unresolved: "THE LOCK HOLDS",
+  cleared: "RELEASED",
+  unentered: "",
 };
 
 export const roomDefinitions: readonly RoomDefinition[] = [
@@ -342,7 +342,7 @@ export const mapLandmarks: readonly MapLandmark[] = [
     id: "start",
     kind: "start",
     room: "corridor",
-    label: "START // FAR END",
+    label: "THE TERMINAL",
     placement: "far-end",
     point: { x: 385, y: 460 },
     radius: 10,
@@ -409,6 +409,13 @@ export function deriveRoomStates(state: GameState): readonly RoomState[] {
   });
 }
 
+/** The room the search is in right now: the first unresolved pin's zone. */
+export function deriveObjectiveZone(state: GameState): ZoneId | null {
+  const resolved = new Set(state.resolvedPins);
+  const nextPin = pins.find((pin) => !resolved.has(pin.id));
+  return nextPin?.zone ?? null;
+}
+
 export function deriveSurveyMap(state: GameState): SurveyMapModel {
   return {
     viewBox: mapViewBox,
@@ -416,5 +423,6 @@ export function deriveSurveyMap(state: GameState): SurveyMapModel {
     connections: roomConnections,
     furniture: mapFurniture,
     landmarks: mapLandmarks,
+    objectiveZone: deriveObjectiveZone(state),
   };
 }

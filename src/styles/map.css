@@ -1,83 +1,82 @@
-html:has(.map-screen),
-body:has(.map-screen),
-#root:has(.map-screen),
-.vhs-stage:has(> .map-screen) {
-  width: 100%;
-  height: 100dvh;
-  overflow: hidden;
+/* A live filter would make the VHS stage the containing block for the map
+   and force a full-screen composite on every pan frame. Never on /map. */
+.vhs-stage:has(.map-screen) {
   transform: none !important;
-  /* A live filter would make this the containing block for the fixed map
-     and force a full-screen composite on every pan frame. */
   filter: none !important;
 }
 
+/* The map fills the shell's scrolling slot and owns its own panning. */
 .map-screen {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
+  position: relative;
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
   overscroll-behavior: none;
-  background: var(--c-surface);
+  background: var(--c-void);
 }
 
-.survey-frame {
-  position: relative;
-  display: grid;
-  width: 100vw;
-  height: 100dvh;
-  place-items: center;
-  overflow: hidden;
-  border: 0;
-  border-radius: 0;
-  background: var(--c-surface);
-  cursor: grab;
-  touch-action: none;
-}
+/* ---- Native-scroll viewport: the browser owns panning ---- */
 
-.survey-frame:active {
-  cursor: grabbing;
-}
-
-.survey-frame::after {
+.survey-scroller-shell {
   position: absolute;
-  z-index: 2;
   inset: 0;
-  pointer-events: none;
-  content: "";
-  opacity: 0.12;
-  background-image:
-    repeating-linear-gradient(
-      91deg,
-      transparent 0,
-      transparent var(--space-xl),
-      var(--c-hairline) calc(var(--space-xl) + var(--hairline))
-    ),
-    repeating-linear-gradient(
-      2deg,
-      transparent 0,
-      transparent var(--space-xxl),
-      var(--c-bone-dim) calc(var(--space-xxl) + var(--hairline))
-    );
+  overflow: hidden;
+  background: var(--c-void);
+}
+
+.survey-scroller {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+}
+
+.survey-scroller::-webkit-scrollbar { display: none; }
+
+/* Sized in px by the scroller from the measured client box: zoom 1 is the
+   computed fit, so the whole flat is always visible at minimum zoom. */
+.survey-scroller__canvas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100%;
+  min-height: 100%;
+  margin: auto;
+}
+
+.survey-scroller__canvas .survey-map {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
 }
 
 .survey-map {
-  position: relative;
-  z-index: 1;
-  grid-area: 1 / 1;
   display: block;
-
-  /* Cover sizing derived from the drawing's viewBox via --map-aspect
-     (injected from map/model.ts in main.tsx). Never hardcode the ratio. */
-  width: max(100vw, calc(100dvh * var(--map-aspect)));
-  max-width: none;
-  height: max(100dvh, calc(100vw / var(--map-aspect)));
-  max-height: none;
-  transform-origin: 0 0;
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* ---- The blueprint ground ---- */
+
+.survey-ground {
+  fill: var(--c-void);
+  stroke: none;
+}
+
+.survey-grid-line {
+  stroke: var(--c-raised);
+  stroke-width: 0.5px;
+}
+
+.survey-ground-grid {
+  pointer-events: none;
+  opacity: 0.55;
 }
 
 .survey-map text {
@@ -85,48 +84,47 @@ body:has(.map-screen),
   font-family: var(--font-doc);
   letter-spacing: var(--tracking-ui);
   paint-order: stroke;
-  stroke: var(--c-surface);
+  stroke: var(--c-void);
   stroke-width: var(--hairline);
 }
+
+/* ---- Room state: the core RE rule ---- */
 
 .survey-room__fill {
   stroke: none;
 }
 
+/* The room the hunt is in now: deep crimson with a slow pulse. */
 .survey-room[data-room-state="unresolved"] .survey-room__fill {
-  fill: var(--c-map-red);
+  fill: var(--c-chroma-red);
+  animation: survey-holds-pulse 3.2s var(--ease-heavy) infinite alternate;
 }
 
+@keyframes survey-holds-pulse {
+  from { opacity: 0.66; }
+  to { opacity: 1; }
+}
+
+/* Rooms the locks released: desaturated slate blue. */
 .survey-room[data-room-state="cleared"] .survey-room__fill {
   fill: var(--c-slate);
 }
 
+/* Rooms not yet reached: outline only, near-invisible. */
 .survey-room[data-room-state="unentered"] .survey-room__fill {
-  fill: var(--c-surface);
+  fill: none;
 }
 
 .survey-room[data-outline-only="true"] .survey-room__fill {
   fill: none;
 }
 
-.survey-room__hatch {
-  fill: none;
-  stroke: url("#survey-wall-hatch");
-  stroke-width: 16px;
-}
-
-.survey-room[data-room-state="unentered"] .survey-room__hatch,
-.survey-room[data-outline-only="true"] .survey-room__hatch {
-  display: none;
-}
-
 .survey-room__line,
-.survey-wall-detail,
 .survey-door,
 .survey-furniture,
 .survey-title-block,
-.survey-north,
-.survey-start {
+.survey-compass__ring,
+.survey-compass__ticks {
   fill: none;
   stroke: var(--c-bone-dim);
   stroke-linecap: square;
@@ -135,11 +133,12 @@ body:has(.map-screen),
 }
 
 .survey-opening-mask {
-  fill: var(--c-surface);
+  fill: var(--c-void);
   stroke: none;
 }
 
 .survey-room__line {
+  stroke: var(--c-bone);
   stroke-width: 1.4px;
 }
 
@@ -148,8 +147,8 @@ body:has(.map-screen),
   stroke-width: 1px;
 }
 
-.survey-wall-detail {
-  stroke-width: 1px;
+.survey-room[data-room-state="unentered"] .survey-room__name {
+  fill: var(--c-hairline);
 }
 
 .survey-door {
@@ -166,7 +165,7 @@ body:has(.map-screen),
 }
 
 .survey-open-passage {
-  fill: var(--c-surface);
+  fill: var(--c-void);
   stroke: var(--c-bone-dim);
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
@@ -198,13 +197,68 @@ body:has(.map-screen),
   fill: var(--c-bone-dim);
 }
 
+.survey-annotation--dim {
+  fill: var(--c-bone-dim);
+}
+
+/* ---- The terminal: you are here ---- */
+
+.survey-terminal__ring {
+  fill: none;
+  stroke: var(--c-bone);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+
+.survey-terminal__ring--outer {
+  stroke: var(--c-bone-dim);
+  stroke-width: 1px;
+}
+
+.survey-terminal__core {
+  fill: var(--c-bone);
+}
+
+/* ---- The objective: a pulsing mark in the active room ---- */
+
+.survey-objective__mark {
+  fill: var(--c-amber);
+  stroke: none;
+  animation: survey-objective-pulse 1.6s var(--ease-heavy) infinite alternate;
+}
+
+.survey-objective__halo {
+  fill: none;
+  stroke: var(--c-amber);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+  animation: survey-objective-halo 1.6s var(--ease-heavy) infinite alternate;
+}
+
+@keyframes survey-objective-pulse {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@keyframes survey-objective-halo {
+  from { opacity: 0.1; }
+  to { opacity: 0.6; }
+}
+
+/* ---- Compass, title block, legend ---- */
+
+.survey-compass__needle {
+  fill: var(--c-bone);
+  stroke: none;
+}
+
 .survey-title-block {
   stroke-width: 1px;
 }
 
 .survey-title {
   font-family: var(--font-award);
-  font-size: var(--text-body);
+  font-size: var(--text-small);
 }
 
 .survey-legend-swatch {
@@ -213,154 +267,21 @@ body:has(.map-screen),
   vector-effect: non-scaling-stroke;
 }
 
-.survey-legend-swatch--unresolved {
-  fill: var(--c-rust);
+.survey-legend-swatch--holds {
+  fill: var(--c-chroma-red);
 }
 
-.survey-legend-swatch--cleared {
+.survey-legend-swatch--released {
   fill: var(--c-slate);
 }
 
-.survey-legend-swatch--unentered {
-  fill: var(--c-surface);
+.survey-legend-mark {
+  fill: var(--c-amber);
+  stroke: none;
 }
 
 .survey-legend-label {
   font-size: var(--text-micro);
-}
-
-.survey-ink-echo {
-  opacity: 0.34;
-  stroke-dasharray: var(--space-hair) var(--space-xs);
-  stroke-width: var(--hairline);
-}
-
-.survey-paper-fiber {
-  pointer-events: none;
-}
-
-.survey-coffee {
-  fill: none;
-  stroke: var(--c-amber);
-  stroke-width: 7px;
-  opacity: 0.2;
-}
-
-.survey-coffee--light {
-  stroke-width: 2px;
-  opacity: 0.14;
-}
-
-.survey-start {
-  stroke: var(--c-bone);
-  stroke-width: 2px;
-}
-
-
-/* ---- Explicit map chrome: controls and the RE2R legend ---- */
-
-.map-controls {
-  position: absolute;
-  z-index: 5;
-  top: calc(var(--space-lg) + env(safe-area-inset-top, 0px));
-  right: var(--space-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.map-control {
-  width: var(--touch-target);
-  height: var(--touch-target);
-  border: var(--hairline) solid var(--line);
-  border-radius: 0;
-  background: rgba(0, 0, 0, 0.72);
-  color: var(--c-bone);
-  font-family: var(--font-ui);
-  font-size: var(--text-heading);
-  line-height: 1;
-}
-
-.map-control:active {
-  background: linear-gradient(180deg, var(--c-bone-bright), var(--c-bone-muted));
-  color: var(--c-ink);
-}
-
-.map-control--close {
-  margin-top: var(--space-md);
-}
-
-.map-legend {
-  position: absolute;
-  z-index: 5;
-  right: var(--space-lg);
-  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 0px));
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-sm) var(--space-md);
-  background: rgba(0, 0, 0, 0.72);
-  border: var(--hairline) solid var(--line-soft);
-  font-family: var(--font-ui);
-  font-size: var(--text-micro);
-  color: var(--c-text);
-  pointer-events: none;
-}
-
-.map-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-
-.map-legend__swatch {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-}
-
-.map-legend__swatch--searching { background: var(--c-map-red); }
-.map-legend__swatch--done { background: var(--c-slate); }
-
-
-/* ---- Native-scroll viewport: the browser owns panning ---- */
-
-.survey-scroller-shell {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  background: var(--c-surface);
-}
-
-.survey-scroller {
-  position: absolute;
-  inset: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  touch-action: pan-x pan-y;
-  scrollbar-width: none;
-}
-
-.survey-scroller::-webkit-scrollbar { display: none; }
-
-.survey-scroller__canvas {
-  /* Height follows the drawing's own ratio; min sizes keep zoom 1 = fit. */
-  min-width: 100%;
-  aspect-ratio: var(--map-aspect);
-  margin: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100%;
-}
-
-.survey-scroller__canvas .survey-map {
-  width: 100%;
-  height: auto;
-  max-width: none;
-  max-height: none;
-  aspect-ratio: var(--map-aspect);
 }
 
 /* Named gifts: amber while waiting, settled ink once collected. */
@@ -379,4 +300,43 @@ body:has(.map-screen),
 }
 .survey-gift--collected .survey-gift__label {
   fill: var(--c-bone-dim);
+}
+
+/* ---- Explicit map chrome: the zoom controls ---- */
+
+.map-controls {
+  position: absolute;
+  z-index: 5;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.map-control {
+  width: var(--control-height);
+  height: var(--control-height);
+  border: var(--hairline) solid var(--line);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.72);
+  color: var(--c-bone);
+  font-family: var(--font-ui);
+  font-size: var(--text-heading);
+  line-height: 1;
+}
+
+.map-control:active {
+  background: linear-gradient(180deg, var(--c-bone-bright), var(--c-bone-muted));
+  color: var(--c-ink);
+}
+
+.map-control:disabled {
+  color: var(--c-text-mute);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .survey-room[data-room-state="unresolved"] .survey-room__fill { animation: none; }
+  .survey-objective__mark { animation: none; }
+  .survey-objective__halo { animation: none; opacity: 0.4; }
 }

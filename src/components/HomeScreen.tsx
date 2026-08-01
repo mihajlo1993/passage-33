@@ -2,26 +2,20 @@
 
 import { useState } from "react";
 import { MEDIA_ASSETS } from "@/src/media";
-import {
-  KEEPER_VOICE_BY_PIN,
-  TOTAL_PIN_COUNT,
-  pins,
-  riddleConfigByPin,
-} from "@/src/pins";
+import { KEEPER_VOICE_BY_PIN, pins, riddleConfigByPin } from "@/src/pins";
 import { playKeeper, type KeeperClipId } from "@/src/audio/keeper";
 import { resolutionModeForPin } from "@/src/game/engine";
 import type { PinResolutionResult } from "@/src/game";
 import { motion } from "@/src/tokens";
 import type { GameState, Pin, PinResolutionMethod } from "@/src/types";
+import { roomDisplayName } from "@/src/zones";
 import { useVHS } from "@/src/fx";
 import { ActionBeat } from "./ActionBeat";
 import { ArrivalPanel } from "./ArrivalPanel";
+import { HoldButton } from "./HoldButton";
 import { RiddleLock } from "./RiddleLock";
-import { RunnerClicks, StarLadder, WagerSum } from "./WitnessPuzzles";
-
-const APPROACH_LABELS: Record<string, string> = {
-  riddle: "Face the lock",
-};
+import { SparkleVerbs } from "./SparkleVerbs";
+import { RunnerClicks, WagerSum } from "./WitnessPuzzles";
 
 export interface HomeScreenProps {
   state: GameState;
@@ -30,10 +24,8 @@ export interface HomeScreenProps {
   resolvePin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
   previewPin: (pinId: number, method?: PinResolutionMethod) => PinResolutionResult;
   sufferSetback: () => number;
-  flushPersistence: () => Promise<void>;
-  /** An AR pin resolved on the /ar route whose payoff has not been read yet. */
-  pendingArrival: PinResolutionResult | null;
-  onAcknowledgeArrival: () => void;
+  /** Bumped by the operator panel to skip a staged beat in progress. */
+  operatorSkipToken: number;
   navigate: (path: string) => void;
 }
 
@@ -44,9 +36,7 @@ export function HomeScreen({
   resolvePin,
   previewPin,
   sufferSetback,
-  flushPersistence,
-  pendingArrival,
-  onAcknowledgeArrival,
+  operatorSkipToken,
   navigate,
 }: HomeScreenProps) {
   const [interacting, setInteracting] = useState(false);
@@ -91,38 +81,18 @@ export function HomeScreen({
     );
   }
 
-  const finishArrival = async (result: PinResolutionResult) => {
+  const finishArrival = (result: PinResolutionResult) => {
     setArrival(null);
     if (!result.ok) return;
-    if (result.saveTriggered) {
-      await flushPersistence();
-      navigate("/save");
-      return;
-    }
     if (result.pin.kind === "win" || result.gameCompleted) {
       navigate("/trophy");
     }
   };
 
-  // Payoff text for pins resolved on other routes (the AR encounters).
-  if (pendingArrival) {
-    return (
-      <section className="screen home-screen">
-        <ArrivalPanel
-          result={pendingArrival}
-          onContinue={() => {
-            onAcknowledgeArrival();
-            void finishArrival(pendingArrival);
-          }}
-        />
-      </section>
-    );
-  }
-
   if (arrival) {
     return (
       <section className="screen home-screen">
-        <ArrivalPanel result={arrival} onContinue={() => void finishArrival(arrival)} />
+        <ArrivalPanel result={arrival} onContinue={() => finishArrival(arrival)} />
       </section>
     );
   }
@@ -144,42 +114,53 @@ export function HomeScreen({
     vhs.glitch(motion.eventMs.vhsDamageSpike);
   };
 
-  if (nextPin && interacting) {
-    const cancel = () => {
-      setInteracting(false);
-    };
+  // Preflight against the engine before showing any interaction, so a gate
+  // that refuses (out of order, missing pin) speaks through the arrival panel.
+  const preflight = (pin: Pin): boolean => {
+    const preview = previewPin(pin.id, resolutionModeForPin(pin));
+    if (!preview.ok) {
+      setArrival(preview);
+      return false;
+    }
+    return true;
+  };
 
-    if (mode === "riddle") {
-      const config = riddleConfigByPin[nextPin.id];
-      if (config) {
-        const lockProps = {
-          pin: nextPin,
-          config,
-          onSolved: () => resolveNow(nextPin),
-          onCancel: cancel,
-          onWrongAttempt: wrongTurn,
-        };
-        switch (config.puzzle?.kind) {
-          case "clicks":
-            return <RunnerClicks {...lockProps} />;
-          case "sum":
-            return <WagerSum {...lockProps} />;
-          case "testimony":
-            return <StarLadder {...lockProps} />;
-          default:
-            return <RiddleLock {...lockProps} />;
-        }
+  if (nextPin && interacting && mode === "riddle") {
+    const config = riddleConfigByPin[nextPin.id];
+    if (config) {
+      const lockProps = {
+        pin: nextPin,
+        config,
+        onSolved: () => resolveNow(nextPin),
+        onCancel: () => setInteracting(false),
+        onWrongAttempt: wrongTurn,
+      };
+      switch (config.puzzle?.kind) {
+        case "clicks":
+          return <RunnerClicks {...lockProps} />;
+        case "sum":
+          return <WagerSum {...lockProps} />;
+        case "verbs":
+          return <SparkleVerbs {...lockProps} />;
+        default:
+          return <RiddleLock {...lockProps} />;
       }
     }
-    if (mode === "action") {
-      return (
-        <ActionBeat pin={nextPin} onResolve={() => resolveNow(nextPin)} onCancel={cancel} />
-      );
-    }
-    // Unknown mode: fall through to the objective view.
   }
 
-  const approach = () => {
+  if (nextPin && interacting && mode === "action" && nextPin.beat) {
+    // Choreographed beats keep their own screen and a single tap to arm.
+    return (
+      <ActionBeat
+        pin={nextPin}
+        operatorSkipToken={operatorSkipToken}
+        onResolve={() => resolveNow(nextPin)}
+        onCancel={() => setInteracting(false)}
+      />
+    );
+  }
+
+  const openLock = () => {
     if (!nextPin) {
       navigate("/trophy");
       return;
@@ -188,29 +169,32 @@ export function HomeScreen({
       navigate("/scan");
       return;
     }
-    const preview = previewPin(nextPin.id, mode);
-    if (!preview.ok) {
-      setArrival(preview);
-      return;
-    }
+    if (!preflight(nextPin)) return;
     setInteracting(true);
   };
 
-  const approachLabel = nextPin
-    ? mode === "action"
-      ? nextPin.actionLabel ?? "Proceed"
-      : APPROACH_LABELS[mode] ?? "Proceed"
+  // Plain collects confirm with one held press, right here on the terminal.
+  const holdToConfirm = Boolean(
+    nextPin && mode === "action" && !nextPin.beat,
+  );
+
+  const ctaLabel = nextPin
+    ? mode === "riddle"
+      ? "Face the lock"
+      : nextPin.beat
+        ? "Approach"
+        : nextPin.actionLabel ?? "Proceed"
     : "Open the file";
 
   return (
     <section className="screen home-screen" aria-labelledby="home-title">
       <header className="screen-heading">
-        <p className="eyebrow">CURRENT ARRANGEMENT</p>
-        <h1 id="home-title">{nextPin ? nextPin.name : "THE PARTY IS COMPLETE"}</h1>
+        <p className="eyebrow">THE KEEPER'S LEDGER</p>
+        <h1 id="home-title">{nextPin ? nextPin.name : "THE WATCH IS ENDED"}</h1>
         <p className="screen-index">
           {nextPin
-            ? "PIN " + String(nextPin.id).padStart(2, "0") + " // " + nextPin.zone
-            : TOTAL_PIN_COUNT + " OF " + TOTAL_PIN_COUNT + " CONTACTS"}
+            ? "ENTRY " + ["0", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"][nextPin.id] + " · " + roomDisplayName(nextPin.zone)
+            : "EVERY LOCK IS OPEN"}
         </p>
       </header>
       <div className="objective-panel">
@@ -218,22 +202,28 @@ export function HomeScreen({
         <p className="host-copy">
           {nextPin
             ? nextPin.objective
-            : "Every arrangement is complete. The trophy is lit and the letter keeps."}
+            : "Every arrangement is complete. The letter keeps."}
         </p>
       </div>
-      <div className="progress-readout" aria-label={state.resolvedPins.length + " of " + TOTAL_PIN_COUNT + " contacts resolved"}>
-        <span>HOUSE CONTACT</span>
-        <strong>{String(state.resolvedPins.length).padStart(2, "0")} / {TOTAL_PIN_COUNT}</strong>
-      </div>
-      <button
-        className="mechanical-button mechanical-button--primary mechanical-button--full"
-        onClick={approach}
-      >
-        {approachLabel}
-      </button>
+      {holdToConfirm && nextPin ? (
+        <HoldButton
+          label={ctaLabel}
+          onComplete={() => {
+            if (!preflight(nextPin)) return;
+            resolveNow(nextPin);
+          }}
+        />
+      ) : (
+        <button
+          className="mechanical-button mechanical-button--primary mechanical-button--full"
+          onClick={openLock}
+        >
+          {ctaLabel}
+        </button>
+      )}
       <div className="quick-grid">
-        <button className="text-control" onClick={() => navigate("/map")}>CHECK FLOORPLAN</button>
-        <button className="text-control" onClick={() => navigate("/inventory")}>OPEN CASE</button>
+        <button className="text-control" onClick={() => navigate("/map")}>OPEN THE SURVEY</button>
+        <button className="text-control" onClick={() => navigate("/inventory")}>OPEN THE GIFTS</button>
       </div>
     </section>
   );

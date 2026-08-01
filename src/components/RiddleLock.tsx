@@ -47,7 +47,8 @@ export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: 
     }
     const next = wrongCount + 1;
     setWrongCount(next);
-    setFeedback(REFUSAL_LINES[(next - 1) % REFUSAL_LINES.length]);
+    const lines = config.refusals ?? REFUSAL_LINES;
+    setFeedback(lines[(next - 1) % lines.length]);
     setShaking(true);
     window.setTimeout(() => setShaking(false), 340);
     void audio.play("refused");
@@ -103,7 +104,7 @@ export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: 
         {wordsShown && <p className="riddle-box__riddle">{config.riddle}</p>}
         <div className="riddle-box__row">
           <input
-            className="riddle-box__input"
+            className="riddle-box__input brass-input"
             type={config.numeric ? "number" : "text"}
             inputMode={config.numeric ? "numeric" : "text"}
             autoComplete="off"
@@ -122,7 +123,7 @@ export function RiddleLock({ pin, config, onSolved, onCancel, onWrongAttempt }: 
             disabled={draft.trim() === ""}
             onClick={submit}
           >
-            Try
+            Speak
           </button>
         </div>
         <p className="riddle-box__feedback" aria-live="polite">{feedback}</p>

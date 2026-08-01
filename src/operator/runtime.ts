@@ -11,7 +11,6 @@ export interface OperatorRuntimeSnapshot {
   readonly skipScareRevision: number;
   readonly resetRevision: number;
   readonly audioInitialization: OperatorInitializationState;
-  readonly arInitialization: OperatorInitializationState;
   readonly activePin: number | null;
   readonly activeZone: ZoneId | null;
 }
@@ -23,7 +22,6 @@ const INITIAL_SNAPSHOT: OperatorRuntimeSnapshot = Object.freeze({
   skipScareRevision: 0,
   resetRevision: 0,
   audioInitialization: "not-started",
-  arInitialization: "not-started",
   activePin: null,
   activeZone: null,
 });
@@ -83,12 +81,6 @@ export function reportOperatorAudioInitialization(
   publish({ audioInitialization: status });
 }
 
-export function reportOperatorArInitialization(
-  status: OperatorInitializationState,
-): void {
-  publish({ arInitialization: status });
-}
-
 export function reportOperatorContext(
   activePin: number | null,
   activeZone: ZoneId | null,
@@ -122,7 +114,6 @@ export function resetOperatorOverrides(): void {
     audioMuted: false,
     vhsIntensityOverride: null,
     audioInitialization: "not-started",
-    arInitialization: "not-started",
     activePin: null,
     activeZone: null,
   });

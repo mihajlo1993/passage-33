@@ -97,10 +97,6 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   const mapModel = compact(source("src/map/model.ts"));
   const scanner = compact(source("src/components/ScanScreen.tsx"));
   const home = compact(source("src/components/HomeScreen.tsx"));
-  const save = compact(source("src/components/SaveScreen.tsx"));
-  const arScreen = compact(source("src/ar/ARScreen.tsx"));
-  const imageAr = compact(source("src/ar/ImageARScreen.tsx"));
-  const room = compact(source("src/ar/RoomARScreen.tsx"));
   const pinSource = compact(source("src/pins.ts"));
 
   const vhsStart = main.indexOf("<VHSLayer");
@@ -118,30 +114,18 @@ test("production source mounts and drives every Phase 2 integration surface", ()
   assert.match(app, /coordinator\.syncZoneFromResolvedPins\(store\.resolvedPins\)/);
   assert.match(app, /coordinator\.syncHealth\(store\.health\)/);
   assert.match(app, /coordinator\.handleResolution\(resolution\)/);
-  assert.match(app, /startVoice=\{startTapeVoice\}/);
   assert.doesNotMatch(director, /useGameStore/);
   assert.doesNotMatch(director, /\.play\(|\.say\(|VOICE_CUES/);
   assert.doesNotMatch(director, /health < 20/);
   assert.match(engine, /crossfadeImpulse\(/);
 
-  assert.match(home, /previewPin\(nextPin\.id, mode\)/);
+  assert.match(home, /previewPin\(pin\.id, resolutionModeForPin\(pin\)\)/);
   assert.doesNotMatch(scanner, /\bcontact\(\)|\bfound\(\)|\bstutter\(\)/);
-  assert.match(save, /onCommit\(\) \.then\(\(\) => audio\.play\(SAVE_WRITTEN_AUDIO_CUE\)\)/);
 
   assert.match(mapScreen, /<SurveyScroller state=\{state\}/);
   assert.match(mapModel, /const cleared = new Set\(state\.clearedZones\)/);
   assert.match(mapModel, /state\.resolvedPins\.includes\(BALCONY_UNLOCK_PIN\)/);
   assert.match(pinSource, /id: 7,[\s\S]*beat: 'threshold'/);
-  assert.match(room, /shotFiredRef\.current = true;[\s\S]*onResolved\(\)/);
-
-  assert.match(arScreen, /subscribeToOperatorScareSkip/);
-  assert.match(arScreen, /if \(resolve\(\)\) leave\(\)/);
-  assert.match(imageAr, /reportOperatorArInitialization\("not-started"\)/);
-  assert.match(imageAr, /reportOperatorArInitialization\("ready"\)/);
-  assert.match(imageAr, /reportOperatorArInitialization\("error"\)/);
-  assert.match(room, /reportOperatorArInitialization\("not-started"\)/);
-  assert.match(room, /reportOperatorArInitialization\("ready"\)/);
-  assert.match(room, /reportOperatorArInitialization\("error"\)/);
 
   assert.match(app, /useWakeLock\(\)/);
 });

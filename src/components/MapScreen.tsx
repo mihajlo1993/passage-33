@@ -5,13 +5,12 @@ import type { GameState } from "@/src/types";
 
 export interface MapScreenProps {
   state: GameState;
-  onClose: () => void;
 }
 
-export function MapScreen({ state, onClose }: MapScreenProps) {
+export function MapScreen({ state }: MapScreenProps) {
   return (
     <div className="map-screen">
-      <SurveyScroller state={state} onClose={onClose} />
+      <SurveyScroller state={state} />
     </div>
   );
 }

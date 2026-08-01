@@ -2,194 +2,136 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  MAP_DOUBLE_TAP_DISTANCE_PX,
-  MAP_DOUBLE_TAP_WINDOW_MS,
   MAP_CONTENT_ASPECT_RATIO,
-  MAP_TAP_MAX_DURATION_MS,
-  MAP_TAP_TRAVEL_PX,
-  MAP_VIEWPORT_FRAME_INTERVAL_MS,
-  MAP_VIEWPORT_MAX_FPS,
-  boundMapViewport,
-  clampMapViewportScale,
-  coverMapViewport,
-  fitMapViewportScale,
-  initialMapViewport,
+  MAP_DOUBLE_TAP_ZOOM_SCALE,
+  MAP_MAX_ZOOM,
+  MAP_MIN_ZOOM,
+  clampMapZoom,
+  distanceBetweenMapViewportPoints,
+  doubleTapTargetZoom,
+  fitMapCanvasSize,
   isMapTapGesture,
   isMapViewportFrameDue,
-  panMapViewport,
-  pinchMapViewport,
+  mapCanvasSizeAtZoom,
+  mapScrollAfterZoom,
+  midpointMapViewport,
+  pinchMapZoom,
   registerMapTap,
-  zoomMapViewportAt,
 } from "../src/map/viewport";
-import { mapViewBox } from "../src/map/model";
+import { mapViewBox, roomDefinitions } from "../src/map/model";
 
-// 272x200 matches the drawing's aspect exactly, so cover == viewport and fit == 1.
-const viewport = { width: 272, height: 200 };
-
-function approximately(actual: number, expected: number, epsilon = 0.000_001) {
-  assert.ok(Math.abs(actual - expected) <= epsilon, `${actual} ≈ ${expected}`);
+function approximately(actual: number, expected: number, epsilon = 1e-6) {
+  assert.ok(
+    Math.abs(actual - expected) <= epsilon,
+    `${actual} is not within ${epsilon} of ${expected}`,
+  );
 }
-
-test("scale and translation stay inside the map viewport", () => {
-  assert.equal(clampMapViewportScale(-1, viewport), 1);
-  assert.equal(clampMapViewportScale(2, viewport), 2);
-  assert.equal(clampMapViewportScale(9, viewport), 3);
-  assert.equal(clampMapViewportScale(Number.NaN, viewport), 1);
-
-  assert.deepEqual(
-    boundMapViewport({ x: 90, y: -900, scale: 2 }, viewport),
-    { x: 0, y: -200, scale: 2 },
-  );
-  assert.deepEqual(
-    boundMapViewport({ x: -900, y: 90, scale: 3 }, viewport),
-    { x: -544, y: 0, scale: 3 },
-  );
-  assert.deepEqual(
-    boundMapViewport({ x: -20, y: -20, scale: 1 }, viewport),
-    { x: 0, y: 0, scale: 1 },
-  );
-});
-
-test("pan and focal zoom math preserve edges and the point under the fingers", () => {
-  assert.deepEqual(
-    panMapViewport(
-      { x: -150, y: -100, scale: 2 },
-      { x: -500, y: 500 },
-      viewport,
-    ),
-    { x: -272, y: 0, scale: 2 },
-  );
-
-  assert.deepEqual(
-    zoomMapViewportAt(
-      { x: 0, y: 0, scale: 1 },
-      2,
-      { x: 150, y: 100 },
-      viewport,
-    ),
-    { x: -150, y: -100, scale: 2 },
-  );
-});
-
-test("pinch combines zoom and centroid pan, then clamps to the 1..3 range", () => {
-  assert.deepEqual(
-    pinchMapViewport(
-      { x: 0, y: 0, scale: 1 },
-      { x: 150, y: 100 },
-      { x: 170, y: 110 },
-      100,
-      200,
-      viewport,
-    ),
-    { x: -130, y: -90, scale: 2 },
-  );
-
-  const clamped = pinchMapViewport(
-    { x: -150, y: -100, scale: 2 },
-    { x: 150, y: 100 },
-    { x: 150, y: 100 },
-    20,
-    200,
-    viewport,
-  );
-  assert.equal(clamped.scale, 3);
-  assert.ok(clamped.x >= -544 && clamped.x <= 0);
-  assert.ok(clamped.y >= -400 && clamped.y <= 0);
-});
 
 test("the aspect ratio derives from the drawing, never a hand-copied constant", () => {
   assert.equal(MAP_CONTENT_ASPECT_RATIO, mapViewBox.width / mapViewBox.height);
 });
 
-test("390 by 844 uses a distortion-free cover plane with pannable crop at scale 1", () => {
-  const portrait = { width: 390, height: 844 };
-  const cover = coverMapViewport(portrait);
-  approximately(cover.width, 844 * MAP_CONTENT_ASPECT_RATIO);
-  assert.equal(cover.height, portrait.height);
-  approximately(cover.width / cover.height, MAP_CONTENT_ASPECT_RATIO);
-  assert.ok(cover.width >= portrait.width);
-  assert.ok(cover.height >= portrait.height);
-  approximately(cover.offsetX, (portrait.width - cover.width) / 2);
-  assert.equal(cover.offsetY, 0);
+test("fit size contains the WHOLE drawing inside the client box, distortion-free", () => {
+  // A 390px phone slot (shell minus chrome), portrait.
+  const fit = fitMapCanvasSize({ width: 390, height: 700 });
+  assert.ok(fit.width <= 390 && fit.height <= 700);
+  approximately(fit.width / fit.height, MAP_CONTENT_ASPECT_RATIO);
+  // The 680-wide drawing letterboxes on the shorter axis: width binds here.
+  approximately(fit.width, 390);
+  approximately(fit.height, 390 / MAP_CONTENT_ASPECT_RATIO);
 
-  const leftEdge = boundMapViewport({ x: -10_000, y: 10_000, scale: 1 }, portrait);
-  const rightEdge = boundMapViewport({ x: 10_000, y: -10_000, scale: 1 }, portrait);
-  approximately(leftEdge.x, cover.offsetX);
-  approximately(rightEdge.x, -cover.offsetX);
-  assert.equal(leftEdge.y, 0);
-  assert.equal(rightEdge.y, 0);
+  // A wider slot: height binds instead.
+  const wide = fitMapCanvasSize({ width: 900, height: 400 });
+  approximately(wide.height, 400);
+  approximately(wide.width, 400 * MAP_CONTENT_ASPECT_RATIO);
 });
 
-test("every edge of the drawing is reachable on a phone: pan right reaches the bathroom wall", () => {
-  const portrait = { width: 390, height: 844 };
-  const cover = coverMapViewport(portrait);
-  // Pan hard right at scale 1: the drawing's right edge must land exactly on
-  // the viewport's right edge, i.e. the full 680-unit width is reachable.
-  const rightStop = boundMapViewport({ x: -10_000, y: 0, scale: 1 }, portrait);
-  const onScreenRightEdge = cover.offsetX + rightStop.x + cover.width;
-  approximately(onScreenRightEdge, portrait.width);
+test("no room can clip offscreen at fit: every room maps inside the fit canvas", () => {
+  const container = { width: 390, height: 700 };
+  const fit = fitMapCanvasSize(container);
+  const scaleX = fit.width / mapViewBox.width;
+  const scaleY = fit.height / mapViewBox.height;
+  for (const room of roomDefinitions) {
+    for (const point of room.geometry.polygon) {
+      const px = point.x * scaleX;
+      const py = point.y * scaleY;
+      assert.ok(px >= 0 && px <= container.width, `${room.id} x inside`);
+      assert.ok(py >= 0 && py <= container.height, `${room.id} y inside`);
+    }
+  }
 });
 
-test("fit scale letterboxes the whole flat inside a portrait phone", () => {
-  const portrait = { width: 390, height: 844 };
-  const fit = fitMapViewportScale(portrait);
-  const cover = coverMapViewport(portrait);
-  assert.ok(fit < 1);
-  approximately(cover.width * fit, portrait.width);
-  assert.ok(cover.height * fit <= portrait.height);
+test("zoom clamps to the 1..5 range and degenerate input falls to the floor", () => {
+  assert.equal(clampMapZoom(0.2), MAP_MIN_ZOOM);
+  assert.equal(clampMapZoom(99), MAP_MAX_ZOOM);
+  assert.equal(clampMapZoom(Number.NaN), MAP_MIN_ZOOM);
+  const sized = mapCanvasSizeAtZoom({ width: 390, height: 700 }, 2);
+  approximately(sized.width, 780);
+});
 
-  const opening = initialMapViewport(portrait);
-  assert.equal(opening.scale, fit);
-  // The full drawing is on screen and centred.
-  approximately(cover.offsetX + opening.x, 0);
-  approximately(
-    cover.offsetY + opening.y,
-    (portrait.height - cover.height * fit) / 2,
-  );
+test("scroll compensation keeps the focal point stationary through a zoom", () => {
+  const scroll = { scrollLeft: 100, scrollTop: 50, clientWidth: 390, clientHeight: 700 };
+  // The content point under the finger is (scroll + focal); after the zoom
+  // it has scaled by the ratio, and the same screen point must find it.
+  const focal = { x: 120, y: 200 };
+  const next = mapScrollAfterZoom(scroll, 2, focal);
+  approximately(next.scrollLeft, (100 + 120) * 2 - 120);
+  approximately(next.scrollTop, (50 + 200) * 2 - 200);
 
-  // Below-fit scales are refused; panning at fit keeps the drawing centred.
-  assert.equal(clampMapViewportScale(0.01, portrait), fit);
-  const nudged = panMapViewport(opening, { x: 500, y: -500 }, portrait);
-  assert.deepEqual(nudged, opening);
+  // Without a focal point the viewport centre holds instead.
+  const centred = mapScrollAfterZoom(scroll, 2);
+  approximately(centred.scrollLeft, (100 + 195) * 2 - 195);
+  approximately(centred.scrollTop, (50 + 350) * 2 - 350);
+});
+
+test("pinch zoom scales with finger distance and clamps at both ends", () => {
+  assert.equal(pinchMapZoom(1, 100, 200), 2);
+  assert.equal(pinchMapZoom(2, 100, 50), 1);
+  assert.equal(pinchMapZoom(1, 100, 25), MAP_MIN_ZOOM);
+  assert.equal(pinchMapZoom(4, 100, 400), MAP_MAX_ZOOM);
+  // A zero start distance never divides: the zoom simply holds.
+  assert.equal(pinchMapZoom(2, 0, 120), 2);
+});
+
+test("double taps toggle between fit and the 2x reading zoom", () => {
+  assert.equal(doubleTapTargetZoom(MAP_MIN_ZOOM), MAP_DOUBLE_TAP_ZOOM_SCALE);
+  assert.equal(doubleTapTargetZoom(2), MAP_MIN_ZOOM);
+  assert.equal(doubleTapTargetZoom(4.5), MAP_MIN_ZOOM);
 });
 
 test("tap classification rejects holds and drags", () => {
-  assert.equal(isMapTapGesture(100, 100 + MAP_TAP_MAX_DURATION_MS, 0), true);
-  assert.equal(isMapTapGesture(100, 101 + MAP_TAP_MAX_DURATION_MS, 0), false);
-  assert.equal(isMapTapGesture(100, 110, MAP_TAP_TRAVEL_PX), true);
-  assert.equal(isMapTapGesture(100, 110, MAP_TAP_TRAVEL_PX + 0.01), false);
+  assert.equal(isMapTapGesture(0, 120, 4), true);
+  assert.equal(isMapTapGesture(0, 4_000, 4), false);
+  assert.equal(isMapTapGesture(0, 120, 400), false);
+  assert.equal(isMapTapGesture(0, Number.NaN, 0), false);
 });
 
 test("double taps require nearby taps inside the timing window and consume the pair", () => {
-  const first = { point: { x: 40, y: 50 }, atMs: 1_000 };
-  const recorded = registerMapTap(null, first);
-  assert.deepEqual(recorded, { isDoubleTap: false, nextTap: first });
+  const first = { point: { x: 40, y: 40 }, atMs: 1_000 };
+  const start = registerMapTap(null, first);
+  assert.equal(start.isDoubleTap, false);
+  assert.deepEqual(start.nextTap, first);
 
-  const matched = registerMapTap(recorded.nextTap, {
-    point: { x: 40 + MAP_DOUBLE_TAP_DISTANCE_PX, y: 50 },
-    atMs: 1_000 + MAP_DOUBLE_TAP_WINDOW_MS,
-  });
-  assert.deepEqual(matched, { isDoubleTap: true, nextTap: null });
+  const paired = registerMapTap(first, { point: { x: 46, y: 44 }, atMs: 1_180 });
+  assert.equal(paired.isDoubleTap, true);
+  assert.equal(paired.nextTap, null);
 
-  const tooLate = registerMapTap(first, {
-    point: first.point,
-    atMs: first.atMs + MAP_DOUBLE_TAP_WINDOW_MS + 0.01,
-  });
+  const tooLate = registerMapTap(first, { point: { x: 42, y: 42 }, atMs: 3_000 });
   assert.equal(tooLate.isDoubleTap, false);
 
-  const tooFar = registerMapTap(first, {
-    point: { x: first.point.x + MAP_DOUBLE_TAP_DISTANCE_PX + 0.01, y: first.point.y },
-    atMs: first.atMs + 1,
-  });
+  const tooFar = registerMapTap(first, { point: { x: 300, y: 400 }, atMs: 1_100 });
   assert.equal(tooFar.isDoubleTap, false);
 });
 
+test("geometry helpers stay exact", () => {
+  assert.equal(distanceBetweenMapViewportPoints({ x: 0, y: 0 }, { x: 3, y: 4 }), 5);
+  assert.deepEqual(midpointMapViewport({ x: 0, y: 0 }, { x: 10, y: 20 }), { x: 5, y: 10 });
+});
+
 test("timestamp gate limits transform commits to 30fps", () => {
-  assert.equal(MAP_VIEWPORT_MAX_FPS, 30);
-  assert.equal(MAP_VIEWPORT_FRAME_INTERVAL_MS, 1_000 / 30);
-  assert.equal(isMapViewportFrameDue(0, null), true);
-  assert.equal(isMapViewportFrameDue(MAP_VIEWPORT_FRAME_INTERVAL_MS - 0.01, 0), false);
-  assert.equal(isMapViewportFrameDue(MAP_VIEWPORT_FRAME_INTERVAL_MS, 0), true);
-  assert.equal(isMapViewportFrameDue(10, 20), true);
-  assert.equal(isMapViewportFrameDue(Number.NaN, 0), false);
+  assert.equal(isMapViewportFrameDue(1_000, null), true);
+  assert.equal(isMapViewportFrameDue(1_010, 1_000), false);
+  assert.equal(isMapViewportFrameDue(1_040, 1_000), true);
+  assert.equal(isMapViewportFrameDue(900, 1_000), true);
+  assert.equal(isMapViewportFrameDue(Number.NaN, 1_000), false);
 });

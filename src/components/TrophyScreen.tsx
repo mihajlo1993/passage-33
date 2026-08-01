@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MEDIA_ASSETS } from "@/src/media";
 import { ENDING_MUSIC_PATH } from "@/src/audio/manifest";
+import { CINEMA_FILM_PATH, CINEMA_POSTER_PATH } from "@/src/cinema";
 import { useAudio } from "@/src/audio/useAudio";
 import { areFinalPresentsResolved } from "@/src/game/engine";
-import { FRAGMENTS, LETTER_CODA, TOTAL_PIN_COUNT } from "@/src/pins";
+import { FRAGMENTS, LETTER_CODA } from "@/src/pins";
 import {
   playKeeper, stopKeeper, unlockKeeper, type KeeperPlaybackResult,
 } from "@/src/audio/keeper";
@@ -13,49 +13,6 @@ import type { GameState } from "@/src/types";
 
 /** Duration of the recorded reading in keeper-lock4.mp3 (ffprobe, ms). */
 const LETTER_READ_MS = 93_600;
-
-const VERDICT_FRONT = ["S", "E", "A", "L", "E", "D"] as const;
-const VERDICT_BACK = ["Y", "O", "U", "R", "S", "."] as const;
-const VERDICT_FLIP_DELAY_MS = 1_400;
-
-/**
- * The previous guest's padlock, one last time. It holds his verdict just long
- * enough to be read, then turns over a letter at a time into hers.
- */
-function PadlockVerdict() {
-  const [flipped, setFlipped] = useState(false);
-  const audio = useAudio();
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setFlipped(true);
-      void audio.play("released");
-    }, VERDICT_FLIP_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [audio]);
-
-  return (
-    <div
-      className="padlock-verdict"
-      role="img"
-      aria-label={flipped ? "The file is yours" : "The file is sealed"}
-    >
-      {VERDICT_BACK.map((back, index) => (
-        <span
-          key={index}
-          className="verdict-tile"
-          data-flipped={flipped}
-          style={{ transitionDelay: `${index * 130}ms` }}
-        >
-          <i className="verdict-tile__face verdict-tile__face--front">
-            {VERDICT_FRONT[index]}
-          </i>
-          <i className="verdict-tile__face verdict-tile__face--back">{back}</i>
-        </span>
-      ))}
-    </div>
-  );
-}
 
 interface LetterParagraph {
   readonly coda: boolean;
@@ -177,12 +134,48 @@ function LetterReading({
   );
 }
 
-function elapsedLabel(startedAt: number, finishedAt: number): string {
-  const totalSeconds = Math.max(0, Math.floor((finishedAt - startedAt) / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":");
+/**
+ * The silent film beneath the reading: full-bleed, muted, playsinline, cut
+ * to the narration's exact length. The narration clock is the master. If
+ * the film ends early it HOLDS its final frame (the candle shot); if it
+ * fails it fades to the poster and the letter never stops. Under
+ * prefers-reduced-motion the poster stands in for the film entirely.
+ */
+function FinaleFilm({ playing }: { playing: boolean }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const reducedMotion = typeof window !== "undefined"
+    && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const [mode, setMode] = useState<"film" | "poster">(reducedMotion ? "poster" : "film");
+
+  useEffect(() => {
+    if (mode !== "film" || !playing) return;
+    // Muted playback is gesture-exempt; the arrival tap started us anyway.
+    void videoRef.current?.play().catch(() => setMode("poster"));
+  }, [mode, playing]);
+
+  if (mode === "poster") {
+    return (
+      <div className="finale-film" aria-hidden="true">
+        <img className="finale-film__poster" src={CINEMA_POSTER_PATH} alt="" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="finale-film" aria-hidden="true">
+      <video
+        ref={videoRef}
+        className="finale-film__video"
+        src={CINEMA_FILM_PATH}
+        poster={CINEMA_POSTER_PATH}
+        muted
+        playsInline
+        autoPlay
+        preload="auto"
+        onError={() => setMode("poster")}
+      />
+    </div>
+  );
 }
 
 export interface TrophyScreenProps {
@@ -193,15 +186,12 @@ export interface TrophyScreenProps {
 export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
   const { trophyAt } = state;
   const trophyUnlocked = trophyAt !== null;
-  const corridorPresentOpened = state.resolvedPins.includes(27);
-  const kitchenPresentOpened = state.resolvedPins.includes(28);
   const finalPresentsOpened = areFinalPresentsResolved(state.resolvedPins);
   const [quiet, setQuiet] = useState(false);
   const [letterDone, setLetterDone] = useState(false);
   const [voiceState, setVoiceState] =
     useState<"starting" | "playing" | "blocked">("starting");
   const [voiceStartedAt, setVoiceStartedAt] = useState<number | null>(null);
-  const trophy = MEDIA_ASSETS.trophy;
   const audio = useAudio();
   const musicRef = useRef<HTMLAudioElement | null>(null);
   const voiceAttemptRef = useRef(0);
@@ -230,8 +220,8 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
     };
   }, [finalPresentsOpened, startKeeperReading]);
 
-  // The mask-off piece: a dusty music box that starts as WINNER settles and
-  // keeps the room warm through the letter. Local file, precached, looped.
+  // The mask-off piece: a dusty music box that starts as the letter settles
+  // and keeps the room warm through the reading. Local file, looped.
   useEffect(() => {
     if (!trophyUnlocked || typeof window === "undefined") return;
     const element = new window.Audio(ENDING_MUSIC_PATH);
@@ -265,8 +255,8 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
         <p className="eyebrow">The locks</p>
         <h1 id="trophy-title">Still holding.</h1>
         <p className="host-copy">Locks remain. The Keeper opens nothing out of order.</p>
-        <button className="mechanical-button mechanical-button--primary" onClick={() => navigate("/scan")}>
-          RETURN TO THE HUNT
+        <button className="mechanical-button mechanical-button--primary" onClick={() => navigate("/")}>
+          RETURN TO THE LEDGER
         </button>
       </section>
     );
@@ -278,33 +268,30 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
 
   if (finalPresentsOpened) {
     return (
-      <section className="screen letter-screen" aria-labelledby="trophy-title">
-        <header className="letter-screen__heading">
-          <p className="eyebrow">Thirty-three years to the night</p>
-          <h1 id="trophy-title">The letter, whole</h1>
-        </header>
-        <div className="letter-document">
-          <blockquote className="letter-whole re-frame">
-            <LetterReading
-              startedAt={voiceStartedAt}
-              onFinished={() => setLetterDone(true)}
-            />
-          </blockquote>
-          {voiceState === "blocked" && (
-            <div className="letter-audio-fallback" role="status">
-              <p className="eyebrow">The Keeper is waiting for your hand.</p>
-              <button
-                className="mechanical-button mechanical-button--primary"
-                onClick={() => {
-                  unlockKeeper();
-                  startKeeperReading(true);
-                }}
-              >
-                READ THE LETTER ALOUD
-              </button>
-            </div>
-          )}
+      <section className="letter-screen letter-screen--film" aria-label="The letter, read over the film">
+        <FinaleFilm playing={voiceState === "playing"} />
+        <p className="letter-screen__mark eyebrow">Thirty-three years to the night</p>
+        <div className="letter-band" data-done={letterDone}>
+          <div className="letter-band__scrim" aria-hidden="true" />
+          <LetterReading
+            startedAt={voiceStartedAt}
+            onFinished={() => setLetterDone(true)}
+          />
         </div>
+        {voiceState === "blocked" && (
+          <div className="letter-audio-fallback" role="status">
+            <p className="eyebrow">The Keeper is waiting for your hand.</p>
+            <button
+              className="mechanical-button mechanical-button--primary"
+              onClick={() => {
+                unlockKeeper();
+                startKeeperReading(true);
+              }}
+            >
+              READ THE LETTER ALOUD
+            </button>
+          </div>
+        )}
         <div className={"letter-finale" + (letterDone ? " is-lit" : "")} aria-hidden={!letterDone}>
           <div className="candles" aria-label="Thirty-three candles">
             {Array.from({ length: 33 }, (_, index) => (
@@ -321,42 +308,16 @@ export function TrophyScreen({ state, navigate }: TrophyScreenProps) {
     );
   }
 
-  const remainingMessage = corridorPresentOpened
-    ? "THE CORRIDOR GIFT IS YOURS. THE SEALED PRESENT IS STILL IN THE KITCHEN."
-    : kitchenPresentOpened
-      ? "THE KITCHEN PRESENT IS YOURS. THE CORRIDOR BOX IS WHERE YOU WOKE."
-      : "TWO PRESENTS REMAIN. ONE IS WHERE YOU WOKE. ONE IS HERE IN THE KITCHEN.";
-  const actionLabel = corridorPresentOpened
-    ? "OPEN THE KITCHEN PRESENT"
-    : kitchenPresentOpened
-      ? "RETURN TO THE CORRIDOR"
-      : "OPEN THE LAST PRESENTS";
-
+  // In this game the trophy IS the letter: pin 9 is the only final present,
+  // so an unlocked trophy always has the letter open. This state is a guard.
   return (
-    <section className="trophy-screen" aria-labelledby="trophy-title">
-      <div className="trophy-image">
-        {trophy.webp && (
-          <img
-            src={trophy.webp.url}
-            width={trophy.width}
-            height={trophy.height}
-            alt="A dark birthday cake burning with thirty-three candles in the abandoned kitchen"
-          />
-        )}
-      </div>
-      <div className="trophy-card">
-        <PadlockVerdict />
-        <p className="eyebrow">Record of trust, year 33</p>
-        <h1 id="trophy-title">Four Locks Open</h1>
-        <p className="trophy-card__message">{remainingMessage}</p>
-        <dl className="trophy-stats">
-          <div><dt>CONTACTS</dt><dd>{String(state.resolvedPins.length).padStart(2, "0")} / {TOTAL_PIN_COUNT}</dd></div>
-          <div><dt>TIME TO CANDLES</dt><dd>{elapsedLabel(state.startedAt, trophyAt)}</dd></div>
-        </dl>
-        <button className="mechanical-button mechanical-button--primary mechanical-button--full" onClick={() => navigate("/scan")}>
-          {actionLabel}
-        </button>
-      </div>
+    <section className="screen trophy-locked" aria-labelledby="trophy-title">
+      <p className="eyebrow">The locks</p>
+      <h1 id="trophy-title">The letter is close.</h1>
+      <p className="host-copy">The last lock is open. Bring the gift back, and the Keeper will read.</p>
+      <button className="mechanical-button mechanical-button--primary" onClick={() => navigate("/")}>
+        RETURN TO THE LEDGER
+      </button>
     </section>
   );
 }

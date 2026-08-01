@@ -129,7 +129,7 @@ test("production build is asset-free and Node is pinned to supported major 22", 
   assert.equal(packageJson.scripts.build, "tsc -b && vite build");
   assert.equal(
     packageJson.scripts["generate:assets"],
-    "npm run generate:audio && npm run generate:media && npm run generate:ar",
+    "npm run generate:audio && npm run generate:media && npm run generate:cinema",
   );
   assert.equal(packageJson.scripts["audit:build"], "node scripts/audit-build-output.mjs");
   assert.doesNotMatch(packageJson.scripts.build, /generate|ffmpeg|scripts\/|public[\\/]/i);
@@ -137,14 +137,12 @@ test("production build is asset-free and Node is pinned to supported major 22", 
   for (const generator of [
     "scripts/generate-audio-assets.mjs",
     "scripts/process-image-assets.mjs",
-    "scripts/generate-ar-assets.mjs",
   ]) {
     assert.match(readFileSync(generator, "utf8"), /lib\/protected-asset\.mjs/);
   }
 
   const mediaGenerator = readFileSync("scripts/process-image-assets.mjs", "utf8");
   assert.doesNotMatch(mediaGenerator, /\brmSync\b|removeOrReport/);
-  assert.match(mediaGenerator, /output: "ar\/textures\/creature"[^\n]+webp: false/);
 
   const docs = readFileSync("ASSETS.md", "utf8");
   assert.match(docs, /generated locally and committed to Git/);

@@ -49,8 +49,6 @@ export function ScanScreen({ resolvePin, flushPersistence, navigate }: ScanScree
     }
     if (result.saveTriggered) {
       await flushPersistence();
-      navigate("/save");
-      return;
     }
     if (result.pin.kind === "win" || result.gameCompleted) {
       navigate("/trophy");
@@ -75,7 +73,7 @@ export function ScanScreen({ resolvePin, flushPersistence, navigate }: ScanScree
   return (
     <section className="scan-screen" aria-labelledby="scan-title">
       <header className="scan-heading">
-        <div><p className="eyebrow">OPTICAL CONTACT</p><h1 id="scan-title">READ THE MARK</h1></div>
+        <div><p className="eyebrow">THE KEEPER'S LENS</p><h1 id="scan-title">READ THE MARK</h1></div>
         <span className="scanner-status" data-status={status}>{status.toUpperCase()}</span>
       </header>
       <ScannerView
@@ -89,14 +87,14 @@ export function ScanScreen({ resolvePin, flushPersistence, navigate }: ScanScree
         onError={() => setCameraError(true)}
         overlay={
           <div className="scanner-reticle" aria-hidden="true">
-            <i /><i /><i /><i /><span>BH7 // QR</span>
+            <i /><i /><i /><i /><span>THE MARK</span>
           </div>
         }
       />
       {!result && (
         <div className="scanner-controls">
-          <p className="scanner-instruction">ALIGN A PRINTED MARK INSIDE THE FRAME. ONLY HOUSE CODES ARE ACCEPTED.</p>
-          {cameraError && <p className="system-warning">CAMERA UNAVAILABLE. ALLOW CAMERA ACCESS IN CHROME, THEN RETURN.</p>}
+          <p className="scanner-instruction">HOLD A PRINTED MARK INSIDE THE FRAME. THE HOUSE ACCEPTS ONLY ITS OWN.</p>
+          {cameraError && <p className="system-warning">THE LENS IS DARK. ALLOW CAMERA ACCESS IN CHROME, THEN RETURN.</p>}
           {torch.supported && (
             <button className="text-control" onClick={() => void (torch.enabled ? torch.off() : torch.on())}>
               {torch.enabled ? "CUT TORCH" : "RAISE TORCH"}

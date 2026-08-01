@@ -117,8 +117,9 @@ test("story data is complete and clean", () => {
   }
   for (const config of Object.values(riddleConfigByPin)) {
     assert.equal(config!.hints.length, 3);
+    assert.ok(config!.refusals.length >= 8, "every lock carries at least eight refusals");
   }
-  assert.ok(REFUSAL_LINES.length >= 3);
+  assert.ok(REFUSAL_LINES.length >= 8);
   for (const [pinId, clip] of Object.entries(KEEPER_VOICE_BY_PIN)) {
     assert.ok(pins.some((pin) => pin.id === Number(pinId)), `voice pin ${pinId}`);
     assert.ok(["intro", "lock1", "lock2", "lock3", "lock4", "dark", "refuse"].includes(clip as string));

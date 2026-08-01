@@ -1,7 +1,6 @@
 "use client";
 
 import { itemById } from "@/src/items";
-import { TROPHY_PIN_ID, FINAL_PRESENT_PIN_IDS } from "@/src/pins";
 import type { PinResolutionResult } from "@/src/game";
 
 export interface ArrivalPanelProps {
@@ -9,15 +8,12 @@ export interface ArrivalPanelProps {
   onContinue: () => void;
 }
 
+const ENTRY_NUMERALS = ["0", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"] as const;
+
 function continueLabel(result: PinResolutionResult): string {
-  if (!result.ok) return "STEP BACK";
-  if (result.saveTriggered) return "RECORD TO CASSETTE";
-  if (result.gameCompleted) return "LET THE HOUSE GO QUIET";
-  if (result.pin.id === TROPHY_PIN_ID) return "VIEW THE TROPHY";
-  if ((FINAL_PRESENT_PIN_IDS as readonly number[]).includes(result.pin.id)) {
-    return "FIND THE OTHER PRESENT";
-  }
-  return "KEEP MOVING";
+  if (!result.ok) return "STEP AWAY";
+  if (result.pin.kind === "win" || result.gameCompleted) return "OPEN THE LETTER";
+  return "BACK TO THE LEDGER";
 }
 
 /** The one voice through which every pin resolution or refusal is delivered. */
@@ -26,21 +22,21 @@ export function ArrivalPanel({ result, onContinue }: ArrivalPanelProps) {
     <article className="arrival-panel" data-refused={!result.ok} aria-live="assertive">
       <p className="eyebrow">
         {result.ok
-          ? "CONTACT ACCEPTED // PIN " + String(result.pin.id).padStart(2, "0")
-          : "CONTACT REFUSED"}
+          ? "ENTRY " + (ENTRY_NUMERALS[result.pin.id] ?? String(result.pin.id)) + " · RECORDED"
+          : "DECLINED"}
       </p>
-      <h2>{result.ok ? result.pin.name : "NOT YET."}</h2>
+      <h2>{result.ok ? result.pin.name : "Not yet."}</h2>
       <p className="host-copy">{result.ok ? result.pin.bodyText : result.hint}</p>
       {result.ok && result.grantedItems.length > 0 && (
         <div className="arrival-grants">
-          <span>RECOVERED</span>
+          <span>RELEASED FROM TRUST</span>
           <strong>
-            {result.grantedItems.map((id) => itemById[id]?.name ?? id).join(" // ")}
+            {result.grantedItems.map((id) => itemById[id]?.name ?? id).join(" · ")}
           </strong>
         </div>
       )}
       {result.ok && result.damage > 0 && (
-        <p className="system-warning">THE HOUSE TOOK SOMETHING OUT OF YOU.</p>
+        <p className="system-warning">THE DARK TOOK SOMETHING OUT OF YOU. IT ALWAYS GIVES IT BACK.</p>
       )}
       <button
         className="mechanical-button mechanical-button--primary mechanical-button--full"

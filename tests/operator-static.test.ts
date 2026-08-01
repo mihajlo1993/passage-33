@@ -54,7 +54,6 @@ test("panel exposes every instant recovery control without dialogs", () => {
   assert.match(panel, /currentPinForOperator/);
   assert.match(panel, /currentZoneForOperator/);
   assert.match(panel, /audioInitialization/);
-  assert.match(panel, /arInitialization/);
 });
 
 test("operator styling is token-only, square, mechanical, and imported", () => {

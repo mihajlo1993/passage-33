@@ -3,138 +3,73 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "@/src/tokens";
 import type { Pin } from "@/src/types";
+import { roomDisplayName } from "@/src/zones";
 import { useTorch } from "@/src/device";
-import { useVHS } from "@/src/fx";
 
-/** How long the entry blackout holds before the house lets her see again. */
-const BLACKOUT_MS = 2_600;
-/** The silence before whatever is behind her stops being polite. */
-const BEHIND_YOU_MS = 3_200;
-/** How far across the kitchen the flame gets before the draught finds it. */
-const CARRY_MS = 2_800;
-const MIX_HOLD_MS = 1_600;
 /** The corridor walk in the dark: long enough to be sure nothing happened. */
 const THRESHOLD_MS = 14_000;
-/** The field recording plays through before the entry appends itself. */
-const LISTEN_MS = 9_000;
-const WISH_HOLD_MS = 3_000;
 
 export interface ActionBeatProps {
   pin: Pin;
+  /** Bumped by the operator panel; a change while staging ends the beat. */
+  operatorSkipToken: number;
   onResolve: () => void;
   onCancel: () => void;
 }
 
 /**
- * The staging layer for action-resolved pins. Plain actions resolve on the
- * press; choreographed beats (the blackout, the thing behind her, the draught,
- * the mix, the wish) make her live through a moment first. Damage, stingers,
- * and haptics ride the store's resolution pipeline afterwards.
+ * The staging layer for the one choreographed beat left in this game: the
+ * dark before the last lock. A single tap arms it; the walk stages for
+ * fourteen seconds, then resolves on its own. Damage, stingers, and haptics
+ * ride the store's resolution pipeline afterwards.
  */
-export function ActionBeat({ pin, onResolve, onCancel }: ActionBeatProps) {
-  const [phase, setPhase] = useState<"armed" | "staging" | "holding">("armed");
-  const [holdProgress, setHoldProgress] = useState(0);
+export function ActionBeat({ pin, operatorSkipToken, onResolve, onCancel }: ActionBeatProps) {
+  const [phase, setPhase] = useState<"armed" | "staging">("armed");
   const timerRef = useRef<number | null>(null);
-  const holdFrameRef = useRef<number | null>(null);
-  const holdStartRef = useRef(0);
+  const skipTokenAtArmRef = useRef(operatorSkipToken);
+  const onResolveRef = useRef(onResolve);
+  onResolveRef.current = onResolve;
   const torch = useTorch();
-  const vhs = useVHS();
 
   useEffect(() => () => {
     if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    if (holdFrameRef.current !== null) cancelAnimationFrame(holdFrameRef.current);
   }, []);
 
-  const stage = (durationMs: number, before?: () => void) => {
-    setPhase("staging");
-    before?.();
-    timerRef.current = window.setTimeout(() => {
-      timerRef.current = null;
-      onResolve();
-    }, durationMs);
-  };
-
-  const beginHold = (durationMs: number) => {
-    setPhase("holding");
-    holdStartRef.current = performance.now();
-    const tick = () => {
-      const elapsed = performance.now() - holdStartRef.current;
-      const progress = Math.min(1, elapsed / durationMs);
-      setHoldProgress(progress);
-      if (progress >= 1) {
-        holdFrameRef.current = null;
-        onResolve();
-        return;
-      }
-      holdFrameRef.current = requestAnimationFrame(tick);
-    };
-    holdFrameRef.current = requestAnimationFrame(tick);
-  };
-
-  const releaseHold = () => {
-    if (phase !== "holding") return;
-    if (holdFrameRef.current !== null) {
-      cancelAnimationFrame(holdFrameRef.current);
-      holdFrameRef.current = null;
+  // The operator's SKIP control ends a beat that is mid-stage.
+  useEffect(() => {
+    if (phase !== "staging") {
+      skipTokenAtArmRef.current = operatorSkipToken;
+      return;
     }
-    setHoldProgress(0);
-    setPhase("armed");
-  };
+    if (operatorSkipToken === skipTokenAtArmRef.current) return;
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    onResolveRef.current();
+  }, [operatorSkipToken, phase]);
 
   const activate = () => {
     if (phase !== "armed") return;
-    switch (pin.beat) {
-      case "blackout":
-        // The dark is his: cut her real torch and the screen together.
-        stage(BLACKOUT_MS, () => {
-          void torch.kill(motion.eventMs.torchKill);
-          vhs.glitch(motion.eventMs.vhsDamageSpike);
-        });
-        return;
-      case "behindYou":
-        stage(BEHIND_YOU_MS);
-        return;
-      case "carry":
-        stage(CARRY_MS, () => vhs.glitch(motion.eventMs.vhsDamageSpike));
-        return;
-      case "threshold":
-        // Every light out, the torch dead, one slow walk. Nothing happens.
-        stage(THRESHOLD_MS, () => {
-          void torch.kill(motion.eventMs.torchKill);
-        });
-        return;
-      case "listen":
-        stage(LISTEN_MS);
-        return;
-      case "mix":
-      case "hold":
-      default:
-        if (pin.beat === "mix" || pin.beat === "hold") return; // press-and-hold path
-        onResolve();
+    if (pin.beat === "threshold") {
+      // Every light out, the torch dead, one slow walk. Nothing happens.
+      setPhase("staging");
+      void torch.kill(motion.eventMs.torchKill);
+      timerRef.current = window.setTimeout(() => {
+        timerRef.current = null;
+        onResolveRef.current();
+      }, THRESHOLD_MS);
+      return;
     }
+    onResolve();
   };
-
-  const isHoldBeat = pin.beat === "mix" || pin.beat === "hold";
-  const holdDuration = pin.beat === "hold" ? WISH_HOLD_MS : MIX_HOLD_MS;
-  const label = pin.actionLabel ?? "PROCEED";
-
-  const stagingCopy =
-    pin.beat === "blackout"
-      ? "THE LIGHTS ARE HIS."
-      : pin.beat === "behindYou"
-        ? "DO NOT TURN AROUND YET."
-        : pin.beat === "carry"
-          ? "WALK. KEEP THE FLAME CLOSE."
-          : pin.beat === "threshold"
-            ? "WALK THE CORRIDOR. THE TERMINAL WILL KNOW."
-            : pin.beat === "listen"
-              ? "RECORDING. STAND STILL."
-              : "";
 
   if (phase === "staging") {
     return (
       <section className="action-beat action-beat--staging" data-beat={pin.beat ?? "plain"}>
-        <p className="action-beat__staging-line" aria-live="assertive">{stagingCopy}</p>
+        <p className="action-beat__staging-line" aria-live="assertive">
+          WALK THE CORRIDOR. THE TERMINAL WILL KNOW.
+        </p>
       </section>
     );
   }
@@ -142,35 +77,16 @@ export function ActionBeat({ pin, onResolve, onCancel }: ActionBeatProps) {
   return (
     <section className="action-beat" aria-labelledby="beat-title" data-beat={pin.beat ?? "plain"}>
       <header className="lock-screen__heading">
-        <p className="eyebrow">
-          {"PIN " + String(pin.id).padStart(2, "0") + " // " + pin.zone.toUpperCase()}
-        </p>
+        <p className="eyebrow">{"ENTRY " + ["0", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"][pin.id] + " · " + roomDisplayName(pin.zone)}</p>
         <h1 id="beat-title">{pin.name}</h1>
       </header>
       <p className="host-copy">{pin.objective}</p>
-      {isHoldBeat ? (
-        <div className="hold-control">
-          <button
-            className="mechanical-button mechanical-button--primary mechanical-button--full"
-            onPointerDown={() => beginHold(holdDuration)}
-            onPointerUp={releaseHold}
-            onPointerLeave={releaseHold}
-            onPointerCancel={releaseHold}
-          >
-            {phase === "holding" ? "HOLD..." : label + " (PRESS AND HOLD)"}
-          </button>
-          <div className="hold-control__track" aria-hidden="true">
-            <i style={{ width: `${Math.round(holdProgress * 100)}%` }} />
-          </div>
-        </div>
-      ) : (
-        <button
-          className="mechanical-button mechanical-button--primary mechanical-button--full"
-          onClick={activate}
-        >
-          {label}
-        </button>
-      )}
+      <button
+        className="mechanical-button mechanical-button--primary mechanical-button--full"
+        onClick={activate}
+      >
+        {pin.actionLabel ?? "PROCEED"}
+      </button>
       <button className="text-control" onClick={onCancel}>NOT YET</button>
     </section>
   );

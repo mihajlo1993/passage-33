@@ -3,9 +3,7 @@
 @import "./styles/interactions.css";
 @import "./styles/map.css";
 @import "./styles/fx.css";
-@import "./styles/ar.css";
 @import "./styles/operator.css";
-@import "./styles/tape.css";
 @import "./styles/media.css";
 @import "./styles/examine.css";
 @import "./styles/puzzles.css";
@@ -91,27 +89,32 @@ h2 {
   min-height: 100dvh;
 }
 
+/*
+ * The shell is a fixed-height grid: header row, scrolling slot, nav row.
+ * overflow: hidden on the shell (never clip on a scroll ancestor: clip
+ * silently killed position: sticky here once). The chrome rows are plain
+ * grid rows, permanently visible; only .screen-slot scrolls.
+ */
 .game-shell {
   position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto;
   width: min(100%, var(--frame-width));
-  min-height: 100dvh;
+  height: 100dvh;
   margin-inline: auto;
-  overflow: clip;
+  overflow: hidden;
   border-inline: var(--hairline) solid var(--c-hairline);
   background: var(--c-surface);
 }
 
-
 .app-header {
-  position: sticky;
   z-index: 10;
-  top: 0;
+  grid-row: 1;
   display: flex;
   align-items: stretch;
   justify-content: space-between;
   min-height: calc(var(--control-height) + var(--space-md));
+  padding-top: env(safe-area-inset-top, 0px);
   border-bottom: var(--hairline) solid var(--c-hairline);
   background: var(--c-void);
 }
@@ -167,11 +170,22 @@ h2 {
 }
 
 .screen-slot {
+  grid-row: 2;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Full-bleed screens (cold open, finale) hide the chrome rows entirely,
+   so the slot is the whole shell and owns the safe areas itself. */
+.game-shell[data-chrome="hidden"] .screen-slot {
+  height: 100dvh;
 }
 
 .screen {
-  min-height: calc(100dvh - var(--control-height) * 2 - var(--space-xxl));
+  min-height: 100%;
   padding: var(--space-xl) var(--space-lg) var(--space-xxl);
 }
 
@@ -266,11 +280,10 @@ h2 {
 }
 
 .bottom-nav {
-  position: sticky;
   z-index: 12;
-  bottom: 0;
+  grid-row: 3;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   padding-bottom: env(safe-area-inset-bottom);
   border-top: var(--hairline) solid var(--c-hairline);
   background: var(--c-void);
@@ -278,7 +291,7 @@ h2 {
 
 .bottom-nav button {
   display: grid;
-  min-height: calc(var(--touch-target) + var(--space-md));
+  min-height: var(--control-height);
   place-items: center;
   gap: var(--space-xs);
   padding: var(--space-sm) 0;

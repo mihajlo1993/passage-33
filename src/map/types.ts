@@ -1,7 +1,7 @@
 import type { ZoneId } from "../types";
 
 export type RoomStatus = "unresolved" | "cleared" | "unentered";
-export type RoomStatusLabel = "UNRESOLVED" | "CLEARED" | "UNENTERED";
+export type RoomStatusLabel = "THE LOCK HOLDS" | "RELEASED" | "";
 
 export interface MapPoint {
   x: number;
@@ -120,4 +120,6 @@ export interface SurveyMapModel {
   connections: readonly RoomConnection[];
   furniture: readonly FurnitureRecord[];
   landmarks: readonly MapLandmark[];
+  /** The room the hunt is in RIGHT NOW; the objective marker pulses here. */
+  objectiveZone: ZoneId | null;
 }

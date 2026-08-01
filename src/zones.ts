@@ -86,3 +86,11 @@ export const mapLandmarks = {
   frontDoor: { zone: 'entry' as const, opens: false },
 } as const;
 
+/**
+ * The room's spoken name for screen copy: "THE LIVING ROOM", never a
+ * lowercase slug. Nothing on any screen may read as debug output.
+ */
+export function roomDisplayName(zone: ZoneId): string {
+  return 'THE ' + zoneById[zone].name.toUpperCase();
+}
+

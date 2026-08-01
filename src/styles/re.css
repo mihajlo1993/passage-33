@@ -16,14 +16,22 @@ body {
 
 /* ---- The world behind the slab: plate, dim, vignette, grain ---- */
 
+/* The zone plate drifts, barely: a 40s Ken Burns pass, transform only.
+   The plate bleeds past every edge so the drift never shows a seam. */
 .screen-plate {
   position: fixed;
   z-index: -3;
-  inset: 0;
+  inset: -6%;
   background-color: var(--c-void);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
+  animation: plate-drift 40s var(--ease-heavy) infinite alternate;
+}
+
+@keyframes plate-drift {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to { transform: scale(1.06) translate3d(-1.2%, 0.8%, 0); }
 }
 
 .screen-plate::before {
@@ -61,27 +69,25 @@ body {
   100% { transform: translate(0, 0); }
 }
 
-/* ---- The corner-tick frame (signature motif) ---- */
+/* ---- The ledger card: double-rule frame with corner ticks ---- */
+
+/* Aged-paper grain, multiplied onto raised surfaces. One tile, reused. */
+:root {
+  --paper-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='2' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='0.18' intercept='0.86'/%3E%3CfeFuncG type='linear' slope='0.18' intercept='0.85'/%3E%3CfeFuncB type='linear' slope='0.18' intercept='0.82'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23p)'/%3E%3C/svg%3E");
+}
 
 .re-frame {
   position: relative;
-  border: 0;
+  border: var(--hairline) solid var(--line);
 }
 
+/* The inner rule of the double border. */
 .re-frame::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 3px;
   pointer-events: none;
-  border: 1px solid transparent;
-  border-image: linear-gradient(
-      90deg,
-      rgba(200, 190, 175, 0.42) 0%,
-      rgba(200, 190, 175, 0.08) 22%,
-      rgba(200, 190, 175, 0.08) 78%,
-      rgba(200, 190, 175, 0.42) 100%
-    )
-    1;
+  border: var(--hairline) solid var(--line-soft);
 }
 
 .re-frame::after {
@@ -114,17 +120,27 @@ body {
   text-transform: none;
   transition: background var(--motion-fast) var(--ease-heavy),
     color var(--motion-fast) var(--ease-heavy),
+    transform var(--motion-fast) var(--ease-heavy),
     box-shadow var(--motion-fast) var(--ease-heavy);
 }
 
+/* Press depth: the button physically gives by a pixel and shades. */
+.mechanical-button:not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+
 .mechanical-button--primary {
-  background: linear-gradient(180deg, var(--c-bone-bright) 0%, var(--c-bone) 55%, var(--c-bone-muted) 100%);
+  background:
+    var(--paper-noise),
+    linear-gradient(180deg, var(--c-bone-bright) 0%, var(--c-bone) 55%, var(--c-bone-muted) 100%);
+  background-blend-mode: multiply, normal;
   border-color: rgba(0, 0, 0, 0.35);
   color: var(--c-ink);
 }
 
 .mechanical-button--primary:not(:disabled):active {
-  box-shadow: var(--glow-select);
+  box-shadow: var(--glow-select), inset 0 2px 3px rgba(0, 0, 0, 0.25);
 }
 
 .mechanical-button:disabled {
@@ -134,7 +150,7 @@ body {
 }
 
 .text-control {
-  color: var(--c-text-dim, #877f78);
+  color: var(--c-bone-dim);
   letter-spacing: var(--tracking-ui);
   text-transform: none;
 }
@@ -143,7 +159,7 @@ body {
 
 .re-select[data-selected="true"],
 .re-select[aria-selected="true"] {
-  background: linear-gradient(180deg, var(--c-bone-bright) 0%, #e6dfd2 55%, var(--c-bone-muted) 100%);
+  background: linear-gradient(180deg, var(--c-bone-bright) 0%, var(--c-bone) 55%, var(--c-bone-muted) 100%);
   color: var(--c-ink);
   box-shadow: var(--glow-select);
 }
@@ -202,13 +218,13 @@ body {
   z-index: 2147483620;
   inset: 0;
   pointer-events: none;
-  background: #000000;
+  background: var(--c-void);
   opacity: 0;
 }
 
 .route-shroud[data-phase="out"] {
   opacity: 1;
-  transition: opacity 320ms cubic-bezier(0.7, 0, 0.84, 0);
+  transition: opacity var(--motion-base) var(--ease-heavy);
   pointer-events: auto;
 }
 
@@ -219,7 +235,7 @@ body {
 
 .route-shroud[data-phase="in"] {
   opacity: 0;
-  transition: opacity 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity var(--motion-base) var(--ease-heavy);
 }
 
 /* ---- Chrome: header and tab nav reskinned as segmented bone control ---- */
@@ -231,7 +247,7 @@ body {
 
 .bottom-nav {
   border-top: 1px solid var(--line-soft);
-  background: #000000;
+  background: var(--c-void);
 }
 
 .bottom-nav button {
@@ -244,6 +260,179 @@ body {
 .bottom-nav button[data-active="true"] {
   background: linear-gradient(180deg, var(--c-bone-bright) 0%, var(--c-bone) 60%, var(--c-bone-muted) 100%);
   color: var(--c-ink);
+}
+
+/* ---- Type: the Keeper's serif for chapter titles ---- */
+
+/*
+ * One scale, five stops (display / title / heading / body / small / micro),
+ * all from tokens. Chapter titles speak in the Keeper's serif, sentence
+ * case; UI labels stay Archivo Narrow; documents stay Courier Prime.
+ */
+.screen-heading h1,
+.lock-screen__heading h1,
+.letter-screen__heading h1,
+.cold-open h1,
+.trophy-locked h1,
+.restore-screen h1,
+.access-denied h1,
+.missing-screen h1 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.screen-heading h1::first-letter,
+.lock-screen__heading h1::first-letter {
+  text-transform: uppercase;
+}
+
+/* ---- Hold track: a slow shimmer rides the fill while she holds ---- */
+
+.hold-control__track {
+  position: relative;
+  overflow: hidden;
+}
+
+.hold-control__track i {
+  position: relative;
+  overflow: hidden;
+}
+
+.hold-control__track i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 248, 236, 0.5) 50%,
+    transparent 80%
+  );
+  transform: translateX(-100%);
+  animation: hold-shimmer 1.2s var(--ease-heavy) infinite;
+}
+
+@keyframes hold-shimmer {
+  to { transform: translateX(100%); }
+}
+
+/* ---- Focus: every interactive element answers the keyboard ---- */
+
+:focus-visible {
+  outline: var(--hairline) solid var(--c-amber);
+  outline-offset: 2px;
+}
+
+/* ---- The ledger panels: objective and arrival wear the double rule ---- */
+
+.objective-panel,
+.arrival-panel {
+  position: relative;
+  border: var(--hairline) solid var(--line);
+}
+
+.objective-panel::after,
+.arrival-panel::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  border: var(--hairline) solid var(--line-soft);
+}
+
+/* Aged paper: the released documents carry the grain of their years. */
+.paper-document {
+  background-color: var(--c-bone);
+  background-image: var(--paper-noise);
+  background-blend-mode: multiply;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hold-control__track i::after { animation: none; }
+}
+
+/* ---- The four seals: the game's structure, worn in the header ---- */
+
+.seals-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0 var(--space-lg);
+}
+
+.wax-seal {
+  width: 34px;
+  height: 34px;
+  overflow: visible;
+}
+
+.wax-seal__wax {
+  fill: var(--c-rust);
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 1;
+}
+
+.wax-seal__ring {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.38);
+  stroke-width: 1.4;
+}
+
+.wax-seal__numeral {
+  fill: var(--c-bone);
+  font-family: var(--font-award);
+  font-size: 13px;
+  opacity: 0.92;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.4);
+  stroke-width: 0.6;
+}
+
+.wax-seal__crack path {
+  fill: none;
+  stroke: var(--c-void);
+  stroke-width: 1.6;
+  stroke-linecap: square;
+  stroke-linejoin: bevel;
+  stroke-dasharray: 90;
+  stroke-dashoffset: 90;
+}
+
+/* Opened: the wax dims and the fractures stay visible. */
+.wax-seal[data-opened="true"] .wax-seal__wax {
+  fill: var(--c-map-red);
+}
+
+.wax-seal[data-opened="true"] .wax-seal__numeral {
+  opacity: 0.55;
+}
+
+.wax-seal[data-opened="true"] .wax-seal__crack path {
+  stroke-dashoffset: 0;
+}
+
+/* The moment a lock resolves, the fracture draws itself once. */
+.wax-seal[data-cracking="true"] .wax-seal__crack path {
+  transition: stroke-dashoffset 700ms var(--ease-heavy);
+}
+
+.wax-seal[data-cracking="true"] {
+  animation: seal-crack-jolt 700ms var(--ease-heavy) 1;
+}
+
+@keyframes seal-crack-jolt {
+  0% { transform: none; }
+  18% { transform: translate(0.5px, -0.5px) rotate(-2deg); }
+  36% { transform: translate(-0.5px, 0.5px) rotate(1.4deg); }
+  60% { transform: translate(0.5px, 0) rotate(-0.8deg); }
+  100% { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wax-seal[data-cracking="true"] { animation: none; }
+  .wax-seal[data-cracking="true"] .wax-seal__crack path { transition: none; }
 }
 
 /* ---- ECG health panel ---- */
@@ -294,6 +483,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .screen-grain { animation: none; }
+  .screen-plate { animation: none; }
   .ecg-panel[data-state="danger"] { animation: none; }
   .route-shroud[data-phase="out"],
   .route-shroud[data-phase="in"] { transition-duration: 1ms; }
@@ -306,7 +496,7 @@ body {
   grid-template-columns: repeat(4, 1fr);
   gap: 11px;
   padding: var(--space-md);
-  background: #000000;
+  background: var(--c-void);
 }
 
 .re-cell {
@@ -315,13 +505,19 @@ body {
   border: 1px solid rgba(255, 250, 240, 0.14);
   border-radius: 3px;
   padding: 0;
-  background: linear-gradient(180deg, var(--c-plate-hi) 0%, var(--c-plate-lo) 100%);
+  background:
+    var(--paper-noise),
+    linear-gradient(180deg, var(--c-plate-hi) 0%, var(--c-plate-lo) 100%);
+  background-blend-mode: multiply, normal;
   transition: background var(--motion-fast) var(--ease-heavy),
     box-shadow var(--motion-fast) var(--ease-heavy);
 }
 
 .re-cell[data-selected="true"] {
-  background: linear-gradient(180deg, #f2ece2 0%, #e6dcd4 100%);
+  background:
+    var(--paper-noise),
+    linear-gradient(180deg, var(--c-bone-bright) 0%, var(--c-bone-muted) 100%);
+  background-blend-mode: multiply, normal;
   border-color: rgba(255, 255, 255, 0.30);
   box-shadow: var(--glow-select);
 }
@@ -404,22 +600,26 @@ body {
   padding: 0 var(--space-xl);
   border: 1px solid rgba(0, 0, 0, 0.35);
   border-radius: 2px;
-  background: linear-gradient(180deg, #d2ccc0 0%, #b9b3a6 100%);
-  color: #2a2620;
+  background:
+    var(--paper-noise),
+    linear-gradient(180deg, var(--c-bone-muted) 0%, var(--c-plate-hi) 100%);
+  background-blend-mode: multiply, normal;
+  color: var(--c-ink);
   font-family: var(--font-ui);
   font-size: var(--text-body);
 }
 
 .re-verb:active {
-  background: #2a2620;
-  color: #e6dcd4;
+  background: var(--c-ink);
+  color: var(--c-bone-muted);
+  transform: translateY(1px);
 }
 
 
 /* ---- Ambient fallbacks: one warm practical per zone until plates land ---- */
 
 .screen-plate[data-ambient] {
-  background-color: #030302;
+  background-color: var(--c-surface);
 }
 
 .screen-plate[data-ambient]::before {
